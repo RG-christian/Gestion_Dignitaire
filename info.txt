@@ -1,0 +1,6 @@
+
+creer une base de donnée sur MAMP, la nommer "gestion_dignitaire"
+
+ouvrer le dossier gestion_dign sur vscode
+
+Ouvrer votre terminal et executer:   php run_migration.php
