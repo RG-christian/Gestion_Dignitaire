@@ -5,6 +5,8 @@ use ReflectionMethod;
 
 class Router {
     public function handleRequest() {
+       // echo "Appel du contrôleur $controllerClass et action $action<br>";
+
         $controller = $_GET['controller'] ?? 'Auth';
         $action = $_GET['action'] ?? 'index';
 

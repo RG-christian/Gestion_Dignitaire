@@ -133,10 +133,19 @@ if (!isset($_SESSION['admin_id'])) {
             <button class="text-gray-800 focus:outline-none transition duration-200 dark:text-gray-100">
                 <i class="fas fa-user-circle text-lg"></i>
             </button>
+
             <ul class="profile-dropdown py-1">
                 <li><a href="#" class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">Profil</a></li>
+
+
                 <li><a href="#" class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">Déconnexion</a></li>
             </ul>
+            <?php if (isset($_SESSION['role_name']) && $_SESSION['role_name'] === 'Superadmin'): ?>
+                <a href="index.php?controller=admin&action=create"
+                   class="ml-4 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
+                    <i class="fas fa-user-plus"></i> Ajouter un utilisateur
+                </a>
+            <?php endif; ?>
         </div>
     </nav>
 </header>
@@ -155,90 +164,78 @@ if (!isset($_SESSION['admin_id'])) {
             <div class="flex-1 overflow-y-auto">
                 <ul class="space-y-1">
                     <li>
-                        <a href="#" class="flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
+                        <a href="index.php?controller=dashboard&action=index"
+                           class="flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
                             <i class="fas fa-tachometer-alt w-5 text-blue-500 dark:text-blue-300"></i>
                             <span class="ml-2 text-sm">Tableau</span>
                         </a>
                     </li>
-                    <li class="relative">
-                        <a href="#" class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="w-5 text-blue-500 dark:text-blue-300">👥</span>
-                            <span class="ml-2 text-sm">Gest. Pers.</span>
-                            <i class="fas fa-chevron-right ml-auto text-xs"></i>
-                        </a>
-                        <ul class="dropdown-content">
-                            <li><a href="index.php?controller=enfant&action=liste" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Enfant</a></li>
-                            <li><a href="index.php?controller=dignitaire&action=afficherListe" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Dignitaire</a></li>
-                            <li><a href="index.php?controller=poste&action=liste" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Poste</a></li>
-                        </ul>
-                    </li>
-                    <li class="relative">
-                        <a href="#" class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="w-5 text-blue-500 dark:text-blue-300">🎓</span>
-                            <span class="ml-2 text-sm">Éduc. & Qualif.</span>
-                            <i class="fas fa-chevron-right ml-auto text-xs"></i>
-                        </a>
-                        <ul class="dropdown-content">
-                            <li><a href="index.php?controller=diplome&action=afficherListe" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Diplôme</a></li>
-                        </ul>
-                    </li>
-                    <li class="relative">
-                        <a href="#" class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="w-5 text-blue-500 dark:text-blue-300">💼</span>
-                            <span class="ml-2 text-sm">Parcours Pro.</span>
-                            <i class="fas fa-chevron-right ml-auto text-xs"></i>
-                        </a>
-                        <ul class="dropdown-content">
-                            <li><a href="index.php?controller=experience&action=liste" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Expérience</a></li>
-                        </ul>
-                    </li>
-                    <li class="relative">
-                        <a href="#" class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="w-5 text-blue-500 dark:text-blue-300">🗣️</span>
-                            <span class="ml-2 text-sm">Langues</span>
-                            <i class="fas fa-chevron-right ml-auto text-xs"></i>
-                        </a>
-                        <ul class="dropdown-content">
-                            <li><a href="index.php?controller=langue_parlee&action=liste" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Langues</a></li>
-                        </ul>
-                    </li>
-                    <li class="relative">
-                        <a href="#" class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="w-5 text-blue-500 dark:text-blue-300">🌐</span>
-                            <span class="ml-2 text-sm">Géographie</span>
-                            <i class="fas fa-chevron-right ml-auto text-xs"></i>
-                        </a>
-                        <ul class="dropdown-content">
-                            <li><a href="#" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Pays/Ville</a></li>
-                        </ul>
-                    </li>
-                    <li class="relative">
-                        <a href="#" class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="w-5 text-blue-500 dark:text-blue-300">🏅</span>
-                            <span class="ml-2 text-sm">Récomp. & Rec.</span>
-                            <i class="fas fa-chevron-right ml-auto text-xs"></i>
-                        </a>
-                        <ul class="dropdown-content">
-                            <li><a href="#" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Nomination</a></li>
-                            <li><a href="#" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Décoration</a></li>
-                        </ul>
-                    </li>
-                    <li class="relative">
-                        <a href="#" class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
-                            <span class="w-5 text-blue-500 dark:text-blue-300">🏢</span>
-                            <span class="ml-2 text-sm">Organisation</span>
-                            <i class="fas fa-chevron-right ml-auto text-xs"></i>
-                        </a>
-                        <ul class="dropdown-content">
-                            <li><a href="#" class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">Structure</a></li>
-                        </ul>
-                    </li>
+                    <?php foreach ($_SESSION['fonctions'] as $fonction): ?>
+                        <?php
+                        // Bloc SWITCH pour sélectionner l’icône adaptée à chaque menu principal
+                        switch($fonction['fonction_name']) {
+                            case 'Gest. Pers.':        $icone = '👥'; break;
+                            case 'Éduc. & Qualif.':    $icone = '🎓'; break;
+                            case 'Organisation':       $icone = '🏢'; break;
+                            case 'Parcours Pro.':      $icone = '💼'; break;
+                            case 'Langues':            $icone = '🗣️'; break;
+                            case 'Géographie':         $icone = '🌐'; break;
+                            case 'Récomp. & Rec.':     $icone = '🏅'; break;
+                            default:                   $icone = '★';
+                        }
+                        // Filtrer les sous-fonctions pour cette fonction seulement
+                        $subf = array_filter($_SESSION['sousfonctions'], function($sf) use ($fonction) {
+                            return $sf['fonction_id'] == $fonction['id'];
+                        });
+                        ?>
+                        <li class="relative">
+                            <a href="#"
+                               class="dropdown-toggle flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white">
+                                <span class="w-5 text-blue-500 dark:text-blue-300"><?= $icone ?></span>
+                                <span class="ml-2 text-sm"><?= htmlspecialchars($fonction['fonction_name']) ?></span>
+                                <i class="fas fa-chevron-right ml-auto text-xs"></i>
+                            </a>
+                            <?php if (!empty($subf)): ?>
+                                <ul class="dropdown-content">
+                                    <?php foreach ($subf as $sousfonction): ?>
+                                        <li>
+                                            <a href="index.php?controller=<?= strtolower($sousfonction['sousfonction_name']) ?>&action=afficherListe"
+                                               class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white text-sm">
+                                                <?= htmlspecialchars($sousfonction['sousfonction_name']) ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
                 </ul>
                 <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p class="text-gray-500 text-xs dark:text-gray-400">Vous êtes connecté en tant qu'administrateur.</p>
-                    <p class="font-medium text-gray-800 text-sm dark:text-gray-100">Bienvenue <?php echo htmlspecialchars($_SESSION['admin_nom_complet']); ?> !</p>
-                    <a href="index.php?controller=auth&action=logout" class="mt-2 inline-block px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 text-sm">Déconnexion</a>
+                    <p class="text-gray-500 text-xs dark:text-gray-400">
+                        <?php
+                        // Par défaut, tu affiches "administrateur", mais tu peux personnaliser :
+                        if (isset($_SESSION['role_name'])) {
+                            if ($_SESSION['role_name'] === 'Superadmin') {
+                                echo "Vous êtes connecté en tant que <b>Superadmin</b>.";
+                            } else {
+                                // Chercher la première fonction principale accessible (menu)
+                                $fonction = $_SESSION['fonctions'][0]['fonction_name'] ?? 'Administrateur';
+                                echo "Vous êtes connecté en tant que <b>$fonction</b>.";
+                            }
+                        } else {
+                            echo "Vous êtes connecté en tant qu'administrateur.";
+                        }
+                        ?>
+                    </p>
+                    <p class="font-medium text-gray-800 text-sm dark:text-gray-100">
+                        Bienvenue <?= htmlspecialchars($_SESSION['admin_nom_complet']) ?> !
+                    </p>
+                    <a href="index.php?controller=auth&action=logout"
+                       class="mt-2 inline-block px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 text-sm">
+                        Déconnexion
+                    </a>
                 </div>
+
             </div>
         </div>
     </aside>

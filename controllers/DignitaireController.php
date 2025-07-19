@@ -8,6 +8,7 @@ $pdo = getDatabaseConnection();
 
 require_once __DIR__ . '/../classes/DignitaireDAO.class.php';
 require_once __DIR__ . '/../classes/Dignitaire.class.php';
+require_once __DIR__ . '/../classes/Dignitaire.class.php';
 
 
 class DignitaireController

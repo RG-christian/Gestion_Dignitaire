@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/../classes/AdminDAO.class.php';
+require_once __DIR__ . '/../classes/UserDAO.class.php';
 
 class AuthController
 {
@@ -12,32 +12,41 @@ class AuthController
     }
 
     public function login()
-    {
-        $error = null;
 
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $username = trim($_POST['username']);
-            $password = $_POST['password'];
+{
+    $error = null;
 
-            $dao = new AdminDAO();
-            $admin = $dao->getByUsername($username);
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        $username = trim($_POST['username']);
+        $password = $_POST['password'];
 
-            if ($admin && password_verify($password, $admin->getPassword())) {
-                // Authentification réussie
-                $_SESSION['admin_id'] = $admin->getId();
-                $_SESSION['admin_username'] = $admin->getUsername();
-                $_SESSION['admin_nom_complet'] = $admin->getNomComplet();
-                // Redirige vers le dashboard (adapter le chemin si besoin)
-                header('Location: index.php?controller=dignitaire&action=afficherListe');
-                exit;
-            } else {
-                $error = "Nom d'utilisateur ou mot de passe incorrect";
-            }
+        $dao = new UserDAO();
+        $admin = $dao->getByUsername($username);
+
+        if ($admin && password_verify($password, $admin->getPassword())) {
+            $_SESSION['admin_id'] = $admin->getId();
+            $_SESSION['admin_username'] = $admin->getUsername();
+            $_SESSION['admin_nom_complet'] = $admin->getNomComplet();
+
+            // AJOUT ICI (AVANT la redirection) :
+            $roleName = $dao->getRoleNameByUserId($admin->getId());
+            $_SESSION['role_name'] = $roleName;
+
+            $fonctions = $dao->getFonctionsByUserId($admin->getId());
+            $sousfonctions = $dao->getSousFonctionsByUserId($admin->getId());
+            $_SESSION['fonctions'] = $fonctions;
+            $_SESSION['sousfonctions'] = $sousfonctions;
+
+            header('Location: index.php?controller=dignitaire&action=afficherListe');
+            exit;
+        } else {
+            $error = "Nom d'utilisateur ou mot de passe incorrect";
         }
-
-        // Affiche la vue de login (on transmet l'erreur si besoin)
-        include __DIR__ . '/../views/login.php';
     }
+
+    // Affiche la vue de login (on transmet l'erreur si besoin)
+    include __DIR__ . '/../views/login.php';
+}
 
     // Affiche le tableau de bord après connexion
     public function dashboard()
@@ -49,6 +58,9 @@ class AuthController
         }
         include __DIR__ . '/../views/dashboard_dignitaire.view.php';
     }
+
+
+
 
     // Déconnexion propre
     public function logout()

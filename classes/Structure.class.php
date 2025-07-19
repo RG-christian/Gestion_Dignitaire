@@ -1,6 +1,5 @@
 <?php
 
-namespace classes;
 
 class Structure {
     private $id;
@@ -18,7 +17,8 @@ class Structure {
     public function getNom() { return $this->nom; }
     public function setNom($nom) { $this->nom = $nom; }
 
-    public function afficherStructure() {
+    public function afficherStructure(): string
+    {
         return "Structure : {$this->nom}";
     }
 }
