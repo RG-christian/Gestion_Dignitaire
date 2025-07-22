@@ -10,10 +10,10 @@ CREATE TABLE IF NOT EXISTS diplome (
     id INT AUTO_INCREMENT PRIMARY KEY,
     dignitaire_id INT NOT NULL,
     intitule VARCHAR(255),
-    etablissement_id INT,
+    etablissement_id INT DEFAULT NULL, 
     annee VARCHAR(10),
-    ville_id INT,
-    domaine_id INT,
+    ville_id INT DEFAULT NULL,        
+    domaine_id INT DEFAULT NULL,       
     code VARCHAR(30),
     type VARCHAR(30),
     CONSTRAINT fk_diplome_dignitaire FOREIGN KEY (dignitaire_id) 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS enfants (
     nom VARCHAR(100),
     prenom VARCHAR(100),
     date_naissance DATE,
-    lieu_naissance INT,
+    lieu_naissance INT DEFAULT NULL, 
     genre VARCHAR(10),
     CONSTRAINT fk_enfant_dignitaire FOREIGN KEY (dignitaire_id) 
         REFERENCES dignitaire(id) ON DELETE CASCADE,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS langues (
     CONSTRAINT fk_langue_dignitaire FOREIGN KEY (dignitaire_id) 
         REFERENCES dignitaire(id) ON DELETE CASCADE,
     CONSTRAINT fk_langue_code FOREIGN KEY (langue_id) 
-        REFERENCES code_langue(id) ON DELETE CASCADE
+        REFERENCES langue(id) ON DELETE CASCADE
 );
 
 -- Expériences professionnelles
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS experiences (
     intitule VARCHAR(150),
     date_debut DATE,
     date_fin DATE,
-    structure_id INT,
+    structure_id INT DEFAULT NULL,
     CONSTRAINT fk_experience_dignitaire FOREIGN KEY (dignitaire_id) 
         REFERENCES dignitaire(id) ON DELETE CASCADE,
     CONSTRAINT fk_experience_structure FOREIGN KEY (structure_id) 
@@ -69,46 +69,58 @@ CREATE TABLE IF NOT EXISTS experiences (
 
 -- Postes occupés
 CREATE TABLE IF NOT EXISTS postes (
-    i d INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     dignitaire_id INT NOT NULL,
     intitule VARCHAR(150),
     date_debut DATE,
     date_fin DATE,
-    entite_id INT,
+    entite_id INT DEFAULT NULL,
+    ville_id INT DEFAULT NULL,
     CONSTRAINT fk_postes_dignitaire FOREIGN KEY (dignitaire_id) 
         REFERENCES dignitaire(id) ON DELETE CASCADE,
     CONSTRAINT fk_postes_entite FOREIGN KEY (entite_id) 
-        REFERENCES entite(id) ON DELETE SET NULL
+        REFERENCES entite(id) ON DELETE SET NULL,
+    CONSTRAINT fk_postes_ville FOREIGN KEY (ville_id) 
+        REFERENCES ville(id) ON DELETE SET NULL    
 );
 
 -- Nominations officielles
 CREATE TABLE IF NOT EXISTS nominations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     dignitaire_id INT NOT NULL,
-    date_nomination DATE,
-    pv_id INT, -- à définir si table PV existe
-    entite_id INT,
-    poste_id INT,
+    entite_id INT DEFAULT NULL,
+    poste_id INT DEFAULT NULL,
+    pv_id INT DEFAULT NULL,
+    date_debut DATE NOT NULL,
+    date_fin   DATE DEFAULT NULL,
+    fonction   VARCHAR(150),
+
     CONSTRAINT fk_nomination_dignitaire FOREIGN KEY (dignitaire_id) 
         REFERENCES dignitaire(id) ON DELETE CASCADE,
     CONSTRAINT fk_nomination_entite FOREIGN KEY (entite_id) 
         REFERENCES entite(id) ON DELETE SET NULL,
     CONSTRAINT fk_nomination_poste FOREIGN KEY (poste_id) 
-        REFERENCES postes(id) ON DELETE SET NULL
+        REFERENCES postes(id) ON DELETE SET NULL,
+    CONSTRAINT fk_nomination_pv FOREIGN KEY (pv_id) 
+        REFERENCES pv(id) ON DELETE SET NULL
 );
 
--- Décorations : indépendantes + relation N:M avec dignitaires
-CREATE TABLE IF NOT EXISTS decoration (
-    deco_id INT AUTO_INCREMENT PRIMARY KEY, 
-    deco_nom VARCHAR(150), 
-    deco_type VARCHAR(50), 
-    deco_niveau VARCHAR(50), 
-    deco_grade VARCHAR(50), 
-    deco_date_obtention DATE, 
-    deco_autorite VARCHAR(50), 
-    deco_motif VARCHAR(50), 
-    deco_description VARCHAR(255), 
-    deco_fichierAttestation VARCHAR(100)
+
+
+CREATE TABLE IF NOT EXISTS historique_nominations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nomination_id INT NOT NULL,
+    dignitaire_id INT NOT NULL,
+    poste_id INT DEFAULT NULL,
+    entite_id INT DEFAULT NULL,
+    date_nomination DATE,
+    date_fin DATE,
+    description TEXT,
+    date_modification DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_historique_nomination_nomination FOREIGN KEY (nomination_id) REFERENCES nominations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_historique_nomination_dignitaire FOREIGN KEY (dignitaire_id) REFERENCES dignitaire(id) ON DELETE CASCADE,
+    CONSTRAINT fk_historique_nomination_poste FOREIGN KEY (poste_id) REFERENCES postes(id) ON DELETE SET NULL,
+    CONSTRAINT fk_historique_nomination_entite FOREIGN KEY (entite_id) REFERENCES entite(id) ON DELETE SET NULL
 );
 
 -- Association entre dignitaires et décorations

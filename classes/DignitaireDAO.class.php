@@ -27,7 +27,7 @@ class DignitaireDAO
             $dignitaires[] = new Dignitaire(
                 $row['id'], $row['nom'], $row['prenom'], $row['date_naissance'],
                 $row['lieu_naissance'], $row['nationalite'], $row['genre'], $row['etat_civil'],
-                $row['tel'], $row['adresse'], $row['nip'], $row['matricule'],
+                $row['telephone'], $row['adresse'], $row['nip'], $row['matricule'],
                 $row['photo'], $row['casierJud'], $row['certificatsMed']
             );
         }
