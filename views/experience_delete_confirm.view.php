@@ -1,9 +1,5 @@
 <!-- views/experience/experience_delete_confirm.view.php -->
-<?php
-$experiences = $experiences ?? [];
-$structures = $structures ?? [];
-$experience = $experience ?? null;
-?>
+
 <h2>Confirmation de suppression</h2>
 
 <p>Êtes-vous sûr(e) de vouloir supprimer cette expérience ?</p>

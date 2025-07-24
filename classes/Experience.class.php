@@ -1,8 +1,5 @@
 <?php
-// classes/Experience.class.php
-
 namespace classes;
-
 
 class Experience
 {
@@ -12,6 +9,7 @@ class Experience
     private $date_debut;
     private $date_fin;
     private $structure_id;
+    private $structure_nom; // Pour affichage
 
     public function __construct(
         $id = null, $dignitaire_id = null, $intitule = null,
@@ -24,8 +22,6 @@ class Experience
         $this->date_fin = $date_fin;
         $this->structure_id = $structure_id;
     }
-
-    public function __destruct() {}
 
     public function getId() { return $this->id; }
     public function setId($id) { $this->id = $id; }
@@ -44,6 +40,9 @@ class Experience
 
     public function getStructureId() { return $this->structure_id; }
     public function setStructureId($structure_id) { $this->structure_id = $structure_id; }
+
+    public function getStructureNom() { return $this->structure_nom; }
+    public function setStructureNom($structure_nom) { $this->structure_nom = $structure_nom; }
 
     public function afficherExperience() {
         return "{$this->intitule} ({$this->date_debut} - {$this->date_fin})";

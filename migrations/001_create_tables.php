@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/database.php';
 $pdo = getDatabaseConnection();
 
 $sql = "
---
+-- Tables de référence d'abord
 -- TABLE DES ROLES
 CREATE TABLE IF NOT EXISTS roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS user_sousfonctions (
 );
 
 
--- Tables de référence d'abord
+
 
 
 CREATE TABLE IF NOT EXISTS domaine (
@@ -197,4 +197,3 @@ try {
 } catch (PDOException $e) {
     echo "Erreur lors de la migration : " . $e->getMessage() . "\n";
 }
-?>

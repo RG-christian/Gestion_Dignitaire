@@ -126,7 +126,8 @@ class Dignitaire
     public function setCertificatsMed($certificatsMed) { $this->certificatsMed = $certificatsMed; }
 
     // --- Méthodes métier (exemples) ---
-    public function getNomComplet() {
+    public function getNomComplet(): string
+    {
         return $this->prenom . ' ' . $this->nom;
     }
 

@@ -3,6 +3,8 @@
 
 use classes\DecorationDAO;
 use classes\DignitaireDAO;
+use classes\VilleDAO;
+
 require_once __DIR__ . '/../config/database.php';
 $pdo = getDatabaseConnection();
 
@@ -13,12 +15,13 @@ require_once __DIR__ . '/../classes/Dignitaire.class.php';
 
 class DignitaireController
 {
-    public function index() {
+    public function index(): void
+    {
         $this->afficherListe();
 
     }
 
-    public function afficherListe()
+    public function afficherListe(): void
     {
         require_once __DIR__ . '/../config/database.php';
         require_once __DIR__ . '/../classes/PosteDAO.class.php';

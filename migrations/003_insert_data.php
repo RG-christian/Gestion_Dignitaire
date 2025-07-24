@@ -31,10 +31,11 @@ INSERT INTO sousfonctions (id, sousfonction_name, fonction_id) VALUES
 (4, 'Diplôme',      2),
 (5, 'Expérience',   3),
 (6, 'Langues',      4),
-(7, 'Pays/ville',   5),
-(8, 'Nomination',   6),
-(9, 'Décoration',   6),
-(10,'Structure',    7);
+(7, 'Pays',         5),
+(8, 'Ville',        5),
+(9, 'Nomination',   6),
+(10, 'Décoration',  6),
+(11,'Structure',    7);
 ";
 
 $sql_data_users = "

@@ -7,14 +7,14 @@ require_once __DIR__ . '/LangueParlee.class.php';
 
 class LangueParleeDAO
 {
-    private $pdo;
+    private ?\PDO $pdo;
 
     public function __construct()
     {
         $this->pdo = getDatabaseConnection();
     }
 
-    public function findAll()
+    public function findAll(): array
     {
         $sql = "SELECT * FROM langues";
         $stmt = $this->pdo->query($sql);
@@ -27,7 +27,7 @@ class LangueParleeDAO
         return $langues;
     }
 
-    public function findById($id)
+    public function findById($id): ?LangueParlee
     {
         $sql = "SELECT * FROM langues WHERE id = ?";
         $stmt = $this->pdo->prepare($sql);

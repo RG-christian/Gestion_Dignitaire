@@ -1,10 +1,3 @@
-<?php
-$experiences = $experiences ?? [];
-$structures = $structures ?? [];
-$experience = $experience ?? null;
-?>
-<h2>Con
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -69,9 +62,9 @@ $experience = $experience ?? null;
         }
 
         .form-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 30px;
+         display: flex;
+         justify-content: space-between;
+         margin-top: 30px;
         }
 
         .btn-submit {
@@ -90,63 +83,63 @@ $experience = $experience ?? null;
         }
 
         .btn-cancel {
-            background-color: #cccccc;
-            color: #047857;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
+         background-color: #cccccc;
+         color: #047857;
+         border: none;
+         padding: 12px 20px;
+         border-radius: 8px;
+         font-size: 16px;
+         cursor: pointer;
+         text-decoration: none;
+         transition: background-color 0.3s ease;
         }
 
         .btn-cancel:hover {
-            background-color: #bbbbbb;
+         background-color: #bbbbbb;
         }
     </style>
 </head>
 <body>
 
-<div class="form-container">
-    <div class="form-header">Modifier une expérience</div>
+    <div class="form-container">
+        <div class="form-header">Modifier une expérience</div>
 
-    <div class="form-body">
-        <form action="index.php?controller=experience&action=update&id=<?= $experience->getId() ?>" method="post">
-            <div class="form-group">
-                <label for="poste">Poste occupé</label>
-                <input type="text" id="poste" name="poste" value="<?= htmlspecialchars($experience->getIntitule()) ?>" required>
-            </div>
+        <div class="form-body">
+            <form action="index.php?controller=experience&action=update&id=<?= $experience->getId() ?>" method="post">
+                <div class="form-group">
+                    <label for="poste">Poste occupé</label>
+                    <input type="text" id="poste" name="poste" value="<?= htmlspecialchars($experience->getIntitule()) ?>" required>
+                </div>
 
-            <div class="form-group">
-                <label for="institution">Institution</label>
-                <select id="institution" name="institution" required>
-                    <?php foreach ($structures as $structure): ?>
-                        <option value="<?= $structure->getId() ?>" <?= $structure->getId() == $experience->getStructureId() ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($structure->getNom()) ?>
-                        </option>
-                    <?php endforeach ?>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="institution">Institution</label>
+                    <select id="institution" name="institution" required>
+                        <?php foreach ($structures as $structure): ?>
+                            <option value="<?= $structure->getId() ?>" <?= $structure->getId() == $experience->getStructureId() ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($structure->getNom()) ?>
+                            </option>
+                        <?php endforeach ?>
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label for="date_debut">Date de début</label>
-                <input type="date" id="date_debut" name="date_debut" value="<?= $experience->getDateDebut() ?>" required>
-            </div>
+                <div class="form-group">
+                    <label for="date_debut">Date de début</label>
+                    <input type="date" id="date_debut" name="date_debut" value="<?= $experience->getDateDebut() ?>" required>
+                </div>
 
-            <div class="form-group">
-                <label for="date_fin">Date de fin</label>
-                <input type="date" id="date_fin" name="date_fin" value="<?= $experience->getDateFin() ?>">
-            </div>
+                <div class="form-group">
+                    <label for="date_fin">Date de fin</label>
+                    <input type="date" id="date_fin" name="date_fin" value="<?= $experience->getDateFin() ?>">
+                </div>
 
-            <div class="form-buttons">
+                <div class="form-buttons">
                 <a href="index.php?controller=experience&action=listByDignitaire&id=<?= $experience->getDignitaireId() ?>" class="btn-cancel">Annuler</a>
                 <button type="submit" class="btn-submit">Enregistrer</button>
 
             </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
 
 </body>
 </html>

@@ -15,9 +15,8 @@ $error = $error ?? null;
     <meta charset="UTF-8">
     <title>Gestion des administrateurs</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <script defer src="../alph.js"></script>
+
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,26 +25,18 @@ $error = $error ?? null;
 
 </head>
 <body class="bg-gray-100 min-h-screen py-8">
-<div
-        x-data="{ show: false, message: '', color: 'bg-green-500', icon: 'fa-check-circle' }"
-        x-show="show"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 scale-90"
-        x-transition:enter-end="opacity-100 scale-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100 scale-100"
-        x-transition:leave-end="opacity-0 scale-90"
-        class="fixed top-6 right-6 z-50 min-w-[250px] flex items-center gap-4 px-5 py-3 rounded-lg shadow-2xl text-white"
-        :class="color"
-        style="display: none;"
-        id="notifToast"
->
-    <i :class="`fas ${icon} text-2xl`"></i>
-    <span class="flex-1 font-semibold" x-text="message"></span>
-    <button @click="show = false" class="ml-2 focus:outline-none">
+<!-- Toast Notification VanillaJS + Tailwind -->
+<div id="toast"
+     class="fixed top-6 right-6 z-50 min-w-[220px] flex items-center gap-3 px-5 py-3 rounded-lg shadow-2xl text-white bg-green-600 opacity-0 pointer-events-none transition-all duration-300"
+     style="display:none;">
+    <i id="toast-icon" class="fas fa-check-circle text-2xl"></i>
+    <span id="toast-msg" class="flex-1 font-semibold"></span>
+    <button type="button" onclick="hideToast()" class="ml-2 focus:outline-none">
         <i class="fas fa-times text-lg"></i>
     </button>
 </div>
+
+
 <div class="top-left-btn">
     <a href="index.php?controller=dignitaire&action=index" class="btn-secondary">
         ←
@@ -138,7 +129,7 @@ $error = $error ?? null;
     <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
         <button id="closeEditModal" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
         <h2 class="text-lg font-bold mb-4">Modifier l'utilisateur</h2>
-        <form id="editUserForm" method="post" action="">
+        <form id="editUserForm" method="post" action="index.php?controller=admin&action=edit">
             <input type="hidden" name="edit_user_id" id="edit_user_id">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -210,39 +201,37 @@ $error = $error ?? null;
 </div>
 
 
-
 <script>
-    function showToast(msg, color = 'bg-green-500', icon = 'fa-check-circle') {
-        const el = document.getElementById('notifToast');
-        if (!el || !el.__x) return;
-        el.__x.$data.message = msg;
-        el.__x.$data.color = color;
-        el.__x.$data.icon = icon;
-        el.__x.$data.show = true;
+    function showToast(msg, color = 'bg-green-600', icon = 'fa-check-circle') {
+        const el = document.getElementById('toast');
+        const iconEl = document.getElementById('toast-icon');
+        const msgEl = document.getElementById('toast-msg');
+        // Nettoie les anciennes classes bg-*
+        el.className = 'fixed top-6 right-6 z-50 min-w-[220px] flex items-center gap-3 px-5 py-3 rounded-lg shadow-2xl text-white opacity-0 pointer-events-none transition-all duration-300 ' + color;
+        msgEl.textContent = msg;
+        iconEl.className = `fas ${icon} text-2xl`;
+        el.style.display = 'flex';
         setTimeout(() => {
-            el.__x && (el.__x.$data.show = false);
-        }, 3000);
+            el.classList.remove('opacity-0', 'pointer-events-none');
+            el.classList.add('opacity-100');
+        }, 10);
+        // Hide after 3s
+        clearTimeout(window.toastTimeout);
+        window.toastTimeout = setTimeout(hideToast, 3000);
     }
-
-
-
+    function hideToast() {
+        const el = document.getElementById('toast');
+        el.classList.remove('opacity-100');
+        el.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => { el.style.display = 'none'; }, 300);
+    }
 </script>
-<div
-        x-data="{ show: false, message: '', color: 'bg-green-500', icon: 'fa-check-circle' }"
-        x-show="show"
-        x-transition
-        class="fixed top-8 right-8 z-50 flex items-center px-4 py-3 rounded shadow-lg text-white space-x-2"
-        :class="color"
-        style="display: none;"
-        id="notifToast"
->
-    <i :class="`fas ${icon} text-xl`"></i>
-    <span x-text="message"></span>
-</div>y
-</body>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- FONCTION POUR LES DROITS DYNAMIQUES ---
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ---- FONCTIONS/SOUS-FONCTIONS DYNAMIQUES ----
         function attachFonctionCheckboxListeners() {
             const fonctionCheckboxes = document.querySelectorAll('input[name="fonctions[]"]');
             const sousfonctionLabels = document.querySelectorAll('.sousfonction-label');
@@ -269,19 +258,17 @@ $error = $error ?? null;
                     }
                 });
             }
-
             updateSousfonctionsVisibility();
         }
 
-        // --- MODALS ET BOUTONS (edit/delete) ---
+        // ---- ACTIONS UTILISATEUR : MODALS EDIT/DELETE ----
         function attachUserActionListeners() {
             // MODAL EDIT
             const editUserModal = document.getElementById('editUserModal');
             const closeEditModalBtn = document.getElementById('closeEditModal');
-            const editUserForm = document.getElementById('editUserForm');
 
             document.querySelectorAll('.edit-user-btn').forEach(btn => {
-                btn.onclick = function() {
+                btn.onclick = function () {
                     const user = JSON.parse(this.getAttribute('data-user'));
                     document.getElementById('edit_user_id').value = user.id;
                     document.getElementById('edit_username').value = user.username;
@@ -300,17 +287,50 @@ $error = $error ?? null;
                         cb.checked = userSousFonctions.includes(cb.closest('label').textContent.trim());
                     });
 
+                    updateEditSousfonctionsVisibility();
                     editUserModal.classList.remove('hidden');
                 }
             });
-            if (closeEditModalBtn) {
-                closeEditModalBtn.onclick = () => editUserModal.classList.add('hidden');
+            if (closeEditModalBtn) closeEditModalBtn.onclick = () => editUserModal.classList.add('hidden');
+            if (editUserModal) editUserModal.onclick = function (e) {
+                if (e.target === editUserModal) editUserModal.classList.add('hidden');
+            };
+
+            function updateEditSousfonctionsVisibility() {
+                const fonctionCheckboxes = document.querySelectorAll('.edit-fonction-checkbox');
+                const sousfonctionLabels = document.querySelectorAll('#edit_sousfonctions_group .sousfonction-label');
+
+                const checkedFonctions = Array.from(fonctionCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                sousfonctionLabels.forEach(label => {
+                    const fonctionId = label.dataset.fonctionId;
+                    const checkbox = label.querySelector('input[type="checkbox"]');
+                    if (checkedFonctions.includes(fonctionId)) {
+                        label.classList.remove('opacity-50', 'pointer-events-none');
+                        checkbox.disabled = false;
+                    } else {
+                        checkbox.checked = false;
+                        checkbox.disabled = true;
+                        label.classList.add('opacity-50', 'pointer-events-none');
+                    }
+                });
             }
-            if (editUserModal) {
-                editUserModal.onclick = function(e) {
-                    if (e.target === editUserModal) editUserModal.classList.add('hidden');
-                };
-            }
+
+
+
+
+// Après avoir défini updateEditSousfonctionsVisibility()
+            document.querySelectorAll('.edit-fonction-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateEditSousfonctionsVisibility);
+            });
+
+
+
+
+
+
 
             // MODAL DELETE
             const deleteUserModal = document.getElementById('deleteUserModal');
@@ -318,30 +338,30 @@ $error = $error ?? null;
             let userIdToDelete = null;
 
             document.querySelectorAll('.delete-user-btn').forEach(btn => {
-                btn.onclick = function() {
+                btn.onclick = function () {
                     userIdToDelete = this.getAttribute('data-userid');
                     const username = this.getAttribute('data-username');
                     deleteUserMsg.textContent = `Êtes-vous sûr de vouloir supprimer l'utilisateur « ${username} » ?`;
                     deleteUserModal.classList.remove('hidden');
                 }
             });
-            document.getElementById('cancelDeleteUserBtn').onclick = function() {
+            document.getElementById('cancelDeleteUserBtn').onclick = function () {
                 deleteUserModal.classList.add('hidden');
                 userIdToDelete = null;
             };
-            document.getElementById('confirmDeleteUserBtn').onclick = function() {
+            document.getElementById('confirmDeleteUserBtn').onclick = function () {
                 if (userIdToDelete) {
                     window.location.href = `index.php?controller=admin&action=delete&id=${userIdToDelete}`;
                 }
             };
-            deleteUserModal.onclick = function(e) {
+            deleteUserModal.onclick = function (e) {
                 if (e.target === deleteUserModal) deleteUserModal.classList.add('hidden');
             };
         }
 
-        // --- RELOAD TABLE + REATTACHE EVENTS + REINITIALISE DROITS ---
+        // ---- RELOAD TABLE & REBIND EVENTS ----
         function reloadUserList() {
-            fetch("index.php?controller=admin&action=ajaxList")
+            fetch("index.php?controller=admin&action=create")
                 .then(r => r.text())
                 .then(html => {
                     document.getElementById("usersTable").innerHTML = html;
@@ -350,31 +370,30 @@ $error = $error ?? null;
                 });
         }
 
-        // --- FORMULAIRE CREATION UTILISATEUR ---
+        // ---- FORM CREATION UTILISATEUR ----
         const createUserForm = document.getElementById('userCreateForm');
         if (createUserForm) {
-            createUserForm.addEventListener('submit', function(e) {
+            createUserForm.addEventListener('submit', function (e) {
                 e.preventDefault();
-
-                // ---- Validations JS ---
+                // --- Validations JS ---
                 const email = this.email.value.trim();
                 const password = this.password.value.trim();
                 if (!email.match(/^[^@]+@[^@]+\.[^@]+$/)) {
-                    showToast("Email invalide", "bg-red-500");
+                    showToast('Email invalide', 'bg-red-500', 'fa-exclamation-triangle');
                     return;
                 }
                 if (password.length < 6) {
-                    showToast("Le mot de passe doit faire au moins 6 caractères", "bg-red-500");
+                    showToast("Le mot de passe doit faire au moins 6 caractères", "bg-red-500", "fa-times-circle");
                     return;
                 }
                 const checkedFonctions = Array.from(this.querySelectorAll('input[name="fonctions[]"]:checked'));
                 if (checkedFonctions.length === 0) {
-                    showToast("Sélectionnez au moins une fonction", "bg-red-500");
+                    showToast("Sélectionnez au moins une fonction", "bg-red-500", "fa-exclamation-triangle");
                     return;
                 }
                 const checkedSousFonctions = Array.from(this.querySelectorAll('input[name="sousfonctions[]"]:checked'));
                 if (checkedSousFonctions.length === 0) {
-                    showToast("Sélectionnez au moins une sous-fonction", "bg-red-500");
+                    showToast("Sélectionnez au moins une sous-fonction", "bg-red-500", "fa-exclamation-triangle");
                     return;
                 }
 
@@ -387,24 +406,15 @@ $error = $error ?? null;
                     .then(r => r.json())
                     .then(res => {
                         if (res.success) {
-                            showToast(
-                                res.message || "Utilisateur ajouté avec succès !",
-                                "bg-green-600",
-                                "fa-check-circle"
-                            );
+                            showToast('Utilisateur ajouté avec succès !', 'bg-green-600', 'fa-check-circle');
                             reloadUserList();
                             createUserForm.reset();
                             attachFonctionCheckboxListeners();
                         } else {
-                            showToast(
-                                res.message || "Un utilisateur avec ce nom ou cet email existe déjà.",
-                                "bg-red-700",
-                                "fa-times-circle"
-                            );
+                            showToast('Erreur lors de l’ajout', 'bg-red-700', 'fa-times-circle');
                         }
                     })
-                    .catch(() => showToast("Erreur serveur", "bg-red-500", "fa-times-circle"));
-
+                    .catch(() => showToast("Erreur serveur", "bg-red-700", "fa-times-circle"));
             });
         }
 
@@ -412,10 +422,10 @@ $error = $error ?? null;
         attachUserActionListeners();
         attachFonctionCheckboxListeners();
     });
-
-
-
 </script>
+
+</body>
+
 
 
 </html>

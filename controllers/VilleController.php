@@ -1,8 +1,6 @@
 <?php
 
-
-use classes\Ville;
-use classes\VilleDAO;
+use classes\{Ville, VilleDAO};
 
 require_once __DIR__ . '/../classes/VilleDAO.class.php';
 require_once __DIR__ . '/../classes/Ville.class.php';
@@ -13,7 +11,9 @@ class VilleController
     {
         $dao = new VilleDAO();
         $villes = $dao->findAll();
+        $list_pays = $dao->recPays();
         require __DIR__ . '/../views/dashboard_ville.view.php';
+
     }
 
     public function afficherDetail($id)
@@ -34,7 +34,7 @@ class VilleController
             $ville = new Ville(
                 null,
                 $_POST['nom'],
-                $_POST['region_id']
+                $_POST['pays_id']
             );
             $dao = new VilleDAO();
             $dao->create($ville);
@@ -56,7 +56,7 @@ class VilleController
             $ville = new Ville(
                 $id,
                 $_POST['nom'],
-                $_POST['region_id']
+                $_POST['pays_id']
             );
             $dao = new VilleDAO();
             $dao->update($ville);

@@ -35,7 +35,8 @@ class Diplome
 
     // Getters & Setters
     public function getId() { return $this->id; }
-    public function setId($id) { $this->id = $id; }
+    public function setId($id): void
+    { $this->id = $id; }
 
     public function getDignitaireId() { return $this->dignitaire_id; }
     public function setDignitaireId($dignitaire_id) { $this->dignitaire_id = $dignitaire_id; }

@@ -12,6 +12,7 @@ class PaysController
     {
         $dao = new PaysDAO();
         $pays = $dao->findAll();
+        $regions = $dao->recRegion();
         require __DIR__ . '/../views/dashboard_pays.view.php';
     }
 
@@ -34,7 +35,9 @@ class PaysController
                 null,
                 $_POST['nom'],
                 $_POST['code_iso'],
-                $_POST['continent']
+                $_POST['indicatif'],
+                $_POST['continent'],
+                $_POST['region_id']
             );
             $dao = new PaysDAO();
             $dao->create($pays);
@@ -57,7 +60,9 @@ class PaysController
                 $id,
                 $_POST['nom'],
                 $_POST['code_iso'],
-                $_POST['continent']
+                $_POST['indicatif'],
+                $_POST['continent'],
+                $_POST['region_id']
             );
             $dao = new PaysDAO();
             $dao->update($pays);

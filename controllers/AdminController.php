@@ -1,10 +1,13 @@
 <?php
+
+use JetBrains\PhpStorm\NoReturn;
+
 require_once __DIR__ . '/../classes/UserDAO.class.php';
 
 class AdminController
 {
 
-    public function create()
+    public function create(): void
     {
         session_start();
 
@@ -72,7 +75,7 @@ class AdminController
         include __DIR__ . '/../views/admin_create.php';
     }
 
-    public function edit()
+    #[NoReturn] public function edit(): void
     {
         session_start();
         if (!isset($_SESSION['role_name']) || $_SESSION['role_name'] !== 'Superadmin') {
@@ -115,7 +118,7 @@ class AdminController
         }
     }
 
-    public function delete()
+    #[NoReturn] public function delete(): void
     {
         session_start();
         if (!isset($_SESSION['role_name']) || $_SESSION['role_name'] !== 'Superadmin') {
@@ -137,7 +140,8 @@ class AdminController
         exit;
     }
 
-    public function ajaxList() {
+    #[NoReturn] public function ajaxList(): void
+    {
         $dao = new UserDAO();
         $users = $dao->getAllUsersWithRights();
         include __DIR__ . '/../views/users_table_partial.php'; // Un fichier qui génère juste le <table> et tbody

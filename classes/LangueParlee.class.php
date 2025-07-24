@@ -8,10 +8,10 @@ namespace classes;
 
 class LangueParlee
 {
-    private $id;
-    private $dignitaire_id;
-    private $langue_id;
-    private $niveau;
+    private mixed $id;
+    private mixed $dignitaire_id;
+    private mixed $langue_id;
+    private mixed $niveau;
 
     public function __construct(
         $id = null, $dignitaire_id = null, $langue_id = null, $niveau = null
@@ -25,7 +25,8 @@ class LangueParlee
     public function __destruct() {}
 
     public function getId() { return $this->id; }
-    public function setId($id) { $this->id = $id; }
+    public function setId($id): void
+    { $this->id = $id; }
 
     public function getDignitaireId() { return $this->dignitaire_id; }
     public function setDignitaireId($dignitaire_id) { $this->dignitaire_id = $dignitaire_id; }
