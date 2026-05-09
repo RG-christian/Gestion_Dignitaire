@@ -65,4 +65,12 @@ class PaysDAO
         $stmt = $this->pdo->prepare("DELETE FROM pays WHERE id = ?");
         return $stmt->execute([$id]);
     }
+
+    public function countAll(): int
+    {
+        $sql = "SELECT COUNT(*) as total FROM pays";
+        $stmt = $this->pdo->query($sql);
+        $row = $stmt->fetch();
+        return (int)($row['total'] ?? 0);
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use JetBrains\PhpStorm\NoReturn;
+use classes\UserDAO;
 
 require_once __DIR__ . '/../classes/UserDAO.class.php';
 

@@ -4,6 +4,8 @@ use classes\Poste;
 
 
 
+
+use classes\PosteDAO;
 require_once __DIR__ . '/../classes/PosteDAO.class.php';
 require_once __DIR__ . '/../classes/Poste.class.php';
 

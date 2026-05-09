@@ -1,11 +1,10 @@
-
 <?php
+namespace classes;
 
-use classes\Poste;
+use PDO;
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/Poste.class.php';
-
 
 class PosteDAO
 {

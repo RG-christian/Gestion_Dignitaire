@@ -1,6 +1,35 @@
 {
+  "name": "gestion-dignitaire/app",
+  "description": "Application de gestion des dignitaires",
+  "type": "project",
   "require": {
+    "php": ">=7.4",
     "ext-pdo": "*",
-    "ext-json": "*"
+    "ext-json": "*",
+    "ext-fileinfo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Classes\\": "classes/",
+      "Controllers\\": "controllers/",
+      "Routers\\": "routers/"
+    },
+    "files": [
+      "config/database.php",
+      "config/security.php",
+      "config/validator.php",
+      "config/logger.php",
+      "config/upload.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ]
   }
 }

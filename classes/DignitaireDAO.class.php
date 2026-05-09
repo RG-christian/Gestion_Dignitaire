@@ -47,7 +47,7 @@ class DignitaireDAO
             return new Dignitaire(
                 $row['id'], $row['nom'], $row['prenom'], $row['date_naissance'],
                 $row['lieu_naissance'], $row['nationalite'], $row['genre'], $row['etat_civil'],
-                $row['tel'], $row['adresse'], $row['nip'], $row['matricule'],
+                $row['telephone'], $row['adresse'], $row['nip'], $row['matricule'],
                 $row['photo'], $row['casierJud'], $row['certificatsMed']  );
         }
         return null;
@@ -69,8 +69,7 @@ class DignitaireDAO
             $d->getLieuNaissance(),
             $d->getGenre(),
             $d->getEtatCivil(),
-            $d->getPhoto(),
-            $d->getId()
+            $d->getPhoto()
         ]);
     }
 
@@ -158,7 +157,7 @@ class DignitaireDAO
     }
 
     public function countAll() {
-        $sql = "SELECT COUNT(*) as total FROM ville";
+        $sql = "SELECT COUNT(*) as total FROM dignitaire";
         $stmt = $this->pdo->query($sql);
         $row = $stmt->fetch();
         return $row['total'] ?? 0;

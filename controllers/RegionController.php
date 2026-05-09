@@ -34,7 +34,7 @@ class RegionController
             $region = new Region(
                 null,
                 $_POST['nom'],
-                $_POST['pays_id']
+                null
             );
             $dao = new RegionDAO();
             $dao->create($region);
@@ -56,7 +56,7 @@ class RegionController
             $region = new Region(
                 $id,
                 $_POST['nom'],
-                $_POST['pays_id']
+                null
             );
             $dao = new RegionDAO();
             $dao->update($region);

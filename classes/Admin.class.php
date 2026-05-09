@@ -1,4 +1,6 @@
 <?php
+namespace classes;
+
 class Admin {
     private $id;
     private $username;

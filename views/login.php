@@ -13,6 +13,7 @@
         <div class="mb-4 text-red-600 text-center"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
     <form method="post" action="">
+        <?= csrfField() ?>
         <label class="block mb-2 text-sm font-medium text-gray-700">Nom d'utilisateur</label>
         <input type="text" name="username" class="w-full px-3 py-2 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
         <label class="block mb-2 text-sm font-medium text-gray-700">Mot de passe</label>

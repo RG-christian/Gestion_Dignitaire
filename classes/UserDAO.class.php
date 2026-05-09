@@ -1,4 +1,8 @@
 <?php
+namespace classes;
+
+use PDO;
+
 require_once __DIR__ . '/../config/database.php';
 require_once 'Admin.class.php';
 

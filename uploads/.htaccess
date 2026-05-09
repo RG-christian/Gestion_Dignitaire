@@ -1,0 +1,11 @@
+# Interdire l'exécution de scripts
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Autoriser uniquement certains types de fichiers
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|doc|docx)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>

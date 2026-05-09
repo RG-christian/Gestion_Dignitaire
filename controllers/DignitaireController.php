@@ -1,10 +1,12 @@
 <?php
 
-
 use classes\DecorationDAO;
 use classes\DignitaireDAO;
 use classes\VilleDAO;
+use classes\PosteDAO;
 
+
+use classes\Dignitaire;
 require_once __DIR__ . '/../config/database.php';
 $pdo = getDatabaseConnection();
 

@@ -1,6 +1,7 @@
 <?php
 
-use classes\{Ville, VilleDAO};
+use classes\VilleDAO;
+use classes\Ville;
 
 require_once __DIR__ . '/../classes/VilleDAO.class.php';
 require_once __DIR__ . '/../classes/Ville.class.php';
@@ -13,7 +14,6 @@ class VilleController
         $villes = $dao->findAll();
         $list_pays = $dao->recPays();
         require __DIR__ . '/../views/dashboard_ville.view.php';
-
     }
 
     public function afficherDetail($id)

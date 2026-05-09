@@ -4,39 +4,96 @@ namespace routers;
 use ReflectionMethod;
 
 class Router {
-    public function handleRequest() {
-       // echo "Appel du contrôleur $controllerClass et action $action<br>";
+    // Whitelist des contrôleurs autorisés
+    private const ALLOWED_CONTROLLERS = [
+        'Auth',
+        'Admin',
+        'Dashboard',
+        'Decoration',
+        'Dignitaire',
+        'Diplome',
+        'Enfant',
+        'Expérience',
+        'Index',
+        'Langues',
+        'Nomination',
+        'Pays',
+        'Poste',
+        'Region',
+        'Test',
+        'Ville'
+    ];
 
+    public function handleRequest() {
         $controller = $_GET['controller'] ?? 'Auth';
         $action = $_GET['action'] ?? 'index';
-
-
         $id = $_GET['id'] ?? null;
 
-        $controllerFile = "controllers/" . ucfirst($controller) . "Controller.php";
-
-        if (file_exists($controllerFile)) {
-            require_once $controllerFile;
-            $controllerClass = ucfirst($controller) . "Controller";
-            $ctrl = new $controllerClass();
-
-            // Vérifie si la méthode existe dans le contrôleur
-            if (method_exists($ctrl, $action)) {
-                $ref = new ReflectionMethod($ctrl, $action);
-                $nbParams = $ref->getNumberOfParameters();
-                if ($nbParams == 0) {
-                    // -------- Correction : on retourne la vue --------
-                    return $ctrl->$action();
-                } else {
-                    return $ctrl->$action($id);
-                }
-            } else {
-                // Action inconnue : affiche une page d'erreur ou redirige
-                return "<div class='alert alert-danger'>Action inconnue !</div>";
-            }
-        } else {
-            // Contrôleur inconnu : affiche une page d'erreur ou redirige
-            return "<div class='alert alert-danger'>Contrôleur non trouvé !</div>";
+        // Validation du contrôleur (whitelist)
+        $controller = ucfirst($controller);
+        if (!in_array($controller, self::ALLOWED_CONTROLLERS, true)) {
+            $this->handleError("Contrôleur non autorisé");
+            return;
         }
+
+        // Validation de l'action (alphanumérique uniquement)
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $action)) {
+            $this->handleError("Action invalide");
+            return;
+        }
+
+        $controllerFile = "controllers/{$controller}Controller.php";
+
+        if (!file_exists($controllerFile)) {
+            $this->handleError("Contrôleur non trouvé");
+            return;
+        }
+
+        require_once $controllerFile;
+        $controllerClass = $controller . "Controller";
+
+        if (!class_exists($controllerClass)) {
+            $this->handleError("Classe de contrôleur introuvable");
+            return;
+        }
+
+        $ctrl = new $controllerClass();
+
+        if (!method_exists($ctrl, $action)) {
+            $this->handleError("Action inconnue");
+            return;
+        }
+
+        try {
+            $ref = new ReflectionMethod($ctrl, $action);
+            $nbParams = $ref->getNumberOfParameters();
+            
+            if ($nbParams == 0) {
+                return $ctrl->$action();
+            } else {
+                // Validation de l'ID si présent
+                if ($id !== null && !is_numeric($id)) {
+                    $this->handleError("ID invalide");
+                    return;
+                }
+                return $ctrl->$action($id);
+            }
+        } catch (\Exception $e) {
+            // Logger l'erreur
+            if (function_exists('getLogger')) {
+                getLogger()->error("Erreur dans le routeur", [
+                    'controller' => $controller,
+                    'action' => $action,
+                    'error' => $e->getMessage()
+                ]);
+            }
+            $this->handleError("Une erreur est survenue");
+        }
+    }
+
+    private function handleError(string $message): void
+    {
+        http_response_code(404);
+        echo "<div class='alert alert-danger'>$message</div>";
     }
 }

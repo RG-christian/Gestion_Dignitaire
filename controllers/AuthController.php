@@ -1,74 +1,101 @@
 <?php
-session_start();
+require_once __DIR__ . '/../config/security.php';
+require_once __DIR__ . '/../config/validator.php';
+require_once __DIR__ . '/../config/logger.php';
 require_once __DIR__ . '/../classes/UserDAO.class.php';
+
+use classes\UserDAO;
 
 class AuthController
 {
-    // Affiche le formulaire et traite la connexion
-
     public function index() {
         $this->login();
-
     }
 
     public function login()
+    {
+        secureSession();
+        $error = null;
 
-{
-    $error = null;
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            // Vérification du token CSRF
+            if (!verifyCSRFToken($_POST['csrf_token'] ?? null)) {
+                $error = "Token de sécurité invalide";
+                getLogger()->warning("Tentative de connexion avec token CSRF invalide", [
+                    'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                ]);
+            } else {
+                // Validation des données
+                $validator = new Validator($_POST);
+                $validator->required('username', 'Le nom d\'utilisateur est requis')
+                         ->required('password', 'Le mot de passe est requis');
 
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $username = trim($_POST['username']);
-        $password = $_POST['password'];
+                if (!$validator->isValid()) {
+                    $error = "Veuillez remplir tous les champs";
+                } else {
+                    $username = Validator::sanitize($_POST['username']);
+                    $password = $_POST['password'];
 
-        $dao = new UserDAO();
-        $admin = $dao->getByUsername($username);
+                    $dao = new UserDAO();
+                    $admin = $dao->getByUsername($username);
 
-        if ($admin && password_verify($password, $admin->getPassword())) {
-            $_SESSION['admin_id'] = $admin->getId();
-            $_SESSION['admin_username'] = $admin->getUsername();
-            $_SESSION['admin_nom_complet'] = $admin->getNomComplet();
+                    if ($admin && password_verify($password, $admin->getPassword())) {
+                        // Régénération de l'ID de session après login (protection contre fixation)
+                        session_regenerate_id(true);
 
-            // AJOUT ICI (AVANT la redirection) :
-            $roleName = $dao->getRoleNameByUserId($admin->getId());
-            $_SESSION['role_name'] = $roleName;
+                        $_SESSION['admin_id'] = $admin->getId();
+                        $_SESSION['admin_username'] = $admin->getUsername();
+                        $_SESSION['admin_nom_complet'] = $admin->getNomComplet();
 
-            $fonctions = $dao->getFonctionsByUserId($admin->getId());
-            $sousfonctions = $dao->getSousFonctionsByUserId($admin->getId());
-            $_SESSION['fonctions'] = $fonctions;
-            $_SESSION['sousfonctions'] = $sousfonctions;
+                        $roleName = $dao->getRoleNameByUserId($admin->getId());
+                        $_SESSION['role_name'] = $roleName;
 
-            header('Location: index.php?controller=dignitaire&action=afficherListe');
-            exit;
-        } else {
-            $error = "Nom d'utilisateur ou mot de passe incorrect";
+                        $fonctions = $dao->getFonctionsByUserId($admin->getId());
+                        $sousfonctions = $dao->getSousFonctionsByUserId($admin->getId());
+                        $_SESSION['fonctions'] = $fonctions;
+                        $_SESSION['sousfonctions'] = $sousfonctions;
+
+                        getLogger()->info("Connexion réussie", [
+                            'user_id' => $admin->getId(),
+                            'username' => $username
+                        ]);
+
+                        header('Location: index.php?controller=dignitaire&action=afficherListe');
+                        exit;
+                    } else {
+                        $error = "Nom d'utilisateur ou mot de passe incorrect";
+                        getLogger()->warning("Tentative de connexion échouée", [
+                            'username' => $username,
+                            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                        ]);
+                    }
+                }
+            }
         }
+
+        include __DIR__ . '/../views/login.php';
     }
 
-    // Affiche la vue de login (on transmet l'erreur si besoin)
-    include __DIR__ . '/../views/login.php';
-}
-
-    // Affiche le tableau de bord après connexion
     public function dashboard()
     {
-        if (!isset($_SESSION['admin_id'])) {
-            // Si non connecté, retour à la connexion
-            header('Location: index.php?controller=auth&action=login');
-            exit;
-        }
+        secureSession();
+        requireAuth();
         include __DIR__ . '/../views/dashboard_dignitaire.view.php';
     }
 
-
-
-
-    // Déconnexion propre
     public function logout()
     {
-        session_start();
-        session_unset();
+        secureSession();
+        
+        if (isset($_SESSION['admin_id'])) {
+            getLogger()->info("Déconnexion", [
+                'user_id' => $_SESSION['admin_id']
+            ]);
+        }
 
+        session_unset();
         $_SESSION = [];
+        
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(session_name(), '', time() - 42000,

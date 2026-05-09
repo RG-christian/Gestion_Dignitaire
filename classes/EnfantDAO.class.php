@@ -1,6 +1,7 @@
 <?php
+namespace classes;
 
-use classes\Enfant;
+use PDO;
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/Enfant.class.php';

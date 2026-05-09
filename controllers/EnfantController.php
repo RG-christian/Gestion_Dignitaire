@@ -6,6 +6,8 @@ use classes\Enfant;
 use JetBrains\PhpStorm\NoReturn;
 
 
+
+use classes\EnfantDAO;
 require_once __DIR__ . '/../classes/EnfantDAO.class.php';
 require_once __DIR__ . '/../classes/Enfant.class.php';
 require_once __DIR__ . '/../classes/DignitaireDAO.class.php';
