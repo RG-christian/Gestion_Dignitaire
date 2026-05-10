@@ -1,0 +1,227 @@
+
+Warning: PHP Startup: Unable to load dynamic library 'zlib' (tried: C:/MAMP/bin/php/php8.2.14/ext\zlib (Le module sp├®cifi├® est introuvable), C:/MAMP/bin/php/php8.2.14/ext\php_zlib.dll (Le module sp├®cifi├® est introuvable)) in Unknown on line 0
+
+Warning: Module "mysqli" is already loaded in Unknown on line 0
+=== ANALYSE COMPL├êTE DE LA BASE DE DONN├ëES ===
+
+TABLES TROUV├ëES (30):
+  - conjoints
+  - decoration
+  - decoration_dignitaire
+  - dignitaire
+  - diplome
+  - domaine
+  - enfants
+  - entite
+  - etablissement
+  - experiences
+  - fonctions
+  - historique_nominations
+  - langue
+  - langues
+  - migrations
+  - nominations
+  - pays
+  - personal_access_tokens
+  - postes
+  - pv
+  - region
+  - roles
+  - roles_fonctions
+  - roles_sousfonctions
+  - sousfonctions
+  - structure
+  - user_fonctions
+  - user_sousfonctions
+  - users
+  - ville
+
+=== STRUCTURE DES TABLES IMPORTANTES ===
+
+--- Table: dignitaire ---
+  id: int(11) NOT NULL [PRI]
+  nip: varchar(20) NULL [UNI]
+  matricule: varchar(20) NOT NULL [UNI]
+  nom: varchar(100) NULL
+  prenom: varchar(100) NULL
+  date_naissance: date NULL
+  lieu_naissance: int(11) NULL [MUL]
+  nationalite: varchar(100) NULL
+  genre: varchar(10) NULL
+  etat_civil: varchar(20) NULL
+  photo: varchar(255) NULL
+  adresse: varchar(255) NULL
+  telephone: varchar(20) NULL
+  casierJud: varchar(255) NULL
+  certificatsMed: varchar(255) NULL
+  ÔåÆ 15 enregistrements
+
+--- Table: postes ---
+  id: int(11) NOT NULL [PRI]
+  dignitaire_id: int(11) NOT NULL [MUL]
+  intitule: varchar(150) NULL
+  date_debut: date NULL
+  date_fin: date NULL
+  entite_id: int(11) NULL [MUL]
+  ville_id: int(11) NULL [MUL]
+  ÔåÆ 15 enregistrements
+
+--- Table: decoration ---
+  deco_id: int(11) NOT NULL [PRI]
+  deco_nom: varchar(150) NULL
+  deco_type: varchar(50) NULL
+  deco_niveau: varchar(50) NULL
+  deco_grade: varchar(50) NULL
+  deco_date_obtention: date NULL
+  deco_autorite: varchar(50) NULL
+  deco_motif: varchar(50) NULL
+  deco_description: varchar(255) NULL
+  deco_fichierAttestation: varchar(100) NULL
+  ÔåÆ 2 enregistrements
+
+--- Table: ville ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(100) NOT NULL
+  pays_id: int(11) NULL [MUL]
+  ÔåÆ 40 enregistrements
+
+--- Table: pays ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(100) NOT NULL [UNI]
+  code_iso: varchar(3) NULL [UNI]
+  indicatif: varchar(10) NOT NULL
+  continent: varchar(50) NULL
+  region_id: int(11) NULL [MUL]
+  ÔåÆ 40 enregistrements
+
+--- Table: region ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(100) NOT NULL [UNI]
+  ÔåÆ 18 enregistrements
+
+--- Table: entite ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(150) NOT NULL [UNI]
+  type: varchar(50) NULL
+  id_sup: int(11) NULL
+  description: text NULL
+  ÔåÆ 7 enregistrements
+
+--- Table: diplome ---
+  id: int(11) NOT NULL [PRI]
+  dignitaire_id: int(11) NOT NULL [MUL]
+  intitule: varchar(255) NULL
+  etablissement_id: int(11) NULL [MUL]
+  annee: varchar(10) NULL
+  ville_id: int(11) NULL [MUL]
+  domaine_id: int(11) NULL [MUL]
+  code: varchar(30) NULL
+  type: varchar(30) NULL
+  ÔåÆ 4 enregistrements
+
+--- Table: enfants ---
+  id: int(11) NOT NULL [PRI]
+  dignitaire_id: int(11) NOT NULL [MUL]
+  nom: varchar(100) NULL
+  prenom: varchar(100) NULL
+  date_naissance: date NULL
+  lieu_naissance: int(11) NULL [MUL]
+  genre: varchar(10) NULL
+  ÔåÆ 7 enregistrements
+
+--- Table: experiences ---
+  id: int(11) NOT NULL [PRI]
+  dignitaire_id: int(11) NOT NULL [MUL]
+  intitule: varchar(150) NULL
+  date_debut: date NULL
+  date_fin: date NULL
+  structure_id: int(11) NULL [MUL]
+  ÔåÆ 5 enregistrements
+
+--- Table: nominations ---
+  id: int(11) NOT NULL [PRI]
+  dignitaire_id: int(11) NOT NULL [MUL]
+  entite_id: int(11) NULL [MUL]
+  poste_id: int(11) NULL [MUL]
+  pv_id: int(11) NULL [MUL]
+  date_debut: date NOT NULL
+  date_fin: date NULL
+  fonction: varchar(150) NULL
+  ÔåÆ 5 enregistrements
+
+--- Table: langue ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(50) NOT NULL [UNI]
+  ÔåÆ 6 enregistrements
+
+--- Table: langues ---
+  id: int(11) NOT NULL [PRI]
+  dignitaire_id: int(11) NOT NULL [MUL]
+  langue_id: int(11) NOT NULL [MUL]
+  niveau: varchar(30) NULL
+  ÔåÆ 4 enregistrements
+
+--- Table: structure ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(150) NOT NULL [UNI]
+  type: varchar(50) NULL
+  adresse: text NULL
+  ville_id: int(11) NULL [MUL]
+  ÔåÆ 7 enregistrements
+
+--- Table: etablissement ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(150) NOT NULL [UNI]
+  type: varchar(50) NULL
+  ville_id: int(11) NULL [MUL]
+  ÔåÆ 5 enregistrements
+
+--- Table: domaine ---
+  id: int(11) NOT NULL [PRI]
+  nom: varchar(100) NOT NULL [UNI]
+  description: text NULL
+  ÔåÆ 7 enregistrements
+
+=== RELATIONS (Foreign Keys) ===
+  conjoints.dignitaire_id ÔåÆ dignitaire.id
+  conjoints.lieu_naissance ÔåÆ ville.id
+  decoration_dignitaire.decoration_id ÔåÆ decoration.deco_id
+  decoration_dignitaire.dignitaire_id ÔåÆ dignitaire.id
+  dignitaire.lieu_naissance ÔåÆ ville.id
+  diplome.dignitaire_id ÔåÆ dignitaire.id
+  diplome.domaine_id ÔåÆ domaine.id
+  diplome.etablissement_id ÔåÆ etablissement.id
+  diplome.ville_id ÔåÆ ville.id
+  enfants.dignitaire_id ÔåÆ dignitaire.id
+  enfants.lieu_naissance ÔåÆ ville.id
+  etablissement.ville_id ÔåÆ ville.id
+  experiences.dignitaire_id ÔåÆ dignitaire.id
+  experiences.structure_id ÔåÆ structure.id
+  historique_nominations.dignitaire_id ÔåÆ dignitaire.id
+  historique_nominations.entite_id ÔåÆ entite.id
+  historique_nominations.nomination_id ÔåÆ nominations.id
+  historique_nominations.poste_id ÔåÆ postes.id
+  langues.dignitaire_id ÔåÆ dignitaire.id
+  langues.langue_id ÔåÆ langue.id
+  nominations.dignitaire_id ÔåÆ dignitaire.id
+  nominations.entite_id ÔåÆ entite.id
+  nominations.poste_id ÔåÆ postes.id
+  nominations.pv_id ÔåÆ pv.id
+  pays.region_id ÔåÆ region.id
+  postes.ville_id ÔåÆ ville.id
+  postes.dignitaire_id ÔåÆ dignitaire.id
+  postes.entite_id ÔåÆ entite.id
+  roles_fonctions.role_id ÔåÆ roles.id
+  roles_fonctions.fonction_id ÔåÆ fonctions.id
+  roles_sousfonctions.role_id ÔåÆ roles.id
+  roles_sousfonctions.sousfonction_id ÔåÆ sousfonctions.id
+  sousfonctions.fonction_id ÔåÆ fonctions.id
+  structure.ville_id ÔåÆ ville.id
+  users.role_id ÔåÆ roles.id
+  user_fonctions.user_id ÔåÆ users.id
+  user_fonctions.fonction_id ÔåÆ fonctions.id
+  user_sousfonctions.user_id ÔåÆ users.id
+  user_sousfonctions.sousfonction_id ÔåÆ sousfonctions.id
+  ville.pays_id ÔåÆ pays.id
+
+=== FIN DE L'ANALYSE ===

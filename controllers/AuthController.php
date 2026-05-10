@@ -15,6 +15,10 @@ class AuthController
     public function login()
     {
         secureSession();
+        
+        // Générer le token CSRF dès le début pour qu'il soit disponible dans le formulaire
+        generateCSRFToken();
+        
         $error = null;
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {

@@ -34,10 +34,12 @@ class NominationController
             $nomination = new Nomination(
                 null,
                 $_POST['dignitaire_id'],
-                $_POST['date_nomination'],
-                $_POST['pv_id'],
-                $_POST['entite_id'],
-                $_POST['poste_id']
+                $_POST['entite_id'] ?? null,
+                $_POST['poste_id'] ?? null,
+                $_POST['pv_id'] ?? null,
+                $_POST['date_debut'],
+                $_POST['date_fin'] ?? null,
+                $_POST['fonction'] ?? null
             );
             $dao = new NominationDAO();
             $dao->create($nomination);
@@ -59,10 +61,12 @@ class NominationController
             $nomination = new Nomination(
                 $id,
                 $_POST['dignitaire_id'],
-                $_POST['date_nomination'],
-                $_POST['pv_id'],
-                $_POST['entite_id'],
-                $_POST['poste_id']
+                $_POST['entite_id'] ?? null,
+                $_POST['poste_id'] ?? null,
+                $_POST['pv_id'] ?? null,
+                $_POST['date_debut'],
+                $_POST['date_fin'] ?? null,
+                $_POST['fonction'] ?? null
             );
             $dao = new NominationDAO();
             $dao->update($nomination);

@@ -20,12 +20,14 @@ class NominationDAO
         $nominations = [];
         while ($row = $stmt->fetch()) {
             $nominations[] = new Nomination(
-                $row['id'],
-                $row['dignitaire_id'],
-                $row['date_nomination'],
-                $row['pv_id'],
-                $row['entite_id'],
-                $row['poste_id']
+                $row['id'] ?? null,
+                $row['dignitaire_id'] ?? null,
+                $row['entite_id'] ?? null,
+                $row['poste_id'] ?? null,
+                $row['pv_id'] ?? null,
+                $row['date_debut'] ?? null,
+                $row['date_fin'] ?? null,
+                $row['fonction'] ?? null
             );
         }
         return $nominations;
@@ -39,12 +41,14 @@ class NominationDAO
         $row = $stmt->fetch();
         if ($row) {
             return new Nomination(
-                $row['id'],
-                $row['dignitaire_id'],
-                $row['date_nomination'],
-                $row['pv_id'],
-                $row['entite_id'],
-                $row['poste_id']
+                $row['id'] ?? null,
+                $row['dignitaire_id'] ?? null,
+                $row['entite_id'] ?? null,
+                $row['poste_id'] ?? null,
+                $row['pv_id'] ?? null,
+                $row['date_debut'] ?? null,
+                $row['date_fin'] ?? null,
+                $row['fonction'] ?? null
             );
         }
         return null;
@@ -52,29 +56,33 @@ class NominationDAO
 
     public function create(Nomination $nom)
     {
-        $sql = "INSERT INTO nominations (dignitaire_id, date_nomination, pv_id, entite_id, poste_id)
-                VALUES (?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO nominations (dignitaire_id, entite_id, poste_id, pv_id, date_debut, date_fin, fonction)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             $nom->getDignitaireId(),
-            $nom->getDateNomination(),
-            $nom->getPvId(),
             $nom->getEntiteId(),
-            $nom->getPosteId()
+            $nom->getPosteId(),
+            $nom->getPvId(),
+            $nom->getDateDebut(),
+            $nom->getDateFin(),
+            $nom->getFonction()
         ]);
     }
 
     public function update(Nomination $nom)
     {
-        $sql = "UPDATE nominations SET dignitaire_id = ?, date_nomination = ?, pv_id = ?, entite_id = ?, poste_id = ?
+        $sql = "UPDATE nominations SET dignitaire_id = ?, entite_id = ?, poste_id = ?, pv_id = ?, date_debut = ?, date_fin = ?, fonction = ?
                 WHERE id = ?";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             $nom->getDignitaireId(),
-            $nom->getDateNomination(),
-            $nom->getPvId(),
             $nom->getEntiteId(),
             $nom->getPosteId(),
+            $nom->getPvId(),
+            $nom->getDateDebut(),
+            $nom->getDateFin(),
+            $nom->getFonction(),
             $nom->getId()
         ]);
     }
@@ -94,12 +102,14 @@ class NominationDAO
         $nominations = [];
         while ($row = $stmt->fetch()) {
             $nominations[] = new Nomination(
-                $row['id'],
-                $row['dignitaire_id'],
-                $row['date_nomination'],
-                $row['pv_id'],
-                $row['entite_id'],
-                $row['poste_id']
+                $row['id'] ?? null,
+                $row['dignitaire_id'] ?? null,
+                $row['entite_id'] ?? null,
+                $row['poste_id'] ?? null,
+                $row['pv_id'] ?? null,
+                $row['date_debut'] ?? null,
+                $row['date_fin'] ?? null,
+                $row['fonction'] ?? null
             );
         }
         return $nominations;
