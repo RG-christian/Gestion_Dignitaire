@@ -4,56 +4,102 @@ export const useApi = () => {
 
   const apiFetch = $fetch.create({
     baseURL: config.public.apiBase as string,
+    credentials: 'include',
     
     onRequest({ options }) {
       const token = authStore.token
       if (token) {
         options.headers = {
           ...options.headers,
-          Authorization: `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+    },
+
+    onResponse({ response }) {
+      // Vérifier si le token est toujours valide
+      if (response.status === 200 && response._data?.token) {
+        // Mettre à jour le token si un nouveau est fourni
+        authStore.token = response._data.token
+        if (process.client) {
+          localStorage.setItem('auth_token', response._data.token)
         }
       }
     },
 
     onResponseError({ response }) {
       if (response.status === 401) {
+        console.warn('Session expirée, déconnexion...')
         authStore.logout()
-        navigateTo('/login')
       }
     }
   })
 
+  // Cache simple pour les requêtes GET
+  const cache = new Map()
+  const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+  const cachedFetch = async (url: string, options: any = {}) => {
+    // Ne mettre en cache que les GET
+    if (options.method && options.method !== 'GET') {
+      return apiFetch(url, options)
+    }
+
+    const cacheKey = url + JSON.stringify(options.params || {})
+    const cached = cache.get(cacheKey)
+
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data
+    }
+
+    const data = await apiFetch(url, options)
+    cache.set(cacheKey, { data, timestamp: Date.now() })
+    return data
+  }
+
   return {
     // Dignitaires
-    getDignitaires: (params?: any) => apiFetch('/dignitaires', { params }),
+    getDignitaires: (params?: any) => cachedFetch('/dignitaires', { params }),
     getDignitaire: (id: number) => apiFetch(`/dignitaires/${id}`),
     createDignitaire: (data: any) => apiFetch('/dignitaires', { method: 'POST', body: data }),
     updateDignitaire: (id: number, data: any) => apiFetch(`/dignitaires/${id}`, { method: 'PUT', body: data }),
     deleteDignitaire: (id: number) => apiFetch(`/dignitaires/${id}`, { method: 'DELETE' }),
-    getStats: () => apiFetch('/dignitaires-stats'),
+    getStats: () => cachedFetch('/dignitaires-stats'),
 
     // Nominations
-    getNominations: (params?: any) => apiFetch('/nominations', { params }),
+    getNominations: (params?: any) => cachedFetch('/nominations', { params }),
     createNomination: (data: any) => apiFetch('/nominations', { method: 'POST', body: data }),
     updateNomination: (id: number, data: any) => apiFetch(`/nominations/${id}`, { method: 'PUT', body: data }),
     deleteNomination: (id: number) => apiFetch(`/nominations/${id}`, { method: 'DELETE' }),
 
     // Décorations
-    getDecorations: () => apiFetch('/decorations'),
+    getDecorations: () => cachedFetch('/decorations'),
     createDecoration: (data: any) => apiFetch('/decorations', { method: 'POST', body: data }),
 
-    // Référentiels
-    getPays: () => apiFetch('/pays'),
-    getVilles: (params?: any) => apiFetch('/villes', { params }),
-    getEntites: () => apiFetch('/entites'),
-    getPostes: () => apiFetch('/postes'),
-    getLangues: () => apiFetch('/langues'),
-    getDomaines: () => apiFetch('/domaines'),
+    // Enfants
+    getEnfants: (params?: any) => cachedFetch('/enfants', { params }),
+    getEnfant: (id: number) => apiFetch(`/enfants/${id}`),
+    createEnfant: (data: any) => apiFetch('/enfants', { method: 'POST', body: data }),
+    updateEnfant: (id: number, data: any) => apiFetch(`/enfants/${id}`, { method: 'PUT', body: data }),
+    deleteEnfant: (id: number) => apiFetch(`/enfants/${id}`, { method: 'DELETE' }),
+
+    // Référentiels (toujours en cache)
+    getPays: () => cachedFetch('/pays'),
+    getVilles: (params?: any) => cachedFetch('/villes', { params }),
+    getEntites: () => cachedFetch('/entites'),
+    getPostes: () => cachedFetch('/postes'),
+    getLangues: () => cachedFetch('/langues'),
+    getDomaines: () => cachedFetch('/domaines'),
 
     // Auth
     login: (credentials: { username: string; password: string }) => 
       apiFetch('/login', { method: 'POST', body: credentials }),
     logout: () => apiFetch('/logout', { method: 'POST' }),
     getUser: () => apiFetch('/user'),
+    
+    // Méthode pour vider le cache
+    clearCache: () => cache.clear()
   }
 }

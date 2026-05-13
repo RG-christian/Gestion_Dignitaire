@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test API Enfants</title>
+</head>
+<body>
+    <h1>Test API Enfants</h1>
+    <button onclick="testAPI()">Tester l'API</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testAPI() {
+            const token = localStorage.getItem('auth_token');
+            const resultEl = document.getElementById('result');
+            
+            if (!token) {
+                resultEl.textContent = 'Erreur: Pas de token trouvé. Connectez-vous d\'abord.';
+                return;
+            }
+
+            try {
+                resultEl.textContent = 'Chargement...';
+                
+                const response = await fetch('http://localhost:8000/api/enfants', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultEl.textContent = 'Erreur: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -57,6 +57,20 @@ class User extends Authenticatable
     ];
 
     /**
+     * Relations à charger automatiquement
+     *
+     * @var array
+     */
+    protected $with = ['fonctions', 'sousfonctions', 'role'];
+
+    /**
+     * Ajouter role_name comme attribut accessible
+     *
+     * @var array
+     */
+    protected $appends = ['role_name'];
+
+    /**
      * Get the name of the unique identifier for the user.
      *
      * @return string
@@ -74,5 +88,47 @@ class User extends Authenticatable
     public function getAuthPassword()
     {
         return $this->password;
+    }
+
+    /**
+     * Relation avec les fonctions de l'utilisateur
+     */
+    public function fonctions()
+    {
+        return $this->belongsToMany(
+            \App\Models\Fonction::class,
+            'user_fonctions',
+            'user_id',
+            'fonction_id'
+        )->orderBy('fonctions.fonction_name');
+    }
+
+    /**
+     * Relation avec les sous-fonctions de l'utilisateur
+     */
+    public function sousfonctions()
+    {
+        return $this->belongsToMany(
+            \App\Models\Sousfonction::class,
+            'user_sousfonctions',
+            'user_id',
+            'sousfonction_id'
+        )->orderBy('sousfonctions.sousfonction_name');
+    }
+
+    /**
+     * Relation avec le rôle
+     */
+    public function role()
+    {
+        return $this->belongsTo(\App\Models\Role::class, 'role_id');
+    }
+
+    /**
+     * Accesseur pour role_name
+     */
+    public function getRoleNameAttribute()
+    {
+        return $this->role ? $this->role->role_name : null;
     }
 }

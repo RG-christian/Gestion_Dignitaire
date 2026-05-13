@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  devtools: { enabled: true },
+  devtools: { enabled: false }, // Désactiver en production
   
   modules: [
     '@nuxtjs/tailwindcss',
@@ -23,12 +23,34 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Système de gestion des dignitaires - République Gabonaise' }
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css' }
       ]
     }
   },
 
   css: ['~/assets/css/main.css'],
+
+  // Optimisations de build
+  vite: {
+    build: {
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor': ['vue', 'pinia'],
+          }
+        }
+      }
+    }
+  },
+
+  // Optimisations de rendu
+  experimental: {
+    payloadExtraction: false,
+    renderJsonPayloads: true,
+    typedPages: false
+  },
 
   compatibilityDate: '2024-04-03'
 })

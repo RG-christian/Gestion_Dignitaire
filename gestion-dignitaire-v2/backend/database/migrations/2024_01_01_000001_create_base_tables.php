@@ -42,6 +42,20 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // Table pivot: user_fonctions
+        Schema::create('user_fonctions', function (Blueprint $table) {
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('fonction_id')->constrained('fonctions')->onDelete('cascade');
+            $table->primary(['user_id', 'fonction_id']);
+        });
+
+        // Table pivot: user_sousfonctions
+        Schema::create('user_sousfonctions', function (Blueprint $table) {
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('sousfonction_id')->constrained('sousfonctions')->onDelete('cascade');
+            $table->primary(['user_id', 'sousfonction_id']);
+        });
+
         // Domaines
         Schema::create('domaines', function (Blueprint $table) {
             $table->id();
@@ -149,6 +163,8 @@ return new class extends Migration
         Schema::dropIfExists('regions');
         Schema::dropIfExists('langues');
         Schema::dropIfExists('domaines');
+        Schema::dropIfExists('user_sousfonctions');
+        Schema::dropIfExists('user_fonctions');
         Schema::dropIfExists('users');
         Schema::dropIfExists('sousfonctions');
         Schema::dropIfExists('fonctions');

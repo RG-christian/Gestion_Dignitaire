@@ -23,11 +23,20 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            $token = $user->createToken('auth-token')->plainTextToken;
+
+            // Charger les fonctions et sous-fonctions
+            $user->load(['fonctions', 'sousfonctions']);
+
+            // Supprimer les anciens tokens
+            $user->tokens()->delete();
+
+            // Créer un nouveau token avec expiration de 7 jours
+            $token = $user->createToken('auth-token', ['*'], now()->addDays(7))->plainTextToken;
 
             return response()->json([
                 'token' => $token,
                 'user' => $user,
+                'expires_at' => now()->addDays(7)->toIso8601String(),
                 'message' => 'Connexion réussie'
             ]);
         }
@@ -54,7 +63,9 @@ class AuthController extends Controller
      */
     public function user(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        $user->load(['fonctions', 'sousfonctions']);
+        return response()->json($user);
     }
 
     /**

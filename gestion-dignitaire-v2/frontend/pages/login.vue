@@ -134,7 +134,15 @@ async function handleLogin() {
 }
 
 // Rediriger si déjà connecté
-onMounted(() => {
+onMounted(async () => {
+  // Charger depuis localStorage si nécessaire
+  if (!authStore.token && process.client) {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      await authStore.loadFromStorage()
+    }
+  }
+  
   if (authStore.isAuthenticated) {
     router.push('/')
   }

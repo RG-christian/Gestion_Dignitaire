@@ -102,13 +102,17 @@
       </button>
 
       <!-- MODE GRILLE -->
-      <div v-if="viewMode === 'grille'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full">
+      <div v-if="loading" class="flex justify-center items-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+      <div v-else-if="viewMode === 'grille'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full">
         <div v-for="d in dignitaires" :key="d.id" class="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
           <div class="relative group w-full flex flex-col items-center">
             <img
-              :src="d.photo ? `/uploads/photos/${d.photo}` : '/default-avatar.png'"
+              :src="d.photo ? `/uploads/photos/${d.photo}` : '/default-avatar.svg'"
               :alt="`Photo de ${d.prenom}`"
               class="w-24 h-24 rounded-full object-cover border-4 border-green-200 shadow mb-2"
+              @error="(e) => (e.target as HTMLImageElement).src = '/default-avatar.svg'"
             >
             <h4 class="text-base font-semibold mb-0.5">{{ d.prenom }} {{ d.nom }}</h4>
             
@@ -165,6 +169,9 @@
       </div>
 
       <!-- MODE LISTE -->
+      <div v-else-if="loading" class="flex justify-center items-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
       <div v-else>
         <!-- Header avec recherche -->
         <header class="bg-green-600 text-white p-4 shadow-md rounded-t-lg mb-4">
@@ -238,7 +245,7 @@
               </h3>
               <p class="text-sm text-gray-600 mb-1">
                 <span class="font-medium">Lieu de naissance :</span>
-                {{ dignitaire.lieu_naissance || 'N/A' }}
+                {{ dignitaire.lieu_naissance_nom || 'N/A' }}
               </p>
               <p class="text-sm text-gray-600 mb-1">
                 <span class="font-medium">Ville d'affectation :</span>
@@ -300,7 +307,15 @@
           <input v-model="form.nom" class="border rounded px-2 py-1" placeholder="Nom" required>
           <input v-model="form.prenom" class="border rounded px-2 py-1" placeholder="Prénom" required>
           <input v-model="form.date_naissance" class="border rounded px-2 py-1" type="date" required>
-          <input v-model="form.lieu_naissance" class="border rounded px-2 py-1" placeholder="Lieu de naissance" required>
+          
+          <!-- Select pour lieu de naissance -->
+          <select v-model="form.lieu_naissance" class="border rounded px-2 py-1" required>
+            <option value="">Sélectionner le lieu de naissance</option>
+            <option v-for="ville in villes" :key="ville.id" :value="ville.id">
+              {{ ville.nom }}
+            </option>
+          </select>
+          
           <select v-model="form.genre" class="border rounded px-2 py-1" required>
             <option value="">Genre</option>
             <option value="Homme">Homme</option>
@@ -346,69 +361,62 @@ const form = reactive({
   photo: ''
 })
 
-// Charger les statistiques
-const { data: stats } = await useAsyncData('dignitaires-stats', async () => {
+// Charger les statistiques (lazy loading)
+const stats = ref({ totalDignitaires: 0, totalPostes: 0, totalDecorations: 0, totalVilles: 0 })
+
+onMounted(async () => {
+  // Charger les stats en arrière-plan
   try {
     const response = await $fetch(`${config.public.apiBase}/dashboard/stats`, {
       headers: {
         Authorization: `Bearer ${authStore.token}`
       }
     })
-    return response
+    stats.value = response
   } catch (error) {
     console.error('Erreur stats:', error)
-    return { totalDignitaires: 0, totalPostes: 0, totalDecorations: 0, totalVilles: 0 }
   }
 })
 
-// Charger les dignitaires
-const { data: dignitaires, refresh: loadDignitaires } = await useAsyncData('dignitaires', async () => {
+// Charger les dignitaires (sans bloquer le rendu)
+const dignitaires = ref([])
+const loading = ref(true)
+
+async function loadDignitaires() {
+  loading.value = true
   try {
     const params = new URLSearchParams()
     if (filters.search) params.append('search', filters.search)
     if (filters.ville_id) params.append('ville_id', filters.ville_id)
     if (filters.entite_id) params.append('entite_id', filters.entite_id)
+    params.append('per_page', '50')
     
     const response = await $fetch(`${config.public.apiBase}/dignitaires?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${authStore.token}`
       }
     })
-    return response.data || []
+    dignitaires.value = response.data || []
   } catch (error) {
     console.error('Erreur dignitaires:', error)
-    return []
+    dignitaires.value = []
+  } finally {
+    loading.value = false
   }
+}
+
+onMounted(() => {
+  loadDignitaires()
 })
 
-// Charger les villes
-const { data: villes } = await useAsyncData('villes', async () => {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/villes`, {
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
-    return response || []
-  } catch (error) {
-    console.error('Erreur villes:', error)
-    return []
-  }
-})
+// Charger les villes et entités avec cache
+const referentiels = useReferentiels()
+const villes = ref([])
+const entites = ref([])
 
-// Charger les entités
-const { data: entites } = await useAsyncData('entites', async () => {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/entites`, {
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
-    return response || []
-  } catch (error) {
-    console.error('Erreur entités:', error)
-    return []
-  }
+onMounted(async () => {
+  villes.value = await referentiels.getVilles()
+  entites.value = await referentiels.getEntites()
 })
 
 function formatDateRange(dateDebut: string, dateFin: string | null) {

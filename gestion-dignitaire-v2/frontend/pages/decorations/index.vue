@@ -1,111 +1,291 @@
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <DashboardLayout>
-      <div class="mb-6 flex justify-between items-center">
-        <h1 class="text-3xl font-bold">Gestion des Décorations</h1>
-        <button
-          @click="showModal = true"
-          class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold"
+  <DashboardLayout>
+    <section class="max-w-7xl mx-auto mt-10 mb-12 px-4">
+      <h2 class="mb-6 text-3xl font-bold">Gestion des Décorations</h2>
+
+      <!-- Filtres -->
+      <div class="mb-6 flex gap-2">
+        <input
+          v-model="filters.search"
+          @input="loadDecorations"
+          type="text"
+          placeholder="Rechercher (nom, type, niveau, grade)..."
+          class="flex-grow border rounded px-3 py-2"
         >
-          + Ajouter une décoration
-        </button>
       </div>
 
-      <!-- Grille de cartes -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="decoration in decorations?.data"
-          :key="decoration.id"
-          class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition"
-        >
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-              <h3 class="text-xl font-bold text-gray-900 mb-2">{{ decoration.nom }}</h3>
-              <div class="space-y-1 text-sm">
-                <p v-if="decoration.type" class="text-gray-600">
-                  <span class="font-medium">Type:</span> {{ decoration.type }}
-                </p>
-                <p v-if="decoration.niveau" class="text-gray-600">
-                  <span class="font-medium">Niveau:</span> {{ decoration.niveau }}
-                </p>
-                <p v-if="decoration.grade" class="text-gray-600">
-                  <span class="font-medium">Grade:</span> {{ decoration.grade }}
-                </p>
-              </div>
-            </div>
-            <div class="ml-4">
-              <span class="inline-flex bg-yellow-100 p-3 rounded-full">
-                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-              </span>
-            </div>
-          </div>
+      <!-- Bouton Ajout -->
+      <button
+        @click="openModal()"
+        class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mb-4"
+      >
+        Ajouter une décoration
+      </button>
 
-          <div v-if="decoration.description" class="text-sm text-gray-600 mb-4">
-            {{ decoration.description }}
-          </div>
+      <!-- Loader -->
+      <div v-if="loading" class="flex justify-center items-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
 
-          <div class="flex items-center justify-between pt-4 border-t">
-            <span class="text-sm text-gray-500">
-              {{ decoration.dignitaires?.length || 0 }} attribution(s)
-            </span>
-            <div class="flex space-x-2">
-              <button
-                @click="editDecoration(decoration)"
-                class="text-blue-600 hover:text-blue-900"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
-              <button
-                @click="deleteDecoration(decoration.id)"
-                class="text-red-600 hover:text-red-900"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
+      <!-- Table -->
+      <div v-else class="overflow-x-auto bg-white rounded-lg shadow">
+        <table v-if="paginatedDecorations.length > 0" class="min-w-full divide-y divide-gray-200 text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left">ID</th>
+              <th class="px-4 py-2 text-left">Nom</th>
+              <th class="px-4 py-2 text-left">Type</th>
+              <th class="px-4 py-2 text-left">Niveau</th>
+              <th class="px-4 py-2 text-left">Grade</th>
+              <th class="px-4 py-2 text-left">Date</th>
+              <th class="px-4 py-2 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <tr v-for="deco in paginatedDecorations" :key="deco.id">
+              <td class="px-4 py-2">{{ deco.id }}</td>
+              <td class="px-4 py-2">{{ deco.nom }}</td>
+              <td class="px-4 py-2">{{ deco.type || 'N/A' }}</td>
+              <td class="px-4 py-2">{{ deco.niveau || 'N/A' }}</td>
+              <td class="px-4 py-2">{{ deco.grade || 'N/A' }}</td>
+              <td class="px-4 py-2">{{ formatDate(deco.date_obtention) }}</td>
+              <td class="px-4 py-2 flex justify-center gap-2">
+                <button
+                  @click="openDetailModal(deco)"
+                  class="bg-sky-500 hover:bg-sky-600 text-white rounded px-2 py-1 text-xs"
+                >
+                  Détail
+                </button>
+                <button
+                  @click="openModal(deco)"
+                  class="bg-blue-600 hover:bg-blue-700 text-white rounded px-2 py-1 text-xs"
+                >
+                  Modifier
+                </button>
+                <button
+                  @click="deleteDecoration(deco.id)"
+                  class="bg-red-600 hover:bg-red-700 text-white rounded px-2 py-1 text-xs"
+                >
+                  Supprimer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="text-center py-8 text-gray-500">Aucune décoration enregistrée.</p>
+
+        <!-- Pagination -->
+        <Pagination
+          v-if="decorations.length > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :start-index="startIndex"
+          :end-index="endIndex"
+          :total="decorations.length"
+          @update:current-page="currentPage = $event"
+        />
+      </div>
+    </section>
+
+    <!-- Modal Ajout/Modification -->
+    <div
+      v-if="showModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click.self="closeModal"
+    >
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
+        <h4 class="text-lg font-bold mb-4">{{ selectedDecoration ? 'Modifier' : 'Ajouter' }} une décoration</h4>
+        <form @submit.prevent="saveDecoration" class="flex flex-col gap-4">
+          <input v-model="form.nom" placeholder="Nom de la décoration" required class="border rounded px-2 py-1">
+          <input v-model="form.type" placeholder="Type" class="border rounded px-2 py-1">
+          <input v-model="form.niveau" placeholder="Niveau" class="border rounded px-2 py-1">
+          <input v-model="form.grade" placeholder="Grade" class="border rounded px-2 py-1">
+          <input v-model="form.date_obtention" type="date" placeholder="Date d'obtention" class="border rounded px-2 py-1">
+          <input v-model="form.autorite" placeholder="Autorité délivrant" class="border rounded px-2 py-1">
+          <textarea v-model="form.motif" placeholder="Motif" rows="2" class="border rounded px-2 py-1"></textarea>
+          <textarea v-model="form.description" placeholder="Description" rows="2" class="border rounded px-2 py-1"></textarea>
+          <input v-model="form.fichier_attestation" placeholder="Fichier attestation" class="border rounded px-2 py-1">
+
+          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2">
+            {{ selectedDecoration ? 'Modifier' : 'Enregistrer' }}
+          </button>
+        </form>
+        <span @click="closeModal" class="absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl cursor-pointer">&times;</span>
+      </div>
+    </div>
+
+    <!-- Modal Détail -->
+    <div
+      v-if="showDetailModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click.self="closeDetailModal"
+    >
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-xl p-6 relative">
+        <h4 class="text-lg font-bold mb-4">Détail de la Décoration</h4>
+        <div v-if="selectedDetail" class="space-y-2">
+          <p><strong>Nom :</strong> {{ selectedDetail.nom }}</p>
+          <p><strong>Type :</strong> {{ selectedDetail.type || 'N/A' }}</p>
+          <p><strong>Niveau :</strong> {{ selectedDetail.niveau || 'N/A' }}</p>
+          <p><strong>Grade :</strong> {{ selectedDetail.grade || 'N/A' }}</p>
+          <p><strong>Date d'obtention :</strong> {{ formatDate(selectedDetail.date_obtention) }}</p>
+          <p><strong>Autorité :</strong> {{ selectedDetail.autorite || 'N/A' }}</p>
+          <p><strong>Motif :</strong> {{ selectedDetail.motif || 'N/A' }}</p>
+          <p><strong>Description :</strong> {{ selectedDetail.description || 'N/A' }}</p>
+          <p><strong>Fichier attestation :</strong> {{ selectedDetail.fichier_attestation || 'N/A' }}</p>
         </div>
+        <span @click="closeDetailModal" class="absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl cursor-pointer">&times;</span>
       </div>
-
-      <!-- Message si vide -->
-      <div v-if="!decorations?.data?.length" class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">Aucune décoration</h3>
-        <p class="mt-1 text-sm text-gray-500">Commencez par ajouter une nouvelle décoration.</p>
-      </div>
-    </DashboardLayout>
-  </div>
+    </div>
+  </DashboardLayout>
 </template>
 
-<script setup lang="ts">
+<script setup>
 definePageMeta({
   middleware: 'auth'
 })
 
-const api = useApi()
+const config = useRuntimeConfig()
+const authStore = useAuthStore()
+
+const decorations = ref([])
+const loading = ref(true)
 const showModal = ref(false)
+const showDetailModal = ref(false)
+const selectedDecoration = ref(null)
+const selectedDetail = ref(null)
+const currentPage = ref(1)
+const itemsPerPage = 10
 
-const { data: decorations, refresh: loadDecorations } = await useAsyncData(
-  'decorations',
-  () => api.getDecorations()
-)
+const filters = reactive({
+  search: ''
+})
 
-function editDecoration(decoration: any) {
-  // TODO: Implémenter modal d'édition
-  console.log('Edit', decoration)
+const form = reactive({
+  nom: '',
+  type: '',
+  niveau: '',
+  grade: '',
+  date_obtention: '',
+  autorite: '',
+  motif: '',
+  description: '',
+  fichier_attestation: ''
+})
+
+// Pagination
+const totalPages = computed(() => Math.ceil(decorations.value.length / itemsPerPage))
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage)
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, decorations.value.length))
+const paginatedDecorations = computed(() => {
+  return decorations.value.slice(startIndex.value, endIndex.value)
+})
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'N/A'
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('fr-FR')
 }
 
-async function deleteDecoration(id: number) {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cette décoration ?')) {
-    await api.deleteDecoration(id)
-    loadDecorations()
+async function loadDecorations() {
+  loading.value = true
+  try {
+    const params = new URLSearchParams()
+    if (filters.search) params.append('search', filters.search)
+
+    const response = await $fetch(`${config.public.apiBase}/decorations?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    })
+    
+    decorations.value = Array.isArray(response) ? response : (response.data || [])
+    currentPage.value = 1 // Reset à la page 1 après recherche
+  } catch (error) {
+    console.error('Erreur chargement décorations:', error)
+    decorations.value = []
+  } finally {
+    loading.value = false
   }
 }
+
+function openModal(decoration = null) {
+  selectedDecoration.value = decoration
+  if (decoration) {
+    form.nom = decoration.nom
+    form.type = decoration.type || ''
+    form.niveau = decoration.niveau || ''
+    form.grade = decoration.grade || ''
+    form.date_obtention = decoration.date_obtention || ''
+    form.autorite = decoration.autorite || ''
+    form.motif = decoration.motif || ''
+    form.description = decoration.description || ''
+    form.fichier_attestation = decoration.fichier_attestation || ''
+  } else {
+    form.nom = ''
+    form.type = ''
+    form.niveau = ''
+    form.grade = ''
+    form.date_obtention = ''
+    form.autorite = ''
+    form.motif = ''
+    form.description = ''
+    form.fichier_attestation = ''
+  }
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+  selectedDecoration.value = null
+}
+
+function openDetailModal(decoration) {
+  selectedDetail.value = decoration
+  showDetailModal.value = true
+}
+
+function closeDetailModal() {
+  showDetailModal.value = false
+  selectedDetail.value = null
+}
+
+async function saveDecoration() {
+  try {
+    if (selectedDecoration.value) {
+      await $fetch(`${config.public.apiBase}/decorations/${selectedDecoration.value.id}`, {
+        method: 'PUT',
+        body: form,
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+    } else {
+      await $fetch(`${config.public.apiBase}/decorations`, {
+        method: 'POST',
+        body: form,
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+    }
+    closeModal()
+    loadDecorations()
+  } catch (error) {
+    console.error('Erreur:', error)
+    alert('Erreur lors de la sauvegarde')
+  }
+}
+
+async function deleteDecoration(id) {
+  if (confirm('Supprimer cette décoration ?')) {
+    try {
+      await $fetch(`${config.public.apiBase}/decorations/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+      loadDecorations()
+    } catch (error) {
+      console.error('Erreur:', error)
+      alert('Erreur lors de la suppression')
+    }
+  }
+}
+
+onMounted(() => {
+  loadDecorations()
+})
 </script>

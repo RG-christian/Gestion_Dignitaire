@@ -56,10 +56,12 @@ return [
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
+            'strict' => false, // Désactiver le mode strict pour plus de performance
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::ATTR_EMULATE_PREPARES => true, // Améliore les performances
+                PDO::ATTR_PERSISTENT => true, // Connexions persistantes
             ]) : [],
         ],
 
