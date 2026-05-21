@@ -11,7 +11,7 @@ class Decoration extends Model
     use HasFactory;
 
     protected $table = 'decoration';
-    protected $primaryKey = 'deco_id'; // Clé primaire personnalisée
+    protected $primaryKey = 'deco_id';
     public $timestamps = false;
 
     protected $fillable = [
@@ -29,6 +29,70 @@ class Decoration extends Model
     protected $casts = [
         'deco_date_obtention' => 'date',
     ];
+
+    // Forcer l'inclusion des accesseurs dans la sérialisation JSON
+    protected $appends = [
+        'id',
+        'nom',
+        'type',
+        'niveau',
+        'grade',
+        'date_obtention',
+        'autorite',
+        'motif',
+        'description',
+        'fichier_attestation'
+    ];
+
+    // Accesseurs pour compatibilité avec l'API
+    public function getIdAttribute()
+    {
+        return $this->deco_id;
+    }
+    public function getNomAttribute()
+    {
+        return $this->deco_nom;
+    }
+
+    public function getTypeAttribute()
+    {
+        return $this->deco_type;
+    }
+
+    public function getNiveauAttribute()
+    {
+        return $this->deco_niveau;
+    }
+
+    public function getGradeAttribute()
+    {
+        return $this->deco_grade;
+    }
+
+    public function getDateObtentionAttribute()
+    {
+        return $this->deco_date_obtention;
+    }
+
+    public function getAutoriteAttribute()
+    {
+        return $this->deco_autorite;
+    }
+
+    public function getMotifAttribute()
+    {
+        return $this->deco_motif;
+    }
+
+    public function getDescriptionAttribute()
+    {
+        return $this->deco_description;
+    }
+
+    public function getFichierAttestationAttribute()
+    {
+        return $this->deco_fichierAttestation;
+    }
 
     public function dignitaires(): BelongsToMany
     {

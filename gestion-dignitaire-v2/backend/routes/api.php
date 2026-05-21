@@ -31,7 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Authentification
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
-    
+
     // Route de test pour vérifier les fonctions
     Route::get('/test-fonctions', function (Request $request) {
         $user = $request->user();
@@ -96,7 +96,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('pays-crud', PaysController::class);
     Route::apiResource('regions-crud', RegionController::class);
     Route::apiResource('villes-crud', VilleController::class);
-    
+
     // Structures
     Route::apiResource('structures', StructureController::class);
 

@@ -15,9 +15,12 @@
     "@pinia/nuxt": "^0.5.1",
     "@vueuse/core": "^10.9.0",
     "@vueuse/nuxt": "^10.9.0",
+    "chart.js": "^4.5.1",
     "nuxt": "^3.11.1",
     "pinia": "^2.1.7",
+    "sweetalert2": "^11.26.24",
     "vue": "^3.4.21",
+    "vue-chartjs": "^5.3.3",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {

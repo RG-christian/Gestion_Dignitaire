@@ -81,9 +81,18 @@ class Dignitaire extends Model
 
     public function decorations(): BelongsToMany
     {
-        return $this->belongsToMany(Decoration::class, 'decoration_dignitaire')
-            ->withPivot('date_attribution')
-            ->withTimestamps();
+        return $this->belongsToMany(Decoration::class, 'decoration_dignitaire', 'dignitaire_id', 'decoration_id')
+            ->withPivot('date_attribution');
+    }
+
+    public function telephones(): HasMany
+    {
+        return $this->hasMany(DignitaireTelephone::class);
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(DignitaireEmail::class);
     }
 
     // Scopes

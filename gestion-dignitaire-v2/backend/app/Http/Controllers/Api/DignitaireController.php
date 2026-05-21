@@ -79,7 +79,9 @@ class DignitaireController extends Controller
             'postes.ville',
             'nominations.entite',
             'nominations.poste',
-            'decorations'
+            'decorations',
+            'telephones',
+            'emails'
         ])->findOrFail($id);
 
         return response()->json($dignitaire);

@@ -49,6 +49,7 @@ class DashboardController extends Controller
                 'totalVilles' => DB::table('ville')->count(),
                 'totalPays' => DB::table('pays')->count(),
                 'totalRegions' => DB::table('region')->count(),
+                'totalDiplomes' => DB::table('diplome')->count(),
             ];
 
             return response()->json($stats);

@@ -9,7 +9,12 @@
         Retour à la liste
       </NuxtLink>
 
-      <div v-if="dignitaire" class="bg-white rounded-lg shadow-lg p-8">
+      <div v-if="loading" class="bg-white rounded-lg shadow-lg p-8 text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+        <p class="text-gray-500 mt-4">Chargement...</p>
+      </div>
+
+      <div v-else-if="dignitaire" class="bg-white rounded-lg shadow-lg p-8">
         <!-- En-tête avec photo -->
         <div class="flex items-start gap-6 mb-8 pb-6 border-b">
           <img
@@ -69,13 +74,47 @@
               <span class="text-gray-600 text-sm">Nationalité</span>
               <p class="font-medium">{{ dignitaire.nationalite || 'N/A' }}</p>
             </div>
-            <div class="bg-gray-50 p-4 rounded">
-              <span class="text-gray-600 text-sm">Téléphone</span>
-              <p class="font-medium">{{ dignitaire.telephone || 'N/A' }}</p>
-            </div>
             <div class="bg-gray-50 p-4 rounded col-span-2">
               <span class="text-gray-600 text-sm">Adresse</span>
               <p class="font-medium">{{ dignitaire.adresse || 'N/A' }}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Téléphones -->
+        <section v-if="dignitaire.telephones && dignitaire.telephones.length > 0" class="mb-8">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+            </svg>
+            Téléphones
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="tel in dignitaire.telephones" :key="tel.id" class="bg-gray-50 p-4 rounded flex items-center justify-between">
+              <div>
+                <p class="font-medium text-lg">{{ tel.numero }}</p>
+                <p class="text-sm text-gray-600 capitalize">{{ tel.type }}</p>
+              </div>
+              <span v-if="tel.principal" class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Principal</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Emails -->
+        <section v-if="dignitaire.emails && dignitaire.emails.length > 0" class="mb-8">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Emails
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div v-for="email in dignitaire.emails" :key="email.id" class="bg-gray-50 p-4 rounded flex items-center justify-between">
+              <div>
+                <p class="font-medium text-lg">{{ email.email }}</p>
+                <p class="text-sm text-gray-600 capitalize">{{ email.type }}</p>
+              </div>
+              <span v-if="email.principal" class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Principal</span>
             </div>
           </div>
         </section>
@@ -160,8 +199,17 @@
             Décorations
           </h2>
           <div class="space-y-3">
-            <div v-for="decoration in dignitaire.decorations" :key="decoration.id" class="bg-gray-50 p-4 rounded">
-              <h3 class="font-bold text-gray-800">{{ decoration.nom }}</h3>
+            <div v-for="decoration in dignitaire.decorations" :key="decoration.id" class="bg-gray-50 p-4 rounded border-l-4 border-yellow-500">
+              <h3 class="font-bold text-lg text-gray-800">{{ decoration.nom }}</h3>
+              <p class="text-sm text-gray-600" v-if="decoration.type">
+                <span class="font-medium">Type:</span> {{ decoration.type }}
+              </p>
+              <p class="text-sm text-gray-600" v-if="decoration.niveau">
+                <span class="font-medium">Niveau:</span> {{ decoration.niveau }}
+              </p>
+              <p class="text-sm text-gray-600" v-if="decoration.grade">
+                <span class="font-medium">Grade:</span> {{ decoration.grade }}
+              </p>
               <p class="text-sm text-gray-600">
                 <span class="font-medium">Date d'attribution:</span> 
                 {{ decoration.pivot?.date_attribution ? formatDate(decoration.pivot.date_attribution) : 'N/A' }}
@@ -172,7 +220,7 @@
       </div>
 
       <div v-else class="bg-white rounded-lg shadow-lg p-8 text-center">
-        <p class="text-gray-500">Chargement...</p>
+        <p class="text-red-500">Erreur lors du chargement du dignitaire</p>
       </div>
     </div>
   </DashboardLayout>
@@ -187,17 +235,21 @@ const route = useRoute()
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 
-const { data: dignitaire } = await useAsyncData(`dignitaire-${route.params.id}`, async () => {
+const dignitaire = ref(null)
+const loading = ref(true)
+
+onMounted(async () => {
   try {
     const response = await $fetch(`${config.public.apiBase}/dignitaires/${route.params.id}`, {
       headers: {
         Authorization: `Bearer ${authStore.token}`
       }
     })
-    return response
+    dignitaire.value = response
   } catch (error) {
     console.error('Erreur chargement dignitaire:', error)
-    return null
+  } finally {
+    loading.value = false
   }
 })
 

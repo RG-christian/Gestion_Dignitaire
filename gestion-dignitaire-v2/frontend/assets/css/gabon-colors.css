@@ -1,0 +1,109 @@
+/**
+ * Palette de couleurs officielle - République Gabonaise
+ * Basée sur les couleurs du drapeau national : Vert, Jaune, Bleu
+ */
+
+:root {
+  /* Couleurs principales - Drapeau Gabonais */
+  
+  /* VERT - Couleur primaire (Forêts et nature du Gabon) */
+  --gabon-green-50: #f0fdf4;
+  --gabon-green-100: #dcfce7;
+  --gabon-green-200: #bbf7d0;
+  --gabon-green-300: #86efac;
+  --gabon-green-400: #4ade80;
+  --gabon-green-500: #22c55e;
+  --gabon-green-600: #16a34a;  /* Vert principal */
+  --gabon-green-700: #15803d;
+  --gabon-green-800: #166534;
+  --gabon-green-900: #14532d;
+
+  /* JAUNE/OR - Couleur secondaire (Soleil équatorial) */
+  --gabon-yellow-50: #fefce8;
+  --gabon-yellow-100: #fef9c3;
+  --gabon-yellow-200: #fef08a;
+  --gabon-yellow-300: #fde047;
+  --gabon-yellow-400: #facc15;
+  --gabon-yellow-500: #eab308;  /* Jaune principal */
+  --gabon-yellow-600: #ca8a04;
+  --gabon-yellow-700: #a16207;
+  --gabon-yellow-800: #854d0e;
+  --gabon-yellow-900: #713f12;
+
+  /* BLEU - Couleur tertiaire (Océan Atlantique) */
+  --gabon-blue-50: #eff6ff;
+  --gabon-blue-100: #dbeafe;
+  --gabon-blue-200: #bfdbfe;
+  --gabon-blue-300: #93c5fd;
+  --gabon-blue-400: #60a5fa;
+  --gabon-blue-500: #3b82f6;
+  --gabon-blue-600: #2563eb;  /* Bleu principal */
+  --gabon-blue-700: #1d4ed8;
+  --gabon-blue-800: #1e40af;
+  --gabon-blue-900: #1e3a8a;
+
+  /* Couleurs génériques (actions communes) */
+  
+  /* Rouge - Actions destructives */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+
+  /* Gris - Neutre */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* Sky - Informations */
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
+  --color-sky-700: #0369a1;
+}
+
+/* Classes utilitaires Tailwind personnalisées */
+.bg-gabon-green { background-color: var(--gabon-green-600); }
+.bg-gabon-yellow { background-color: var(--gabon-yellow-500); }
+.bg-gabon-blue { background-color: var(--gabon-blue-600); }
+
+.text-gabon-green { color: var(--gabon-green-600); }
+.text-gabon-yellow { color: var(--gabon-yellow-600); }
+.text-gabon-blue { color: var(--gabon-blue-600); }
+
+.border-gabon-green { border-color: var(--gabon-green-600); }
+.border-gabon-yellow { border-color: var(--gabon-yellow-500); }
+.border-gabon-blue { border-color: var(--gabon-blue-600); }
+
+/* Gradients officiels */
+.gradient-gabon-primary {
+  background: linear-gradient(135deg, var(--gabon-green-600) 0%, var(--gabon-green-700) 100%);
+}
+
+.gradient-gabon-secondary {
+  background: linear-gradient(135deg, var(--gabon-yellow-500) 0%, var(--gabon-yellow-600) 100%);
+}
+
+.gradient-gabon-tertiary {
+  background: linear-gradient(135deg, var(--gabon-blue-600) 0%, var(--gabon-blue-700) 100%);
+}
+
+.gradient-gabon-flag {
+  background: linear-gradient(to bottom, 
+    var(--gabon-green-600) 0%, 
+    var(--gabon-green-600) 33.33%, 
+    var(--gabon-yellow-500) 33.33%, 
+    var(--gabon-yellow-500) 66.66%, 
+    var(--gabon-blue-600) 66.66%, 
+    var(--gabon-blue-600) 100%
+  );
+}

@@ -3,84 +3,108 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Decoration;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 
 class DecorationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = DB::table('decoration as d')
-            ->select(['d.*']);
+        $query = Decoration::query();
 
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('d.nom', 'like', "%{$search}%")
-                  ->orWhere('d.type', 'like', "%{$search}%")
-                  ->orWhere('d.niveau', 'like', "%{$search}%")
-                  ->orWhere('d.grade', 'like', "%{$search}%");
+                $q->where('deco_nom', 'like', "%{$search}%")
+                  ->orWhere('deco_type', 'like', "%{$search}%")
+                  ->orWhere('deco_niveau', 'like', "%{$search}%")
+                  ->orWhere('deco_grade', 'like', "%{$search}%");
             });
         }
 
-        $decorations = $query->orderBy('d.nom')->get();
+        $decorations = $query->orderBy('deco_nom')->get();
 
         return response()->json($decorations);
     }
 
     public function show(int $id): JsonResponse
     {
-        $decoration = DB::table('decoration')->where('id', $id)->first();
-
-        if (!$decoration) {
-            return response()->json(['message' => 'Décoration non trouvée'], 404);
-        }
-
+        $decoration = Decoration::findOrFail($id);
         return response()->json($decoration);
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'nom' => 'required|string|max:255',
-            'type' => 'nullable|string|max:100',
-            'niveau' => 'nullable|string|max:100',
-            'grade' => 'nullable|string|max:100',
+            'nom' => 'required|string|max:150',
+            'type' => 'nullable|string|max:50',
+            'niveau' => 'nullable|string|max:50',
+            'grade' => 'nullable|string|max:50',
             'date_obtention' => 'nullable|date',
-            'autorite' => 'nullable|string|max:255',
-            'motif' => 'nullable|string',
-            'description' => 'nullable|string',
-            'fichier_attestation' => 'nullable|string|max:255',
+            'autorite' => 'nullable|string|max:50',
+            'motif' => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:255',
+            'fichier_attestation' => 'nullable|string|max:100',
         ]);
 
-        $id = DB::table('decoration')->insertGetId($validated);
-        
-        return response()->json(['id' => $id, ...$validated], 201);
+        // Mapper les noms de colonnes avec préfixe
+        $data = [
+            'deco_nom' => $validated['nom'],
+            'deco_type' => $validated['type'] ?? null,
+            'deco_niveau' => $validated['niveau'] ?? null,
+            'deco_grade' => $validated['grade'] ?? null,
+            'deco_date_obtention' => $validated['date_obtention'] ?? null,
+            'deco_autorite' => $validated['autorite'] ?? null,
+            'deco_motif' => $validated['motif'] ?? null,
+            'deco_description' => $validated['description'] ?? null,
+            'deco_fichierAttestation' => $validated['fichier_attestation'] ?? null,
+        ];
+
+        $decoration = Decoration::create($data);
+
+        return response()->json($decoration, 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
+        $decoration = Decoration::findOrFail($id);
+
         $validated = $request->validate([
-            'nom' => 'required|string|max:255',
-            'type' => 'nullable|string|max:100',
-            'niveau' => 'nullable|string|max:100',
-            'grade' => 'nullable|string|max:100',
+            'nom' => 'required|string|max:150',
+            'type' => 'nullable|string|max:50',
+            'niveau' => 'nullable|string|max:50',
+            'grade' => 'nullable|string|max:50',
             'date_obtention' => 'nullable|date',
-            'autorite' => 'nullable|string|max:255',
-            'motif' => 'nullable|string',
-            'description' => 'nullable|string',
-            'fichier_attestation' => 'nullable|string|max:255',
+            'autorite' => 'nullable|string|max:50',
+            'motif' => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:255',
+            'fichier_attestation' => 'nullable|string|max:100',
         ]);
 
-        DB::table('decoration')->where('id', $id)->update($validated);
-        
-        return response()->json(['id' => $id, ...$validated]);
+        // Mapper les noms de colonnes avec préfixe
+        $data = [
+            'deco_nom' => $validated['nom'],
+            'deco_type' => $validated['type'] ?? null,
+            'deco_niveau' => $validated['niveau'] ?? null,
+            'deco_grade' => $validated['grade'] ?? null,
+            'deco_date_obtention' => $validated['date_obtention'] ?? null,
+            'deco_autorite' => $validated['autorite'] ?? null,
+            'deco_motif' => $validated['motif'] ?? null,
+            'deco_description' => $validated['description'] ?? null,
+            'deco_fichierAttestation' => $validated['fichier_attestation'] ?? null,
+        ];
+
+        $decoration->update($data);
+
+        return response()->json($decoration);
     }
 
     public function destroy(int $id): JsonResponse
     {
-        DB::table('decoration')->where('id', $id)->delete();
+        $decoration = Decoration::findOrFail($id);
+        $decoration->delete();
+
         return response()->json(['message' => 'Décoration supprimée avec succès']);
     }
 }
