@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']); // Endpoint optimisé
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+    Route::get('/dashboard/chart-data', [DashboardController::class, 'chartData']);
 
     // Dignitaires
     Route::apiResource('dignitaires', DignitaireController::class);
@@ -81,6 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Postes
     Route::apiResource('postes', PosteController::class);
+
+    // Entités (CRUD complet)
+    Route::apiResource('entites', \App\Http\Controllers\Api\EntiteController::class);
 
     // Référentiels (lecture seule)
     Route::get('/pays', [ReferentielController::class, 'pays']);

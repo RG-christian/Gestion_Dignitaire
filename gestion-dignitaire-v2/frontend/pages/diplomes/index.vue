@@ -27,17 +27,12 @@
       <!-- Filtres améliorés -->
       <div class="bg-white rounded-xl shadow-md p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="relative">
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input
+          <div>
+            <SearchInput
               v-model="filters.search"
-              @input="loadDiplomes"
-              type="text"
               placeholder="Rechercher par intitulé, établissement, année..."
-              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all"
-            >
+              @update:modelValue="debouncedLoadDiplomes"
+            />
           </div>
           <div class="relative">
             <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -418,6 +413,7 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const referentiels = useReferentiels()
+const { debounce } = useDebounce()
 
 const diplomes = ref([])
 const dignitaires = ref([])
@@ -504,6 +500,9 @@ async function loadEtablissements() {
     console.error('Erreur:', error)
   }
 }
+
+// Version debouncée pour optimiser les requêtes AJAX
+const debouncedLoadDiplomes = debounce(loadDiplomes, 500)
 
 function openModal(diplome: any = null) {
   selectedDiplome.value = diplome

@@ -189,6 +189,10 @@ async function handleLogin() {
   try {
     const success = await authStore.login(credentials)
     if (success) {
+      // Récupérer l'URL de redirection depuis les query params
+      const route = useRoute()
+      const redirectTo = (route.query.redirect as string) || '/'
+      
       // SweetAlert succès avec redirection immédiate
       Swal.fire({
         icon: 'success',
@@ -200,9 +204,9 @@ async function handleLogin() {
         showConfirmButton: false,
         allowOutsideClick: false,
         didOpen: () => {
-          // Redirection immédiate sans attendre la fermeture du Swal
+          // Redirection vers la page d'origine ou le dashboard
           setTimeout(() => {
-            router.push('/')
+            router.push(redirectTo)
           }, 500)
         }
       })

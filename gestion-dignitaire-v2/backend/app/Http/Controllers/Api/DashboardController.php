@@ -60,4 +60,48 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Récupérer les données pour les graphiques
+     */
+    public function chartData()
+    {
+        try {
+            // Répartition par genre
+            $parGenre = [
+                'hommes' => DB::table('dignitaire')->where('genre', 'Homme')->count(),
+                'femmes' => DB::table('dignitaire')->where('genre', 'Femme')->count(),
+            ];
+
+            // Répartition par région (utiliser les vraies données avec jointure)
+            $parRegion = DB::table('dignitaire')
+                ->join('ville', 'dignitaire.lieu_naissance', '=', 'ville.id')
+                ->join('region', 'ville.region_id', '=', 'region.id')
+                ->select('region.nom as nom', DB::raw('COUNT(*) as count'))
+                ->whereNotNull('ville.region_id')
+                ->groupBy('region.id', 'region.nom')
+                ->orderBy('count', 'desc')
+                ->limit(5)
+                ->get();
+
+            // Répartition par poste (grouper par intitulé)
+            $parPoste = DB::table('postes')
+                ->select('postes.intitule as nom', DB::raw('COUNT(*) as count'))
+                ->groupBy('postes.intitule')
+                ->orderBy('count', 'desc')
+                ->limit(5)
+                ->get();
+
+            return response()->json([
+                'parGenre' => $parGenre,
+                'parRegion' => $parRegion,
+                'parPoste' => $parPoste,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des données graphiques',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

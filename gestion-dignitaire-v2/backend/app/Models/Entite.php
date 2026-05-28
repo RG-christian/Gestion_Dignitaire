@@ -11,7 +11,7 @@ class Entite extends Model
 {
     use HasFactory;
 
-    protected $table = 'entite'; // Table au singulier
+    protected $table = 'entite'; // Table au singulier (comme dans la BDD)
     public $timestamps = false;
 
     protected $fillable = [

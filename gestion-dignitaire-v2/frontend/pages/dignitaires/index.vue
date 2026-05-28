@@ -1,66 +1,79 @@
 <template>
   <DashboardLayout>
-    <section class="max-w-7xl mx-auto mt-10 mb-12 px-4">
-      <!-- Dashboard Statistiques -->
-      <div class="mt-8 mb-8 px-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Nombre de dignitaires -->
-          <div class="bg-white rounded-xl shadow border p-5 flex items-center">
+    <div style="zoom: 0.8;">
+    <!-- Header moderne avec gradient gabonais -->
+    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+      <div class="max-w-full mx-auto px-2">
+        <div class="flex items-center gap-3 mb-2">
+          <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3h-1m-2.5-4a4 4 0 11-8 0 4 4 0 018 0zm-7.5 8h-5v-2a3 3 0 013-3h1"/>
+          </svg>
+          <h1 class="text-3xl font-bold text-white drop-shadow-lg">Gestion des Dignitaires</h1>
+        </div>
+        <p class="text-white text-sm opacity-95 drop-shadow">Gérer les dignitaires et leurs informations</p>
+      </div>
+    </header>
+
+    <section class="max-w-full mx-auto px-2 pb-8">
+      <!-- Dashboard Statistiques modernisé -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Nombre de dignitaires -->
+        <div class="bg-white rounded-xl shadow-lg border-l-4 border-gabon-green-600 p-5 hover:shadow-xl transition-shadow">
+          <div class="flex items-center justify-between">
             <div class="flex-1">
-              <div class="text-gray-500 mb-1">Nombre de dignitaires</div>
-              <div class="text-2xl font-bold">{{ stats?.totalDignitaires || 0 }}</div>
+              <div class="text-gray-500 text-sm font-medium mb-1">Nombre de dignitaires</div>
+              <div class="text-3xl font-bold text-gray-800">{{ stats?.totalDignitaires || 0 }}</div>
             </div>
-            <div class="ml-3">
-              <span class="inline-flex bg-green-200 p-3 rounded-full">
-                <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5m6-6a4 4 0 10-8 0 4 4 0 008 0z"/>
-                </svg>
-              </span>
+            <div class="bg-gabon-green-100 p-3 rounded-full">
+              <svg class="w-8 h-8 text-gabon-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-3-3h-1m-2.5-4a4 4 0 11-8 0 4 4 0 018 0zm-7.5 8h-5v-2a3 3 0 013-3h1"/>
+              </svg>
             </div>
           </div>
+        </div>
 
-          <!-- Nombres de postes -->
-          <div class="bg-white rounded-xl shadow border p-5 flex items-center">
+        <!-- Nombres de postes -->
+        <div class="bg-white rounded-xl shadow-lg border-l-4 border-gabon-yellow-500 p-5 hover:shadow-xl transition-shadow">
+          <div class="flex items-center justify-between">
             <div class="flex-1">
-              <div class="text-gray-500 mb-1">Nombres de postes</div>
-              <div class="text-2xl font-bold">{{ stats?.totalPostes || 0 }}</div>
+              <div class="text-gray-500 text-sm font-medium mb-1">Nombres de postes</div>
+              <div class="text-3xl font-bold text-gray-800">{{ stats?.totalPostes || 0 }}</div>
             </div>
-            <div class="ml-3">
-              <span class="inline-flex bg-yellow-100 p-3 rounded-full">
-                <svg class="w-7 h-7 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 7V6a2 2 0 012-2h8a2 2 0 012 2v1M6 7h12M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7" />
-                </svg>
-              </span>
+            <div class="bg-gabon-yellow-100 p-3 rounded-full">
+              <svg class="w-8 h-8 text-gabon-yellow-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
             </div>
           </div>
+        </div>
 
-          <!-- Décorations données -->
-          <div class="bg-white rounded-xl shadow border p-5 flex items-center">
+        <!-- Décorations données -->
+        <div class="bg-white rounded-xl shadow-lg border-l-4 border-gabon-blue-600 p-5 hover:shadow-xl transition-shadow">
+          <div class="flex items-center justify-between">
             <div class="flex-1">
-              <div class="text-gray-500 mb-1">Décorations données</div>
-              <div class="text-2xl font-bold">{{ stats?.totalDecorations || 0 }}</div>
+              <div class="text-gray-500 text-sm font-medium mb-1">Décorations données</div>
+              <div class="text-3xl font-bold text-gray-800">{{ stats?.totalDecorations || 0 }}</div>
             </div>
-            <div class="ml-3">
-              <span class="inline-flex bg-blue-100 p-3 rounded-full">
-                <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m0 0a4 4 0 110-8 4 4 0 010 8z" />
-                </svg>
-              </span>
+            <div class="bg-gabon-blue-100 p-3 rounded-full">
+              <svg class="w-8 h-8 text-gabon-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+              </svg>
             </div>
           </div>
+        </div>
 
-          <!-- Villes d'affectation -->
-          <div class="bg-white rounded-xl shadow border p-5 flex items-center">
+        <!-- Villes d'affectation -->
+        <div class="bg-white rounded-xl shadow-lg border-l-4 border-red-500 p-5 hover:shadow-xl transition-shadow">
+          <div class="flex items-center justify-between">
             <div class="flex-1">
-              <div class="text-gray-500 mb-1">Villes d'affectation</div>
-              <div class="text-2xl font-bold">{{ stats?.totalVilles || 0 }}</div>
+              <div class="text-gray-500 text-sm font-medium mb-1">Villes d'affectation</div>
+              <div class="text-3xl font-bold text-gray-800">{{ stats?.totalVilles || 0 }}</div>
             </div>
-            <div class="ml-3">
-              <span class="inline-flex bg-red-100 p-3 rounded-full">
-                <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 21V3h18v18M3 21v-6h18v6" />
-                </svg>
-              </span>
+            <div class="bg-red-100 p-3 rounded-full">
+              <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
             </div>
           </div>
         </div>
@@ -295,6 +308,7 @@
         </main>
       </div>
     </section>
+    </div>
 
     <!-- Modal Ajout/Modification -->
     <div v-if="showModal" class="fixed z-50 inset-0 bg-black bg-opacity-30 flex items-center justify-center" @click.self="closeModal">

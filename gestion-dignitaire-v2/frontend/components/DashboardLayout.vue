@@ -112,7 +112,7 @@
       </aside>
 
       <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto bg-gray-100 transition-all duration-300 lg:ml-64">
+      <main class="flex-1 overflow-y-auto bg-gray-100 transition-all duration-300 lg:ml-64 lg:pl-6">
         <slot />
       </main>
     </div>
@@ -120,6 +120,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+
 const authStore = useAuthStore()
 const isSidebarOpen = ref(false)
 const isDark = ref(false)
@@ -163,6 +165,8 @@ function getRouteForSousfonction(name: string): string {
     'Dignitaire': '/dignitaires',
     'Enfant': '/enfants',
     'Poste': '/postes',
+    'Entité': '/entites',
+    'Entite': '/entites',
     'Diplôme': '/diplomes',
     'Diplome': '/diplomes',
     'Expérience': '/experiences',

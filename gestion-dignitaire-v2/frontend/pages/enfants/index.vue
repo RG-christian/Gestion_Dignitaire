@@ -1,93 +1,164 @@
 <template>
   <DashboardLayout>
-    <main class="max-w-7xl mx-auto p-6 bg-white shadow rounded-xl mt-8">
-      <div class="flex justify-between mb-6">
-        <h2 class="text-2xl font-semibold text-gray-700">Liste des enfants</h2>
-        <button
-          @click="openModal()"
-          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold transition"
-        >
-          + Ajouter un enfant
-        </button>
+    <div style="zoom: 0.8;">
+    <!-- Header moderne avec gradient gabonais -->
+    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+      <div class="max-w-full mx-auto px-2">
+        <div class="flex items-center gap-3 mb-2">
+          <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <h1 class="text-3xl font-bold text-white drop-shadow-lg">Gestion des Enfants</h1>
+        </div>
+        <p class="text-white text-sm opacity-95 drop-shadow">Gérer les enfants des dignitaires</p>
+      </div>
+    </header>
+
+    <main class="max-w-full mx-auto px-2 pb-8">
+      <!-- Barre de recherche et filtres modernisée -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+        <div class="flex flex-col md:flex-row gap-4 items-center">
+          <!-- Recherche -->
+          <div class="flex-1 w-full">
+            <SearchInput
+              v-model="filters.search"
+              placeholder="Rechercher un enfant..."
+              @update:modelValue="debouncedLoadEnfants"
+            />
+          </div>
+
+          <!-- Filtre dignitaire -->
+          <div class="w-full md:w-64">
+            <select
+              v-model="filters.dignitaire_id"
+              @change="loadEnfants"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent transition"
+            >
+              <option value="">Tous les dignitaires</option>
+              <option v-for="dig in dignitaires" :key="dig.id" :value="dig.id">
+                {{ dig.prenom }} {{ dig.nom }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Bouton Ajouter -->
+          <button
+            @click="openModal()"
+            class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Ajouter
+          </button>
+        </div>
       </div>
 
-      <!-- Filtres -->
-      <div class="mb-4 flex gap-4">
-        <input
-          v-model="filters.search"
-          @input="loadEnfants"
-          type="text"
-          placeholder="Rechercher un enfant..."
-          class="border rounded px-4 py-2 flex-1"
-        >
-        <select
-          v-model="filters.dignitaire_id"
-          @change="loadEnfants"
-          class="border rounded px-4 py-2"
-        >
-          <option value="">Tous les dignitaires</option>
-          <option v-for="dig in dignitaires" :key="dig.id" :value="dig.id">
-            {{ dig.prenom }} {{ dig.nom }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Loader -->
+      <!-- Loader modernisé -->
       <div v-if="loading" class="flex justify-center items-center py-20">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div class="relative">
+          <div class="animate-spin rounded-full h-16 w-16 border-4 border-gray-200"></div>
+          <div class="animate-spin rounded-full h-16 w-16 border-4 border-gabon-green-600 border-t-transparent absolute top-0 left-0"></div>
+        </div>
       </div>
 
       <!-- Erreur -->
-      <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-        {{ error }}
+      <div v-else-if="error" class="bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-lg shadow mb-4">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+          <span class="font-semibold">{{ error }}</span>
+        </div>
       </div>
 
-      <!-- Table -->
-      <div v-else class="overflow-x-auto bg-white rounded-lg shadow">
-        <table v-if="paginatedEnfants.length > 0" class="min-w-full text-sm text-gray-700">
-          <thead class="bg-gray-100 border-b">
-            <tr>
-              <th class="py-3 px-4 text-left">Nom</th>
-              <th class="py-3 px-4 text-left">Prénom</th>
-              <th class="py-3 px-4 text-left">Genre</th>
-              <th class="py-3 px-4 text-left">Naissance</th>
-              <th class="py-3 px-4 text-left">Lieu</th>
-              <th class="py-3 px-4 text-left">Dignitaire</th>
-              <th class="py-3 px-4 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-for="enfant in paginatedEnfants" :key="enfant.id" class="hover:bg-gray-50">
-              <td class="py-2 px-4">{{ enfant.nom }}</td>
-              <td class="py-2 px-4">{{ enfant.prenom }}</td>
-              <td class="py-2 px-4">{{ enfant.genre }}</td>
-              <td class="py-2 px-4">{{ formatDate(enfant.date_naissance) }}</td>
-              <td class="py-2 px-4">{{ enfant.lieu_naissance_nom || 'N/A' }}</td>
-              <td class="py-2 px-4">{{ enfant.dignitaire_nom_complet }}</td>
-              <td class="py-2 px-4 flex justify-center space-x-2">
-                <button
-                  @click="openDetailModal(enfant)"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition"
-                >
-                  Détails
-                </button>
-                <button
-                  @click="openModal(enfant)"
-                  class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition"
-                >
-                  Modifier
-                </button>
-                <button
-                  @click="deleteEnfant(enfant.id)"
-                  class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition"
-                >
-                  Supprimer
-                </button>
-              </td>
+      <!-- Table modernisée -->
+      <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div v-if="paginatedEnfants.length > 0" class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+              <tr>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nom</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Prénom</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Genre</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Naissance</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Lieu</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Dignitaire</th>
+                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="enfant in paginatedEnfants" :key="enfant.id" class="hover:bg-gabon-green-50 transition-colors duration-150">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="text-sm font-semibold text-gray-900">{{ enfant.nom }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {{ enfant.prenom }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span v-if="enfant.genre === 'M'" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gabon-blue-100 text-gabon-blue-800">
+                    Masculin
+                  </span>
+                  <span v-else class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                    Féminin
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {{ formatDate(enfant.date_naissance) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {{ enfant.lieu_naissance_nom || 'N/A' }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  {{ enfant.dignitaire_nom_complet }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <div class="flex items-center justify-center gap-2">
+                    <button
+                      @click="openDetailModal(enfant)"
+                      class="inline-flex items-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold px-3 py-2 rounded-lg transition-colors"
+                      title="Détails"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                      Détails
+                    </button>
+                    <button
+                      @click="openModal(enfant)"
+                      class="inline-flex items-center gap-1 bg-gabon-blue-50 hover:bg-gabon-blue-100 text-gabon-blue-700 font-semibold px-3 py-2 rounded-lg transition-colors"
+                      title="Modifier"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                      Modifier
+                    </button>
+                    <button
+                      @click="deleteEnfant(enfant.id)"
+                      class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors"
+                      title="Supprimer"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                      Supprimer
+                    </button>
+                  </div>
+                </td>
             </tr>
           </tbody>
         </table>
-        <p v-else class="text-center py-8 text-gray-500">Aucun enfant enregistré.</p>
+        </div>
+        
+        <!-- Message vide -->
+        <div v-else class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <p class="mt-4 text-gray-500 text-lg">Aucun enfant enregistré</p>
+        </div>
 
         <!-- Pagination -->
         <Pagination
@@ -101,114 +172,216 @@
         />
       </div>
     </main>
+    </div>
 
     <!-- Modal Ajout/Modification -->
     <div
       v-if="showModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       @click.self="closeModal"
     >
-      <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative animate-scale-in">
-        <h2 class="text-2xl font-bold mb-4" :class="selectedEnfant ? 'text-yellow-600' : 'text-green-700'">
-          {{ selectedEnfant ? 'Modifier' : 'Ajouter' }} un enfant
-        </h2>
-        <form @submit.prevent="saveEnfant" class="space-y-4">
-          <input
-            v-model="form.nom"
-            type="text"
-            placeholder="Nom"
-            required
-            class="w-full border rounded px-3 py-2"
-          >
-          <input
-            v-model="form.prenom"
-            type="text"
-            placeholder="Prénom"
-            required
-            class="w-full border rounded px-3 py-2"
-          >
-          <input
-            v-model="form.date_naissance"
-            type="date"
-            required
-            class="w-full border rounded px-3 py-2"
-          >
-          <select
-            v-model="form.lieu_naissance"
-            class="w-full border rounded px-3 py-2"
-          >
-            <option value="">Lieu de naissance</option>
-            <option v-for="ville in villes" :key="ville.id" :value="ville.id">
-              {{ ville.nom }}
-            </option>
-          </select>
-          <select
-            v-model="form.genre"
-            required
-            class="w-full border rounded px-3 py-2"
-          >
-            <option value="">Genre</option>
-            <option value="M">Masculin</option>
-            <option value="F">Féminin</option>
-          </select>
-          <select
-            v-model="form.dignitaire_id"
-            required
-            class="w-full border rounded px-3 py-2"
-          >
-            <option value="">Choisir un dignitaire</option>
-            <option v-for="dig in dignitaires" :key="dig.id" :value="dig.id">
-              {{ dig.prenom }} {{ dig.nom }}
-            </option>
-          </select>
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scale-in">
+        <!-- Header du modal -->
+        <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+          <h4 class="text-xl font-bold text-white flex items-center gap-2">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            {{ selectedEnfant ? 'Modifier' : 'Ajouter' }} un enfant
+          </h4>
+          <button @click="closeModal" class="text-white hover:text-gray-200 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
 
-          <div class="flex justify-end gap-3 mt-4">
+        <!-- Formulaire -->
+        <form @submit.prevent="saveEnfant" class="p-6">
+          <div class="space-y-4">
+            <!-- Dignitaire -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Dignitaire <span class="text-red-500">*</span>
+              </label>
+              <select
+                v-model="form.dignitaire_id"
+                required
+                class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition"
+              >
+                <option value="">-- Choisir un dignitaire --</option>
+                <option v-for="dig in dignitaires" :key="dig.id" :value="dig.id">
+                  {{ dig.prenom }} {{ dig.nom }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Nom et Prénom -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  Nom <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.nom"
+                  type="text"
+                  required
+                  class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition"
+                  placeholder="Nom de famille"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  Prénom <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.prenom"
+                  type="text"
+                  required
+                  class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition"
+                  placeholder="Prénom"
+                >
+              </div>
+            </div>
+
+            <!-- Genre -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Genre <span class="text-red-500">*</span>
+              </label>
+              <select
+                v-model="form.genre"
+                required
+                class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition"
+              >
+                <option value="">-- Sélectionner un genre --</option>
+                <option value="M">Masculin</option>
+                <option value="F">Féminin</option>
+              </select>
+            </div>
+
+            <!-- Date de naissance -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Date de naissance <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="form.date_naissance"
+                type="date"
+                required
+                class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition"
+              >
+            </div>
+
+            <!-- Lieu de naissance -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Lieu de naissance
+              </label>
+              <select
+                v-model="form.lieu_naissance"
+                class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition"
+              >
+                <option value="">-- Sélectionner une ville --</option>
+                <option v-for="ville in villes" :key="ville.id" :value="ville.id">
+                  {{ ville.nom }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Boutons d'action -->
+          <div class="flex gap-3 mt-6 pt-4 border-t">
             <button
               type="button"
               @click="closeModal"
-              class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded transition"
+              class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition"
             >
               Annuler
             </button>
             <button
               type="submit"
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition"
+              class="flex-1 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
             >
               {{ selectedEnfant ? 'Modifier' : 'Ajouter' }}
             </button>
           </div>
         </form>
-        <button
-          @click="closeModal"
-          class="absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl"
-        >
-          &times;
-        </button>
       </div>
     </div>
 
     <!-- Modal Détail -->
     <div
       v-if="showDetailModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       @click.self="closeDetailModal"
     >
-      <div class="bg-white rounded-xl shadow-lg w-full max-w-xl p-6 relative animate-fade-in">
-        <h2 class="text-2xl font-bold text-blue-700 mb-4">Détails de l'enfant</h2>
-        <div v-if="selectedDetail" class="space-y-3">
-          <p><strong>Nom complet :</strong> {{ selectedDetail.prenom }} {{ selectedDetail.nom }}</p>
-          <p><strong>Genre :</strong> {{ selectedDetail.genre === 'M' ? 'Masculin' : 'Féminin' }}</p>
-          <p><strong>Date de naissance :</strong> {{ formatDate(selectedDetail.date_naissance) }}</p>
-          <p><strong>Lieu de naissance :</strong> {{ selectedDetail.lieu_naissance_nom || 'N/A' }}</p>
-          <p><strong>Dignitaire :</strong> {{ selectedDetail.dignitaire_nom_complet }}</p>
-          <p v-if="selectedDetail.age"><strong>Âge :</strong> {{ selectedDetail.age }} ans</p>
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in">
+        <!-- Header du modal -->
+        <div class="bg-gradient-to-r from-gabon-blue-600 to-sky-600 px-6 py-4 flex items-center justify-between">
+          <h4 class="text-xl font-bold text-white flex items-center gap-2">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            Détails de l'enfant
+          </h4>
+          <button @click="closeDetailModal" class="text-white hover:text-gray-200 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
-        <button
-          @click="closeDetailModal"
-          class="absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl"
-        >
-          &times;
-        </button>
+
+        <!-- Contenu -->
+        <div v-if="selectedDetail" class="p-6">
+          <div class="space-y-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm font-semibold text-gray-500 mb-1">Nom complet</p>
+              <p class="text-lg font-bold text-gray-900">{{ selectedDetail.prenom }} {{ selectedDetail.nom }}</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Genre</p>
+                <div class="mt-2">
+                  <span v-if="selectedDetail.genre === 'M'" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gabon-blue-100 text-gabon-blue-800">
+                    Masculin
+                  </span>
+                  <span v-else class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-pink-100 text-pink-800">
+                    Féminin
+                  </span>
+                </div>
+              </div>
+
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Date de naissance</p>
+                <p class="text-gray-900">{{ formatDate(selectedDetail.date_naissance) }}</p>
+                <p v-if="selectedDetail.age" class="text-sm text-gray-600 mt-1">{{ selectedDetail.age }} ans</p>
+              </div>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm font-semibold text-gray-500 mb-1">Lieu de naissance</p>
+              <p class="text-gray-900">{{ selectedDetail.lieu_naissance_nom || 'N/A' }}</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm font-semibold text-gray-500 mb-1">Dignitaire</p>
+              <p class="text-lg text-gray-900">{{ selectedDetail.dignitaire_nom_complet }}</p>
+            </div>
+          </div>
+
+          <!-- Bouton fermer -->
+          <div class="mt-6 pt-4 border-t">
+            <button
+              @click="closeDetailModal"
+              class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </DashboardLayout>
@@ -222,6 +395,7 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const referentiels = useReferentiels()
+const { debounce } = useDebounce()
 
 const enfants = ref([])
 const dignitaires = ref([])
@@ -295,6 +469,9 @@ async function loadDignitaires() {
   }
 }
 
+// Version debouncée pour optimiser les requêtes AJAX
+const debouncedLoadEnfants = debounce(loadEnfants, 500)
+
 function openModal(enfant: any = null) {
   selectedEnfant.value = enfant
   if (enfant) {
@@ -349,16 +526,43 @@ async function saveEnfant() {
         }
       })
     }
+    
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'success',
+      title: 'Succès',
+      text: selectedEnfant.value ? 'Enfant modifié avec succès' : 'Enfant ajouté avec succès',
+      timer: 2000,
+      showConfirmButton: false
+    })
+    
     closeModal()
     loadEnfants()
   } catch (error) {
     console.error('Erreur sauvegarde:', error)
-    alert('Erreur lors de la sauvegarde')
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'error',
+      title: 'Erreur',
+      text: error.data?.message || 'Erreur lors de la sauvegarde'
+    })
   }
 }
 
 async function deleteEnfant(id: number) {
-  if (confirm('Supprimer cet enfant ?')) {
+  const { $swal } = useNuxtApp()
+  const result = await $swal.fire({
+    title: 'Êtes-vous sûr ?',
+    text: 'Cette action est irréversible',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#dc2626',
+    confirmButtonText: 'Oui, supprimer',
+    cancelButtonText: 'Annuler'
+  })
+  
+  if (result.isConfirmed) {
     try {
       await $fetch(`${config.public.apiBase}/enfants/${id}`, {
         method: 'DELETE',
@@ -366,10 +570,23 @@ async function deleteEnfant(id: number) {
           Authorization: `Bearer ${authStore.token}`
         }
       })
+      
+      $swal.fire({
+        icon: 'success',
+        title: 'Supprimé',
+        text: 'L\'enfant a été supprimé avec succès',
+        timer: 2000,
+        showConfirmButton: false
+      })
+      
       loadEnfants()
     } catch (error) {
       console.error('Erreur suppression:', error)
-      alert('Erreur lors de la suppression')
+      $swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Erreur lors de la suppression'
+      })
     }
   }
 }

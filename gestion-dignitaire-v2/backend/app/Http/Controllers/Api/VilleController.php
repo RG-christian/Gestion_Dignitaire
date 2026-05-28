@@ -11,18 +11,25 @@ class VilleController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = $request->get('per_page', 20); // Pagination côté serveur
+        $page = $request->get('page', 1);
+
         $query = DB::table('ville as v')
             ->select([
                 'v.*',
-                'p.nom as pays_nom'
+                'p.nom as pays_nom',
+                'p.code_iso as pays_code_iso',
+                'r.nom as region_nom'
             ])
-            ->leftJoin('pays as p', 'v.pays_id', '=', 'p.id');
+            ->leftJoin('pays as p', 'v.pays_id', '=', 'p.id')
+            ->leftJoin('region as r', 'v.region_id', '=', 'r.id');
 
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('v.nom', 'like', "%{$search}%")
-                  ->orWhere('p.nom', 'like', "%{$search}%");
+                  ->orWhere('p.nom', 'like', "%{$search}%")
+                  ->orWhere('r.nom', 'like', "%{$search}%");
             });
         }
 
@@ -30,9 +37,22 @@ class VilleController extends Controller
             $query->where('v.pays_id', $request->pays_id);
         }
 
-        $villes = $query->orderBy('v.nom')->get();
+        // Compter le total avant pagination
+        $total = $query->count();
 
-        return response()->json($villes);
+        // Appliquer la pagination
+        $villes = $query->orderBy('v.nom')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return response()->json([
+            'data' => $villes,
+            'total' => $total,
+            'per_page' => $perPage,
+            'current_page' => $page,
+            'last_page' => ceil($total / $perPage)
+        ]);
     }
 
     public function show(int $id): JsonResponse
@@ -40,9 +60,12 @@ class VilleController extends Controller
         $ville = DB::table('ville as v')
             ->select([
                 'v.*',
-                'p.nom as pays_nom'
+                'p.nom as pays_nom',
+                'p.code_iso as pays_code_iso',
+                'r.nom as region_nom'
             ])
             ->leftJoin('pays as p', 'v.pays_id', '=', 'p.id')
+            ->leftJoin('region as r', 'v.region_id', '=', 'r.id')
             ->where('v.id', $id)
             ->first();
 
@@ -58,10 +81,11 @@ class VilleController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'pays_id' => 'nullable|exists:pays,id',
+            'region_id' => 'nullable|exists:region,id',
         ]);
 
         $id = DB::table('ville')->insertGetId($validated);
-        
+
         return response()->json(['id' => $id, ...$validated], 201);
     }
 
@@ -70,10 +94,11 @@ class VilleController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'pays_id' => 'nullable|exists:pays,id',
+            'region_id' => 'nullable|exists:region,id',
         ]);
 
         DB::table('ville')->where('id', $id)->update($validated);
-        
+
         return response()->json(['id' => $id, ...$validated]);
     }
 
