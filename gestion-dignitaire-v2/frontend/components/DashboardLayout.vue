@@ -2,8 +2,8 @@
   <div class="min-h-screen bg-gray-100 transition-all duration-300">
     <!-- Header -->
     <header class="bg-white text-gray-800 h-16 flex items-center px-3 sm:px-4 shadow-lg fixed top-0 left-0 right-0 z-20">
-      <button @click="toggleSidebar" class="text-gray-800 focus:outline-none mr-3">
-        <i class="fas fa-bars text-lg transition duration-200"></i>
+      <button @click="toggleSidebarCollapse" class="text-gray-800 focus:outline-none mr-3 hover:bg-gray-100 p-2 rounded-lg transition">
+        <i :class="isSidebarCollapsed ? 'fas fa-bars' : 'fas fa-times'" class="text-lg transition duration-200"></i>
       </button>
       <div class="flex items-center space-x-2">
         <i class="fas fa-crown text-lg text-blue-500"></i>
@@ -12,22 +12,22 @@
         </NuxtLink>
       </div>
       <nav class="ml-auto flex items-center space-x-2">
-        <button @click="toggleTheme" class="text-gray-800 focus:outline-none transition duration-200">
+        <button @click="toggleTheme" class="text-gray-800 focus:outline-none transition duration-200 hover:bg-gray-100 p-2 rounded-lg">
           <i :class="isDark ? 'fas fa-sun' : 'fas fa-adjust'" class="text-lg"></i>
         </button>
         <div class="relative">
-          <button @click="toggleProfileMenu" class="text-gray-800 focus:outline-none transition duration-200">
+          <button @click="toggleProfileMenu" class="text-gray-800 focus:outline-none transition duration-200 hover:bg-gray-100 p-2 rounded-lg">
             <i class="fas fa-user-circle text-lg"></i>
           </button>
           <ul v-if="showProfileMenu" class="absolute right-0 top-full mt-2 bg-white shadow-lg rounded py-1 min-w-[10rem] z-30">
             <li>
               <a href="#" class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                Profil
+                <i class="fas fa-user mr-2"></i>Profil
               </a>
             </li>
             <li>
               <button @click="logout" class="w-full text-left block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                Déconnexion
+                <i class="fas fa-sign-out-alt mr-2"></i>Déconnexion
               </button>
             </li>
           </ul>
@@ -46,28 +46,42 @@
     <div class="flex pt-16">
       <!-- Sidebar -->
       <aside 
+        @mouseenter="handleMouseEnter"
+        @mouseleave="handleMouseLeave"
         :class="[
-          'bg-white text-gray-800 w-64 min-h-[calc(100vh-64px)] fixed top-16 left-0 shadow-md transition-all duration-300 z-10',
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          'bg-white text-gray-800 min-h-[calc(100vh-64px)] fixed top-16 left-0 shadow-md transition-all duration-300 z-10',
+          isSidebarCollapsed ? 'w-16' : 'w-72'
         ]"
       >
-        <div class="pt-6 px-3 w-full h-full flex flex-col">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-sm font-medium text-gray-800 px-2">Menu</h2>
-            <button @click="toggleSidebar" class="text-gray-800 focus:outline-none lg:hidden">
-              <i class="fas fa-times text-lg"></i>
+        <div class="pt-6 px-2 w-full h-full flex flex-col">
+          <!-- Header avec bouton toggle -->
+          <div class="flex justify-between items-center mb-6 px-2">
+            <h2 v-show="!isSidebarCollapsed" class="text-base font-semibold text-gray-800 transition-opacity duration-200">Menu Principal</h2>
+            <button 
+              @click="toggleSidebarCollapse" 
+              class="text-gray-800 focus:outline-none hover:bg-gray-100 p-2 rounded-lg transition ml-auto"
+              :title="isSidebarCollapsed ? 'Déplier le menu' : 'Replier le menu'"
+            >
+              <i :class="isSidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" class="text-sm"></i>
             </button>
           </div>
-          <div class="flex-1 overflow-y-auto sidebar">
-            <ul class="space-y-1">
+
+          <!-- Menu items -->
+          <div class="flex-1 overflow-visible">
+            <ul class="space-y-3">
               <!-- Tableau de Bord -->
               <li>
                 <NuxtLink
                   to="/"
-                  class="flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200"
+                  class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
+                  :title="isSidebarCollapsed ? 'Tableau de Bord' : ''"
                 >
-                  <i class="fas fa-tachometer-alt w-5 text-blue-500"></i>
-                  <span class="ml-2 text-sm">Tableau</span>
+                  <i class="fas fa-tachometer-alt w-6 text-lg text-blue-500"></i>
+                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium">Tableau de Bord</span>
+                  <!-- Tooltip pour mode réduit -->
+                  <div v-if="isSidebarCollapsed" class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    Tableau de Bord
+                  </div>
                 </NuxtLink>
               </li>
 
@@ -75,45 +89,94 @@
               <li v-for="fonction in fonctionsAvecSousfonctions" :key="fonction.id" class="relative">
                 <button
                   @click="toggleDropdown(fonction.fonction_name)"
-                  class="w-full flex items-center p-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition duration-200"
+                  class="w-full flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
+                  :title="isSidebarCollapsed ? fonction.fonction_name : ''"
                 >
-                  <i :class="['fas', getIcon(fonction.fonction_name), 'w-5', 'text-blue-500']"></i>
-                  <span class="ml-2 text-sm">{{ fonction.fonction_name }}</span>
-                  <i :class="openDropdown === fonction.fonction_name ? 'fa-chevron-down' : 'fa-chevron-right'" class="fas ml-auto text-xs"></i>
+                  <i :class="['fas', getIcon(fonction.fonction_name), 'w-6', 'text-lg', 'text-blue-500']"></i>
+                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium flex-1 text-left">{{ fonction.fonction_name }}</span>
+                  <i v-show="!isSidebarCollapsed" :class="openDropdown === fonction.fonction_name ? 'fa-chevron-down' : 'fa-chevron-right'" class="fas ml-auto text-sm"></i>
                 </button>
-                <ul v-show="openDropdown === fonction.fonction_name" class="dropdown-content bg-gray-50 pl-3 mt-1 space-y-1 rounded">
+
+                <!-- Sous-menu en mode étendu -->
+                <ul 
+                  v-show="openDropdown === fonction.fonction_name && !isSidebarCollapsed" 
+                  class="dropdown-content bg-gray-50 pl-3 mt-2 space-y-2 rounded overflow-hidden"
+                >
                   <li v-for="sf in getSousFonctions(fonction.id)" :key="sf.id">
                     <NuxtLink
                       :to="getRouteForSousfonction(sf.sousfonction_name)"
-                      class="block px-3 py-1.5 text-gray-600 hover:bg-blue-50 hover:text-blue-700 text-sm rounded"
+                      class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-sm rounded transition"
                     >
                       {{ sf.sousfonction_name }}
                     </NuxtLink>
                   </li>
                 </ul>
+
+                <!-- Menu flottant en mode réduit -->
+                <div 
+                  v-if="isSidebarCollapsed && openDropdown === fonction.fonction_name"
+                  class="fixed left-16 bg-white shadow-xl rounded-lg py-2 px-1 min-w-[200px] z-50 border border-gray-200"
+                  :style="{ top: getDropdownPosition(fonction.id) }"
+                >
+                  <div class="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-200 mb-1">
+                    {{ fonction.fonction_name }}
+                  </div>
+                  <NuxtLink
+                    v-for="sf in getSousFonctions(fonction.id)"
+                    :key="sf.id"
+                    :to="getRouteForSousfonction(sf.sousfonction_name)"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-sm rounded transition"
+                    @click="openDropdown = null"
+                  >
+                    {{ sf.sousfonction_name }}
+                  </NuxtLink>
+                </div>
               </li>
             </ul>
-            <div class="mt-auto pt-4 border-t border-gray-200">
+
+            <!-- Footer info utilisateur -->
+            <div v-show="!isSidebarCollapsed" class="mt-auto pt-6 border-t border-gray-200">
               <p class="text-gray-500 text-xs">
                 Vous êtes connecté en tant que <b>{{ authStore.user?.role_name || 'Administrateur' }}</b>.
               </p>
-              <p class="font-medium text-gray-800 text-sm">
+              <p class="font-medium text-gray-800 text-sm mt-2">
                 Bienvenue {{ authStore.user?.nom_complet || 'Admin' }} !
               </p>
               <button
                 @click="logout"
-                class="mt-2 inline-block px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 text-sm"
+                class="mt-3 w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm font-medium"
               >
-                Déconnexion
+                <i class="fas fa-sign-out-alt mr-1"></i>Déconnexion
+              </button>
+            </div>
+
+            <!-- Footer mode réduit -->
+            <div v-show="isSidebarCollapsed" class="mt-auto pt-4 border-t border-gray-200 flex justify-center">
+              <button
+                @click="logout"
+                class="p-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 group relative"
+                title="Déconnexion"
+              >
+                <i class="fas fa-sign-out-alt"></i>
+                <div class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                  Déconnexion
+                </div>
               </button>
             </div>
           </div>
         </div>
       </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto bg-gray-100 transition-all duration-300 lg:ml-64 lg:pl-6">
-        <slot />
+      <!-- Main Content avec marge dynamique et pleine largeur -->
+      <main 
+        :class="[
+          'flex-1 overflow-y-auto bg-gray-100 transition-all duration-300',
+          isSidebarCollapsed ? 'ml-16' : 'ml-72'
+        ]"
+      >
+        <div class="w-full">
+          <slot />
+        </div>
       </main>
     </div>
   </div>
@@ -123,10 +186,11 @@
 import { ref, computed, onMounted } from 'vue'
 
 const authStore = useAuthStore()
-const isSidebarOpen = ref(false)
+const isSidebarCollapsed = ref(false)
 const isDark = ref(false)
 const showProfileMenu = ref(false)
 const openDropdown = ref<string | null>(null)
+const hoverTimeout = ref<any>(null)
 
 // Récupérer les fonctions et sous-fonctions depuis le store
 const fonctions = computed(() => authStore.user?.fonctions || [])
@@ -171,7 +235,7 @@ function getRouteForSousfonction(name: string): string {
     'Diplome': '/diplomes',
     'Expérience': '/experiences',
     'Experience': '/experiences',
-    'Langues': '/langues-parlees',
+    'Langues': '/langues',
     'Pays': '/pays',
     'Ville': '/villes',
     'Nomination': '/nominations',
@@ -184,8 +248,43 @@ function getRouteForSousfonction(name: string): string {
   return routes[name] || `/${name.toLowerCase()}`
 }
 
-function toggleSidebar() {
-  isSidebarOpen.value = !isSidebarOpen.value
+function getDropdownPosition(fonctionId: number): string {
+  // Calculer la position du menu flottant
+  const index = fonctionsAvecSousfonctions.value.findIndex((f: any) => f.id === fonctionId)
+  const topOffset = 64 + 80 + (index * 40) // header + padding + index * hauteur item
+  return `${topOffset}px`
+}
+
+function toggleSidebarCollapse() {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  // Fermer tous les dropdowns quand on réduit la sidebar
+  if (isSidebarCollapsed.value) {
+    openDropdown.value = null
+  }
+}
+
+function handleMouseEnter() {
+  // Déplier automatiquement au survol après 200ms
+  if (isSidebarCollapsed.value) {
+    hoverTimeout.value = setTimeout(() => {
+      isSidebarCollapsed.value = false
+    }, 200)
+  }
+}
+
+function handleMouseLeave() {
+  // Annuler le timer si la souris quitte avant 200ms
+  if (hoverTimeout.value) {
+    clearTimeout(hoverTimeout.value)
+    hoverTimeout.value = null
+  }
+  // Replier automatiquement quand la souris quitte après 500ms
+  hoverTimeout.value = setTimeout(() => {
+    if (!isSidebarCollapsed.value) {
+      isSidebarCollapsed.value = true
+      openDropdown.value = null
+    }
+  }, 500)
 }
 
 function toggleTheme() {
@@ -227,28 +326,68 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Pas de scroll - tout visible */
 .sidebar {
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #6b7280 #ffffff;
+  overflow: visible !important;
 }
 
-.sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-  background: #ffffff;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background-color: #6b7280;
-  border-radius: 3px;
-  border: 2px solid #ffffff;
+/* Pas de scroll en mode réduit */
+aside:has(.w-16) .sidebar {
+  overflow: visible !important;
 }
 
 .dropdown-content {
   overflow: hidden;
   transition: all 0.3s ease-in-out;
+}
+
+/* Animation pour les tooltips */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+/* Transition fluide pour la sidebar */
+aside {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Transition fluide pour le contenu principal */
+main {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Menu flottant en mode réduit */
+.fixed.left-16 {
+  animation: slideInRight 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Amélioration des boutons de menu */
+aside button,
+aside a {
+  position: relative;
+  overflow: visible;
+}
+
+/* Effet hover professionnel */
+aside button:hover,
+aside a:hover {
+  transform: translateX(2px);
+}
+
+/* Icônes centrées en mode réduit */
+aside.w-16 button,
+aside.w-16 a {
+  justify-content: center;
 }
 </style>

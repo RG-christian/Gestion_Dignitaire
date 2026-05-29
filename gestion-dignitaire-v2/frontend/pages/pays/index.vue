@@ -15,28 +15,76 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
-      <!-- Barre de recherche et bouton d'ajout -->
-      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
-        <div class="flex flex-col md:flex-row gap-4 items-center">
-          <!-- Recherche -->
-          <div class="flex-1 w-full">
-            <SearchInput
+      <!-- Barre de recherche et filtres -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <!-- Recherche principale -->
+        <div class="flex flex-col md:flex-row gap-4 mb-4">
+          <div class="flex-1">
+            <input
               v-model="filters.search"
-              placeholder="Rechercher (nom, code ISO, continent)..."
-              @update:modelValue="debouncedLoadPays"
-            />
+              @input="debouncedLoadPays"
+              type="text"
+              placeholder="Rechercher par nom, code ISO, continent..."
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
           </div>
-          
-          <!-- Bouton Ajouter -->
           <button
             @click="openModal()"
-            class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
+            class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg whitespace-nowrap"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Ajouter un pays
+            + Ajouter un pays
           </button>
+        </div>
+
+        <!-- Recherche alphabétique améliorée -->
+        <div class="mb-4">
+          <div class="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+            </svg>
+            Recherche par lettre :
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              @click="filters.letter = ''; loadPays()"
+              :class="filters.letter === '' ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'"
+              class="px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 transform hover:scale-105"
+            >
+              Tous
+            </button>
+            <button
+              v-for="letter in alphabet"
+              :key="letter"
+              @click="filters.letter = letter; loadPays()"
+              :class="filters.letter === letter ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'"
+              class="w-10 h-10 rounded-lg font-bold text-base transition-all duration-200 transform hover:scale-110 hover:shadow-md flex items-center justify-center"
+            >
+              {{ letter }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtres avancés -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <select v-model="filters.continent" @change="loadPays" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Tous les continents</option>
+            <option value="Afrique">Afrique</option>
+            <option value="Amériques">Amériques</option>
+            <option value="Asie">Asie</option>
+            <option value="Europe">Europe</option>
+            <option value="Océanie">Océanie</option>
+          </select>
+          
+          <select v-model="filters.region_id" @change="loadPays" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Toutes les régions</option>
+            <option v-for="region in regions" :key="region.id" :value="region.id">
+              {{ region.nom }}
+            </option>
+          </select>
+
+          <div class="text-sm text-gray-600 flex items-center justify-center bg-gray-50 rounded-lg px-3 py-2">
+            {{ filteredPays.length }} pays trouvé(s)
+          </div>
         </div>
       </div>
 
@@ -48,71 +96,86 @@
         </div>
       </div>
 
-      <!-- Tableau moderne -->
+      <!-- Tableau moderne enrichi -->
       <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div v-if="paginatedPays.length > 0" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+            <thead class="bg-gradient-to-r from-green-600 to-green-700 text-white">
               <tr>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Code ISO</th>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Indicatif</th>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Continent</th>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Pays</th>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Drapeau</th>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Région</th>
-                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Drapeau</th>
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Pays</th>
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Code ISO</th>
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Indicatif</th>
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Continent</th>
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Région</th>
+                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="p in paginatedPays" :key="p.id" class="hover:bg-gabon-green-50 transition-colors duration-150">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="font-mono text-sm font-semibold text-gray-900">{{ p.code_iso || 'N/A' }}</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="text-sm text-gray-700">{{ p.indicatif || 'N/A' }}</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gabon-blue-100 text-gabon-blue-800">
-                    {{ p.continent || 'N/A' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="text-sm font-semibold text-gray-900">{{ p.nom }}</span>
-                </td>
+              <tr v-for="p in paginatedPays" :key="p.id" class="hover:bg-green-50 transition-colors duration-150">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <img 
                     v-if="p.code_iso" 
                     :src="`https://flagcdn.com/w40/${p.code_iso.toLowerCase()}.png`" 
                     :alt="`${p.nom} flag`"
-                    class="inline-block h-6 rounded shadow-sm"
+                    class="inline-block h-8 rounded shadow-md border border-gray-200"
                     @error="$event.target.style.display='none'"
                   >
                   <span v-else class="text-gray-400 text-sm">N/A</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="text-sm text-gray-700">{{ p.region_nom || 'N/A' }}</span>
+                  <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-sm font-bold text-gray-900">{{ p.nom }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="font-mono text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">{{ p.code_iso || 'N/A' }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-1 text-sm text-gray-700">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                    </svg>
+                    {{ p.indicatif || 'N/A' }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    {{ p.continent || 'N/A' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div v-if="p.region_nom" class="flex items-center gap-1 text-sm text-gray-700">
+                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ p.region_nom }}
+                  </div>
+                  <span v-else class="text-sm text-gray-400">—</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                   <div class="flex items-center justify-center gap-2">
                     <button
                       @click="openModal(p)"
-                      class="inline-flex items-center gap-1 bg-gabon-blue-50 hover:bg-gabon-blue-100 text-gabon-blue-700 font-semibold px-3 py-2 rounded-lg transition-colors"
+                      class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow transition-all"
                       title="Modifier"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                       </svg>
-                      Modifier
                     </button>
                     <button
                       @click="deletePays(p.id)"
-                      class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors"
+                      class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow transition-all"
                       title="Supprimer"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                       </svg>
-                      Supprimer
                     </button>
                   </div>
                 </td>
@@ -131,12 +194,12 @@
 
         <!-- Pagination -->
         <Pagination
-          v-if="pays.length > 0"
+          v-if="filteredPays.length > 0"
           :current-page="currentPage"
           :total-pages="totalPages"
           :start-index="startIndex"
           :end-index="endIndex"
-          :total="pays.length"
+          :total="filteredPays.length"
           @update:current-page="currentPage = $event"
         />
       </div>
@@ -457,6 +520,9 @@ const selectedPays = ref(null)
 const currentPage = ref(1)
 const itemsPerPage = 10
 
+// Alphabet pour la recherche par lettre
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+
 const form = ref({
   nom: '',
   code_iso: '',
@@ -466,7 +532,10 @@ const form = ref({
 })
 
 const filters = ref({
-  search: ''
+  search: '',
+  letter: '',
+  continent: '',
+  region_id: ''
 })
 
 // Auto-complétion avec API REST Countries
@@ -493,16 +562,41 @@ const continentMapping = {
   'Oceania': 'Océanie'
 }
 
+// Pays filtrés
+const filteredPays = computed(() => {
+  let result = pays.value
+
+  // Filtre par lettre
+  if (filters.value.letter) {
+    result = result.filter(p => p.nom.toUpperCase().startsWith(filters.value.letter))
+  }
+
+  // Filtre par continent
+  if (filters.value.continent) {
+    result = result.filter(p => p.continent === filters.value.continent)
+  }
+
+  // Filtre par région
+  if (filters.value.region_id) {
+    result = result.filter(p => p.region_id == filters.value.region_id)
+  }
+
+  // Tri alphabétique
+  result.sort((a, b) => a.nom.localeCompare(b.nom))
+
+  return result
+})
+
 // Pagination
 const paginatedPays = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
-  return pays.value.slice(start, end)
+  return filteredPays.value.slice(start, end)
 })
 
-const totalPages = computed(() => Math.ceil(pays.value.length / itemsPerPage))
+const totalPages = computed(() => Math.ceil(filteredPays.value.length / itemsPerPage))
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage + 1)
-const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, pays.value.length))
+const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, filteredPays.value.length))
 
 // Charger les pays
 async function loadPays() {

@@ -10,7 +10,7 @@
           </svg>
           <h1 class="text-3xl font-bold text-white drop-shadow-lg">Gestion des Dignitaires</h1>
         </div>
-        <p class="text-white text-sm opacity-95 drop-shadow">Gérer les dignitaires et leurs informations</p>
+        <p class="text-white text-sm opacity-95 drop-shadow">{{ dignitaires.length }} dignitaire(s) trouvé(s)</p>
       </div>
     </header>
 
@@ -79,101 +79,181 @@
         </div>
       </div>
 
-      <!-- Boutons Mode d'affichage -->
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-3xl font-bold">Gestion des Dignitaires</h2>
-        <div class="flex gap-2">
+      <!-- Barre de recherche et filtres -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <!-- Recherche principale -->
+        <div class="flex flex-col md:flex-row gap-4 mb-4">
+          <div class="flex-1">
+            <input
+              v-model="filters.search"
+              @input="loadDignitaires"
+              type="text"
+              placeholder="Rechercher par nom, prénom, matricule..."
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+          </div>
           <button
-            @click="viewMode = 'grille'"
-            :class="viewMode === 'grille' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-3 py-1 rounded flex items-center gap-1"
+            @click="openModal()"
+            class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg whitespace-nowrap"
           >
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z"/>
-            </svg>
-            Grille
-          </button>
-          <button
-            @click="viewMode = 'liste'"
-            :class="viewMode === 'liste' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
-            class="px-3 py-1 rounded flex items-center gap-1"
-          >
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
-            </svg>
-            Liste
+            + Ajouter un dignitaire
           </button>
         </div>
-      </div>
 
-      <!-- Bouton d'ajout -->
-      <button
-        @click="openModal()"
-        class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded mb-6"
-      >
-        Ajouter un dignitaire
-      </button>
+        <!-- Recherche alphabétique améliorée -->
+        <div class="mb-4">
+          <div class="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+            </svg>
+            Recherche par lettre :
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              @click="filters.letter = ''; loadDignitaires()"
+              :class="filters.letter === '' ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'"
+              class="px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 transform hover:scale-105"
+            >
+              Tous
+            </button>
+            <button
+              v-for="letter in alphabet"
+              :key="letter"
+              @click="filters.letter = letter; loadDignitaires()"
+              :class="filters.letter === letter ? 'bg-gradient-to-br from-green-600 to-green-700 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-green-50 border border-gray-200'"
+              class="w-10 h-10 rounded-lg font-bold text-base transition-all duration-200 transform hover:scale-110 hover:shadow-md flex items-center justify-center"
+            >
+              {{ letter }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtres avancés -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <select v-model="filters.genre" @change="loadDignitaires" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Tous les genres</option>
+            <option value="Homme">Homme</option>
+            <option value="Femme">Femme</option>
+          </select>
+          
+          <select v-model="filters.ville_id" @change="loadDignitaires" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Toutes les villes</option>
+            <option v-for="ville in villes" :key="ville.id" :value="ville.id">
+              {{ ville.nom }}
+            </option>
+          </select>
+          
+          <select v-model="filters.entite_id" @change="loadDignitaires" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Toutes les entités</option>
+            <option v-for="entite in entites" :key="entite.id" :value="entite.id">
+              {{ entite.nom }}
+            </option>
+          </select>
+
+          <div class="flex gap-2">
+            <button
+              @click="viewMode = 'grille'"
+              :class="viewMode === 'grille' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="flex-1 px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-sm"
+            >
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z"/>
+              </svg>
+              Grille
+            </button>
+            <button
+              @click="viewMode = 'liste'"
+              :class="viewMode === 'liste' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="flex-1 px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-sm"
+            >
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+              </svg>
+              Liste
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- MODE GRILLE -->
       <div v-if="loading" class="flex justify-center items-center py-20">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
-      <div v-else-if="viewMode === 'grille'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full">
-        <div v-for="d in dignitaires" :key="d.id" class="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
-          <div class="relative group w-full flex flex-col items-center">
+      <div v-else-if="viewMode === 'grille'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
+        <div v-if="dignitaires.length === 0" class="col-span-full text-center py-12 text-gray-500">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3h-1m-2.5-4a4 4 0 11-8 0 4 4 0 018 0zm-7.5 8h-5v-2a3 3 0 013-3h1"/>
+          </svg>
+          <p class="text-lg font-medium">Aucun dignitaire trouvé</p>
+        </div>
+        <div v-for="d in dignitaires" :key="d.id" class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-5 flex flex-col items-center group">
+          <div class="relative w-full flex flex-col items-center">
+            <!-- Photo -->
             <img
               :src="d.photo ? `/uploads/photos/${d.photo}` : '/default-avatar.svg'"
-              :alt="`Photo de ${d.prenom}`"
-              class="w-24 h-24 rounded-full object-cover border-4 border-green-200 shadow mb-2"
+              :alt="`Photo de ${d.prenom} ${d.nom}`"
+              class="w-28 h-28 rounded-full object-cover border-4 border-green-100 shadow-md mb-3"
               @error="(e) => (e.target as HTMLImageElement).src = '/default-avatar.svg'"
             >
-            <h4 class="text-base font-semibold mb-0.5">{{ d.prenom }} {{ d.nom }}</h4>
             
-            <!-- Postes -->
-            <div v-if="d.postes && d.postes.length > 0" class="mt-1 mb-1 text-center">
-              <div v-for="poste in d.postes" :key="poste.id" class="mb-2">
-                <div class="font-semibold text-green-700 text-sm flex items-center gap-1 justify-center">
-                  <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M12 7v4m0 0v4m0-4h4m-4 0H8m12 0a2 2 0 002-2V7a2 2 0 00-2-2h-2.586A2 2 0 0015 3.586L13.414 2H10.586L9 3.586A2 2 0 007.586 5H5a2 2 0 00-2 2v2a2 2 0 002 2h16z"/>
-                  </svg>
-                  {{ poste.intitule }}
-                </div>
-                <div class="text-gray-400 text-xs flex items-center gap-1 justify-center">
-                  <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M8 7V3m8 4V3m-9 8h10m-4 4h4m-4 4h4m1 1a2 2 0 002-2V7a2 2 0 00-2-2h-1.5"/>
-                  </svg>
-                  {{ formatDateRange(poste.date_debut, poste.date_fin) }}
-                </div>
+            <!-- Nom complet -->
+            <h4 class="text-lg font-bold text-gray-800 text-center mb-1">
+              {{ d.prenom }} {{ d.nom }}
+            </h4>
+            
+            <!-- Poste actuel avec année -->
+            <div v-if="d.poste_actuel" class="text-center mb-2 w-full px-2">
+              <div class="text-sm font-medium text-green-700 flex items-center justify-center gap-1">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                {{ d.poste_actuel }}
               </div>
+              <div v-if="d.poste_annee" class="text-xs text-gray-500 mt-0.5">
+                {{ d.poste_annee }}
+              </div>
+            </div>
+            <div v-else class="text-center mb-2">
+              <div class="text-sm text-gray-400 italic">Aucun poste actuel</div>
+            </div>
+
+            <!-- Ville d'affectation -->
+            <div v-if="d.ville_poste" class="text-xs text-gray-600 flex items-center gap-1 mb-2">
+              <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              {{ d.ville_poste }}
             </div>
 
             <!-- Actions flottantes au hover -->
-            <div class="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition">
+            <div class="absolute top-0 right-0 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <NuxtLink
                 :to="`/dignitaires/${d.id}`"
-                class="bg-sky-100 hover:bg-sky-200 text-sky-800 p-1.5 rounded-full shadow"
-                title="Voir"
+                class="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-full shadow-lg"
+                title="Voir les détails"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm-9 0a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
               </NuxtLink>
               <button
                 @click="openModal(d)"
-                class="bg-blue-100 hover:bg-blue-200 text-blue-800 p-1.5 rounded-full shadow"
+                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg"
                 title="Modifier"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M15.232 5.232l3.536 3.536M9 13l6 6M9 13l-3-3a2 2 0 112.828-2.828l3 3z"/>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                 </svg>
               </button>
               <button
                 @click="deleteDignitaire(d.id)"
-                class="bg-red-100 hover:bg-red-200 text-red-700 p-1.5 rounded-full shadow"
+                class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg"
                 title="Supprimer"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
               </button>
             </div>
@@ -186,160 +266,365 @@
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
       <div v-else>
-        <!-- Header avec recherche -->
-        <header class="bg-green-600 text-white p-4 shadow-md rounded-t-lg mb-4">
-          <div class="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <svg class="w-7 h-7 text-white mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                <path d="M8 12l2 2 4-4" stroke="white" stroke-width="2" fill="none"/>
-              </svg>
-              Gestion des Dignitaires
-            </h1>
-            <form @submit.prevent="loadDignitaires" class="flex items-center w-full sm:w-auto gap-0.5">
-              <input
-                v-model="filters.search"
-                type="text"
-                placeholder="Rechercher dignitaire..."
-                class="border-none rounded-l-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:outline-none w-52 sm:w-64"
-              >
-              <button type="submit" class="bg-yellow-400 hover:bg-yellow-500 text-green-900 px-4 py-2 rounded-r-lg font-semibold shadow">
-                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              </button>
-            </form>
-          </div>
-        </header>
+        <div v-if="dignitaires.length === 0" class="text-center py-12 text-gray-500 bg-white rounded-lg">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3h-1m-2.5-4a4 4 0 11-8 0 4 4 0 018 0zm-7.5 8h-5v-2a3 3 0 013-3h1"/>
+          </svg>
+          <p class="text-lg font-medium">Aucun dignitaire trouvé</p>
+        </div>
 
-        <!-- Filtres -->
-        <form @submit.prevent="loadDignitaires" class="bg-white p-4 mb-6 rounded-lg shadow-md">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Table liste améliorée -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-green-600 to-green-700 text-white">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Photo</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Identité</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Poste actuel</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Période</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Ville</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Entité</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Genre</th>
+                <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="d in dignitaires" :key="d.id" class="hover:bg-green-50 transition-colors">
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <img
+                    :src="d.photo ? `/uploads/photos/${d.photo}` : '/default-avatar.svg'"
+                    :alt="`Photo de ${d.prenom} ${d.nom}`"
+                    class="w-14 h-14 rounded-full object-cover border-2 border-green-200 shadow-sm"
+                    @error="(e) => (e.target as HTMLImageElement).src = '/default-avatar.svg'"
+                  >
+                </td>
+                <td class="px-4 py-3">
+                  <div class="font-bold text-gray-900">{{ d.prenom }} {{ d.nom }}</div>
+                  <div class="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                    </svg>
+                    {{ d.matricule }}
+                  </div>
+                  <div v-if="d.lieu_naissance_nom" class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Né(e) à {{ d.lieu_naissance_nom }}
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div v-if="d.poste_actuel" class="text-sm">
+                    <div class="font-semibold text-green-700 flex items-center gap-1">
+                      <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      </svg>
+                      {{ d.poste_actuel }}
+                    </div>
+                  </div>
+                  <div v-else class="text-sm text-gray-400 italic flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                    </svg>
+                    Aucun poste
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div v-if="d.poste_annee" class="text-sm text-gray-700 flex items-center gap-1">
+                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    {{ d.poste_annee }}
+                  </div>
+                  <div v-else class="text-sm text-gray-400">—</div>
+                </td>
+                <td class="px-4 py-3">
+                  <div v-if="d.ville_poste" class="text-sm text-gray-700 flex items-center gap-1">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ d.ville_poste }}
+                  </div>
+                  <div v-else class="text-sm text-gray-400">—</div>
+                </td>
+                <td class="px-4 py-3">
+                  <div v-if="d.nom_entite" class="text-sm text-gray-700">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                      {{ d.nom_entite }}
+                    </span>
+                  </div>
+                  <div v-else class="text-sm text-gray-400">—</div>
+                </td>
+                <td class="px-4 py-3">
+                  <span v-if="d.genre === 'Homme'" class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Homme
+                  </span>
+                  <span v-else-if="d.genre === 'Femme'" class="bg-pink-100 text-pink-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Femme
+                  </span>
+                  <span v-else class="text-sm text-gray-400">—</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-center">
+                  <div class="flex items-center justify-center gap-2">
+                    <NuxtLink
+                      :to="`/dignitaires/${d.id}`"
+                      class="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-lg shadow transition-all"
+                      title="Voir les détails"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                    </NuxtLink>
+                    <button
+                      @click="openModal(d)"
+                      class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow transition-all"
+                      title="Modifier"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
+                    <button
+                      @click="deleteDignitaire(d.id)"
+                      class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow transition-all"
+                      title="Supprimer"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <!-- Modal Ajout/Modification améliorée -->
+    <div v-if="showModal" class="fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" @click.self="closeModal">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+        <!-- Header de la modal -->
+        <div class="sticky top-0 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-t-2xl flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            <h3 class="text-xl font-bold">{{ selectedDignitaire ? 'Modifier' : 'Ajouter' }} un dignitaire</h3>
+          </div>
+          <button 
+            @click="closeModal" 
+            class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Corps de la modal -->
+        <form @submit.prevent="saveDignitaire" class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- NIP -->
             <div>
-              <label class="block text-sm font-medium text-gray-700">Ville</label>
-              <select v-model="filters.ville_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
-                <option value="">Toutes les villes</option>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                  </svg>
+                  NIP
+                </span>
+              </label>
+              <input 
+                v-model="form.nip" 
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                placeholder="Numéro d'identification"
+              >
+            </div>
+
+            <!-- Matricule -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                  </svg>
+                  Matricule <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <input 
+                v-model="form.matricule" 
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                placeholder="Matricule"
+                required
+              >
+            </div>
+
+            <!-- Nom -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                  Nom <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <input 
+                v-model="form.nom" 
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                placeholder="Nom de famille"
+                required
+              >
+            </div>
+
+            <!-- Prénom -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                  Prénom <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <input 
+                v-model="form.prenom" 
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                placeholder="Prénom"
+                required
+              >
+            </div>
+
+            <!-- Date de naissance -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  Date de naissance <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <input 
+                v-model="form.date_naissance" 
+                type="date"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                required
+              >
+            </div>
+
+            <!-- Lieu de naissance -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  Lieu de naissance <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <select 
+                v-model="form.lieu_naissance" 
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                required
+              >
+                <option value="">Sélectionner une ville</option>
                 <option v-for="ville in villes" :key="ville.id" :value="ville.id">
                   {{ ville.nom }}
                 </option>
               </select>
             </div>
+
+            <!-- Genre -->
             <div>
-              <label class="block text-sm font-medium text-gray-700">Entité</label>
-              <select v-model="filters.entite_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
-                <option value="">Toutes les entités</option>
-                <option v-for="entite in entites" :key="entite.id" :value="entite.id">
-                  {{ entite.nom }}
-                </option>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                  </svg>
+                  Genre <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <select 
+                v-model="form.genre" 
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                required
+              >
+                <option value="">Sélectionner le genre</option>
+                <option value="Homme">Homme</option>
+                <option value="Femme">Femme</option>
               </select>
             </div>
-            <div class="flex items-end">
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                Filtrer
-              </button>
+
+            <!-- État civil -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  État civil <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <select 
+                v-model="form.etat_civil" 
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                required
+              >
+                <option value="">Sélectionner l'état civil</option>
+                <option value="Célibataire">Célibataire</option>
+                <option value="Marié(e)">Marié(e)</option>
+                <option value="Divorcé(e)">Divorcé(e)</option>
+                <option value="Veuf(ve)">Veuf(ve)</option>
+              </select>
+            </div>
+
+            <!-- Photo -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  Nom du fichier photo
+                </span>
+              </label>
+              <input 
+                v-model="form.photo" 
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                placeholder="exemple: photo.jpg"
+              >
+              <p class="text-xs text-gray-500 mt-1">Le fichier doit être uploadé dans /uploads/photos/</p>
             </div>
           </div>
-        </form>
 
-        <!-- Cartes liste -->
-        <main class="container mx-auto p-6">
-          <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            <div v-if="dignitaires.length === 0" class="col-span-full text-center py-6 text-gray-500">
-              Aucun dignitaire trouvé.
-            </div>
-            <div
-              v-for="dignitaire in dignitaires"
-              :key="dignitaire.id"
-              class="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 relative group"
+          <!-- Boutons d'action -->
+          <div class="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+            <button 
+              type="button"
+              @click="closeModal"
+              class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition-all"
             >
-              <h3 class="text-lg font-bold text-green-800 mb-1">
-                {{ dignitaire.prenom }} {{ dignitaire.nom }}
-              </h3>
-              <p class="text-sm text-gray-600 mb-1">
-                <span class="font-medium">Lieu de naissance :</span>
-                {{ dignitaire.lieu_naissance_nom || 'N/A' }}
-              </p>
-              <p class="text-sm text-gray-600 mb-1">
-                <span class="font-medium">Ville d'affectation :</span>
-                {{ dignitaire.ville_poste || 'Aucune' }}
-              </p>
-              <p class="text-sm text-gray-600 mb-1">
-                <span class="font-medium">Poste actuel :</span>
-                {{ dignitaire.poste_actuel || 'Aucun poste actuel' }}
-              </p>
-              <p class="text-sm text-gray-600 mb-1">
-                <span class="font-medium">Entité :</span>
-                {{ dignitaire.nom_entite || 'Aucune entité actuelle' }}
-              </p>
-
-              <!-- Actions flottantes -->
-              <div class="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition">
-                <NuxtLink
-                  :to="`/dignitaires/${dignitaire.id}`"
-                  class="bg-sky-100 hover:bg-sky-200 text-sky-800 p-1.5 rounded-full shadow"
-                  title="Voir"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm-9 0a9 9 0 1118 0 9 9 0 01-18 0z"/>
-                  </svg>
-                </NuxtLink>
-                <button
-                  @click="openModal(dignitaire)"
-                  class="bg-blue-100 hover:bg-blue-200 text-blue-800 p-1.5 rounded-full shadow"
-                  title="Modifier"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M15.232 5.232l3.536 3.536M9 13l6 6M9 13l-3-3a2 2 0 112.828-2.828l3 3z"/>
-                  </svg>
-                </button>
-                <button
-                  @click="deleteDignitaire(dignitaire.id)"
-                  class="bg-red-100 hover:bg-red-200 text-red-700 p-1.5 rounded-full shadow"
-                  title="Supprimer"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
+              Annuler
+            </button>
+            <button 
+              type="submit"
+              class="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all transform hover:scale-105"
+            >
+              {{ selectedDignitaire ? '✓ Modifier' : '+ Enregistrer' }}
+            </button>
           </div>
-        </main>
-      </div>
-    </section>
-    </div>
-
-    <!-- Modal Ajout/Modification -->
-    <div v-if="showModal" class="fixed z-50 inset-0 bg-black bg-opacity-30 flex items-center justify-center" @click.self="closeModal">
-      <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
-        <button class="absolute right-4 top-4 text-gray-400 hover:text-gray-600 text-2xl" @click="closeModal">&times;</button>
-        <h4 class="text-lg font-bold mb-4">{{ selectedDignitaire ? 'Modifier' : 'Ajouter' }} un dignitaire</h4>
-        <form @submit.prevent="saveDignitaire" class="flex flex-col gap-2">
-          <input v-model="form.nip" class="border rounded px-2 py-1" placeholder="NIP" required>
-          <input v-model="form.matricule" class="border rounded px-2 py-1" placeholder="Matricule" required>
-          <input v-model="form.nom" class="border rounded px-2 py-1" placeholder="Nom" required>
-          <input v-model="form.prenom" class="border rounded px-2 py-1" placeholder="Prénom" required>
-          <input v-model="form.date_naissance" class="border rounded px-2 py-1" type="date" required>
-          
-          <!-- Select pour lieu de naissance -->
-          <select v-model="form.lieu_naissance" class="border rounded px-2 py-1" required>
-            <option value="">Sélectionner le lieu de naissance</option>
-            <option v-for="ville in villes" :key="ville.id" :value="ville.id">
-              {{ ville.nom }}
-            </option>
-          </select>
-          
-          <select v-model="form.genre" class="border rounded px-2 py-1" required>
-            <option value="">Genre</option>
-            <option value="Homme">Homme</option>
-            <option value="Femme">Femme</option>
-          </select>
-          <input v-model="form.etat_civil" class="border rounded px-2 py-1" placeholder="État civil" required>
-          <input v-model="form.photo" class="border rounded px-2 py-1" placeholder="Nom du fichier photo">
-          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mt-2">
-            {{ selectedDignitaire ? 'Modifier' : 'Enregistrer' }}
-          </button>
         </form>
       </div>
     </div>
@@ -357,8 +642,13 @@ const showModal = ref(false)
 const selectedDignitaire = ref(null)
 const viewMode = ref('grille')
 
+// Alphabet pour la recherche par lettre
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+
 const filters = reactive({
   search: '',
+  letter: '',
+  genre: '',
   ville_id: '',
   entite_id: ''
 })
@@ -400,17 +690,44 @@ async function loadDignitaires() {
   loading.value = true
   try {
     const params = new URLSearchParams()
+    
+    // Recherche par texte
     if (filters.search) params.append('search', filters.search)
+    
+    // Recherche par lettre (filtre côté client pour l'instant)
+    if (filters.genre) params.append('genre', filters.genre)
     if (filters.ville_id) params.append('ville_id', filters.ville_id)
     if (filters.entite_id) params.append('entite_id', filters.entite_id)
-    params.append('per_page', '50')
+    params.append('per_page', '100')
     
     const response = await $fetch(`${config.public.apiBase}/dignitaires?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${authStore.token}`
       }
     })
-    dignitaires.value = response.data || []
+    
+    let data = response.data || []
+    
+    // Filtre par lettre côté client
+    if (filters.letter) {
+      data = data.filter(d => d.nom.toUpperCase().startsWith(filters.letter))
+    }
+    
+    // Tri alphabétique par nom
+    data.sort((a, b) => {
+      const nomA = a.nom.toUpperCase()
+      const nomB = b.nom.toUpperCase()
+      return nomA.localeCompare(nomB)
+    })
+    
+    // Enrichir avec l'année du poste
+    dignitaires.value = data.map(d => {
+      if (d.poste_actuel) {
+        // Récupérer l'année depuis les postes si disponible
+        d.poste_annee = 'En cours'
+      }
+      return d
+    })
   } catch (error) {
     console.error('Erreur dignitaires:', error)
     dignitaires.value = []

@@ -21,7 +21,8 @@ class DignitaireController extends Controller
                 'ville.nom as lieu_naissance_nom',
                 DB::raw('(SELECT intitule FROM postes WHERE postes.dignitaire_id = dignitaire.id AND (postes.date_fin IS NULL OR postes.date_fin >= NOW()) ORDER BY postes.date_debut DESC LIMIT 1) as poste_actuel'),
                 DB::raw('(SELECT ville.nom FROM postes LEFT JOIN ville ON postes.ville_id = ville.id WHERE postes.dignitaire_id = dignitaire.id AND (postes.date_fin IS NULL OR postes.date_fin >= NOW()) ORDER BY postes.date_debut DESC LIMIT 1) as ville_poste'),
-                DB::raw('(SELECT entite.nom FROM postes LEFT JOIN entite ON postes.entite_id = entite.id WHERE postes.dignitaire_id = dignitaire.id AND (postes.date_fin IS NULL OR postes.date_fin >= NOW()) ORDER BY postes.date_debut DESC LIMIT 1) as nom_entite')
+                DB::raw('(SELECT entite.nom FROM postes LEFT JOIN entite ON postes.entite_id = entite.id WHERE postes.dignitaire_id = dignitaire.id AND (postes.date_fin IS NULL OR postes.date_fin >= NOW()) ORDER BY postes.date_debut DESC LIMIT 1) as nom_entite'),
+                DB::raw('(SELECT CONCAT(YEAR(postes.date_debut), " - ", COALESCE(YEAR(postes.date_fin), "à ce jour")) FROM postes WHERE postes.dignitaire_id = dignitaire.id AND (postes.date_fin IS NULL OR postes.date_fin >= NOW()) ORDER BY postes.date_debut DESC LIMIT 1) as poste_annee')
             ])
             ->leftJoin('ville', 'dignitaire.lieu_naissance', '=', 'ville.id');
 
@@ -56,9 +57,14 @@ class DignitaireController extends Controller
             });
         }
 
+        // Tri alphabétique par nom par défaut
+        $sortBy = $request->get('sort_by', 'nom');
+        $sortOrder = $request->get('sort_order', 'asc');
+        $query->orderBy('dignitaire.' . $sortBy, $sortOrder);
+
         // Pagination
         $perPage = $request->get('per_page', 20);
-        $dignitaires = $query->orderBy('dignitaire.id', 'desc')->paginate($perPage);
+        $dignitaires = $query->paginate($perPage);
 
         return response()->json($dignitaires);
     }
