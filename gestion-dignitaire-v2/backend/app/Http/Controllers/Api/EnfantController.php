@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Enfant;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,8 @@ class EnfantController extends Controller
 
         $enfant = Enfant::create($validated);
 
+        AuditLogger::log($request, 'created', 'Enfant', $enfant->id, "{$enfant->prenom} {$enfant->nom}", null, $validated);
+
         return response()->json($enfant, 201);
     }
 
@@ -89,7 +92,10 @@ class EnfantController extends Controller
             'genre' => 'required|in:M,F,Homme,Femme',
         ]);
 
+        $old = $enfant->getOriginal();
         $enfant->update($validated);
+
+        AuditLogger::log($request, 'updated', 'Enfant', $enfant->id, "{$enfant->prenom} {$enfant->nom}", $old, $validated);
 
         return response()->json($enfant);
     }
@@ -97,10 +103,14 @@ class EnfantController extends Controller
     /**
      * Supprimer un enfant
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $enfant = Enfant::findOrFail($id);
+        $old = $enfant->getOriginal();
+        $label = "{$enfant->prenom} {$enfant->nom}";
         $enfant->delete();
+
+        AuditLogger::log($request, 'deleted', 'Enfant', $id, $label, $old, null);
 
         return response()->json(['message' => 'Enfant supprimé avec succès']);
     }

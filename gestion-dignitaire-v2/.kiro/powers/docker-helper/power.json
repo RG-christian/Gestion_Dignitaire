@@ -1,0 +1,8 @@
+{
+  "name": "docker-helper",
+  "displayName": "Docker Helper",
+  "description": "Diagnostic et résolution des problèmes Docker et déploiement",
+  "version": "1.0.0",
+  "keywords": ["docker", "deployment", "containers", "ci-cd", "cache", "nginx"],
+  "mcpServers": {}
+}

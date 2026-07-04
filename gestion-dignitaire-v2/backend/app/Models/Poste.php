@@ -20,6 +20,8 @@ class Poste extends Model
         'date_fin',
         'entite_id',
         'ville_id',
+        'statut',
+        'motif_fin',
     ];
 
     protected $casts = [
@@ -44,6 +46,6 @@ class Poste extends Model
 
     public function scopeActuels($query)
     {
-        return $query->whereNull('date_fin')->orWhere('date_fin', '>=', now());
+        return $query->where('statut', 'en_cours');
     }
 }

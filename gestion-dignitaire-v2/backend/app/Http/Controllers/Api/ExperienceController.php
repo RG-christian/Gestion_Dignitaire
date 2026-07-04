@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,8 @@ class ExperienceController extends Controller
 
         $id = DB::table('experiences')->insertGetId($validated);
 
+        AuditLogger::log($request, 'created', 'Experience', $id, $validated['intitule'] ?? null, null, $validated);
+
         return response()->json(['id' => $id, ...$validated], 201);
     }
 
@@ -83,14 +86,21 @@ class ExperienceController extends Controller
             'date_fin' => 'nullable|date',
         ]);
 
+        $old = (array) DB::table('experiences')->where('id', $id)->first();
         DB::table('experiences')->where('id', $id)->update($validated);
+
+        AuditLogger::log($request, 'updated', 'Experience', $id, $validated['intitule'] ?? null, $old, $validated);
 
         return response()->json(['id' => $id, ...$validated]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
+        $old = (array) DB::table('experiences')->where('id', $id)->first();
         DB::table('experiences')->where('id', $id)->delete();
+
+        AuditLogger::log($request, 'deleted', 'Experience', $id, $old['intitule'] ?? null, $old, null);
+
         return response()->json(['message' => 'Expérience supprimée avec succès']);
     }
 }

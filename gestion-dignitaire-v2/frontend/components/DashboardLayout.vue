@@ -7,7 +7,7 @@
       </button>
       <div class="flex items-center space-x-2">
         <i class="fas fa-crown text-lg text-blue-500"></i>
-        <NuxtLink to="/" class="text-sm sm:text-base font-medium tracking-tight">
+        <NuxtLink to="/dashboard" class="text-sm sm:text-base font-medium tracking-tight">
           Gestion Dignitaires
         </NuxtLink>
       </div>
@@ -21,9 +21,9 @@
           </button>
           <ul v-if="showProfileMenu" class="absolute right-0 top-full mt-2 bg-white shadow-lg rounded py-1 min-w-[10rem] z-30">
             <li>
-              <a href="#" class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+              <NuxtLink to="/profil" class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
                 <i class="fas fa-user mr-2"></i>Profil
-              </a>
+              </NuxtLink>
             </li>
             <li>
               <button @click="logout" class="w-full text-left block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
@@ -32,7 +32,7 @@
             </li>
           </ul>
           <NuxtLink 
-            v-if="authStore.user?.role_name === 'Superadmin'"
+            v-if="permissions.estSuperAdmin.value"
             to="/admin/create"
             class="ml-4 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm"
           >
@@ -72,7 +72,7 @@
               <!-- Tableau de Bord -->
               <li>
                 <NuxtLink
-                  to="/"
+                  to="/dashboard"
                   class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
                   :title="isSidebarCollapsed ? 'Tableau de Bord' : ''"
                 >
@@ -81,6 +81,21 @@
                   <!-- Tooltip pour mode réduit -->
                   <div v-if="isSidebarCollapsed" class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                     Tableau de Bord
+                  </div>
+                </NuxtLink>
+              </li>
+
+              <!-- Journal des actions (traçabilité) -->
+              <li v-if="permissions.aAccesComplet.value">
+                <NuxtLink
+                  to="/admin/audit-logs"
+                  class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
+                  :title="isSidebarCollapsed ? 'Journal des actions' : ''"
+                >
+                  <i class="fas fa-history w-6 text-lg text-blue-500"></i>
+                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium">Journal des actions</span>
+                  <div v-if="isSidebarCollapsed" class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    Journal des actions
                   </div>
                 </NuxtLink>
               </li>
@@ -136,12 +151,24 @@
 
             <!-- Footer info utilisateur -->
             <div v-show="!isSidebarCollapsed" class="mt-auto pt-6 border-t border-gray-200">
-              <p class="text-gray-500 text-xs">
-                Vous êtes connecté en tant que <b>{{ authStore.user?.role_name || 'Administrateur' }}</b>.
-              </p>
-              <p class="font-medium text-gray-800 text-sm mt-2">
-                Bienvenue {{ authStore.user?.nom_complet || 'Admin' }} !
-              </p>
+              <div class="flex items-start gap-3 mb-3">
+                <div class="flex-shrink-0">
+                  <div class="w-10 h-10 bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                    {{ (authStore.user?.nom_complet || 'A').charAt(0).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-gray-800 text-sm truncate">
+                    {{ authStore.user?.nom_complet || 'Administrateur' }}
+                  </p>
+                  <p class="text-xs text-gray-500 truncate">
+                    {{ authStore.user?.email || 'admin@example.com' }}
+                  </p>
+                  <p class="text-xs text-gabon-green-600 font-medium mt-1">
+                    {{ authStore.user?.role_name || 'Administrateur' }}
+                  </p>
+                </div>
+              </div>
               <button
                 @click="logout"
                 class="mt-3 w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 text-sm font-medium"
@@ -186,6 +213,7 @@
 import { ref, computed, onMounted } from 'vue'
 
 const authStore = useAuthStore()
+const permissions = usePermissions()
 const isSidebarCollapsed = ref(false)
 const isDark = ref(false)
 const showProfileMenu = ref(false)
@@ -308,8 +336,20 @@ function toggleDropdown(name: string) {
   }
 }
 
-function logout() {
-  if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+async function logout() {
+  const { $swal } = useNuxtApp()
+  const result = await $swal.fire({
+    title: 'Déconnexion',
+    text: 'Êtes-vous sûr de vouloir vous déconnecter ?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Oui, me déconnecter',
+    cancelButtonText: 'Annuler'
+  })
+  
+  if (result.isConfirmed) {
     authStore.logout()
   }
 }

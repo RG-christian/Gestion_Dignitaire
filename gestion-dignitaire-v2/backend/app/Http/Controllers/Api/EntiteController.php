@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Entite;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -70,6 +71,8 @@ class EntiteController extends Controller
         $entite = Entite::create($request->all());
         $entite->load(['parent', 'enfants']);
 
+        AuditLogger::log($request, 'created', 'Entite', $entite->id, $entite->nom, null, $request->all());
+
         return response()->json($entite, 201);
     }
 
@@ -107,8 +110,11 @@ class EntiteController extends Controller
             ], 422);
         }
 
+        $old = $entite->getOriginal();
         $entite->update($request->all());
         $entite->load(['parent', 'enfants']);
+
+        AuditLogger::log($request, 'updated', 'Entite', $entite->id, $entite->nom, $old, $request->all());
 
         return response()->json($entite);
     }
@@ -116,7 +122,7 @@ class EntiteController extends Controller
     /**
      * Supprime une entité
      */
-    public function destroy($id): JsonResponse
+    public function destroy(Request $request, $id): JsonResponse
     {
         $entite = Entite::find($id);
 
@@ -133,7 +139,11 @@ class EntiteController extends Controller
             ], 422);
         }
 
+        $old = $entite->getOriginal();
+        $label = $entite->nom;
         $entite->delete();
+
+        AuditLogger::log($request, 'deleted', 'Entite', $id, $label, $old, null);
 
         return response()->json([
             'message' => 'Entité supprimée avec succès'

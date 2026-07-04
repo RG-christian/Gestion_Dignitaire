@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(npm run *)",
+      "Bash(disown)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/dignitaires --max-time 10)",
+      "Bash(sleep 5 *)",
+      "Read(//tmp/**)",
+      "Bash(curl -sv http://localhost:3000/ --max-time 10)",
+      "Bash(php artisan tinker --execute=\" *)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

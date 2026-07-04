@@ -558,25 +558,65 @@ async function saveDiplome() {
         headers: { Authorization: `Bearer ${authStore.token}` }
       })
     }
+    
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'success',
+      title: 'Succès',
+      text: selectedDiplome.value ? 'Diplôme modifié avec succès' : 'Diplôme ajouté avec succès',
+      timer: 2000,
+      showConfirmButton: false
+    })
+    
     closeModal()
     loadDiplomes()
   } catch (error) {
     console.error('Erreur:', error)
-    alert('Erreur lors de la sauvegarde')
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'error',
+      title: 'Erreur',
+      text: 'Une erreur est survenue lors de la sauvegarde'
+    })
   }
 }
 
 async function deleteDiplome(id: number) {
-  if (confirm('Supprimer ce diplôme ?')) {
+  const { $swal } = useNuxtApp()
+  const result = await $swal.fire({
+    title: 'Êtes-vous sûr ?',
+    text: 'Cette action supprimera définitivement ce diplôme',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#dc2626',
+    confirmButtonText: 'Oui, supprimer',
+    cancelButtonText: 'Annuler'
+  })
+  
+  if (result.isConfirmed) {
     try {
       await $fetch(`${config.public.apiBase}/diplomes/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${authStore.token}` }
       })
+      
+      $swal.fire({
+        icon: 'success',
+        title: 'Supprimé',
+        text: 'Le diplôme a été supprimé avec succès',
+        timer: 2000,
+        showConfirmButton: false
+      })
+      
       loadDiplomes()
     } catch (error) {
       console.error('Erreur:', error)
-      alert('Erreur lors de la suppression')
+      $swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors de la suppression'
+      })
     }
   }
 }

@@ -36,6 +36,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role_id',
+        'telephone',
+        'photo',
     ];
 
     /**
@@ -113,7 +115,7 @@ class User extends Authenticatable
             'user_sousfonctions',
             'user_id',
             'sousfonction_id'
-        )->orderBy('sousfonctions.sousfonction_name');
+        )->withPivot('niveau')->orderBy('sousfonctions.sousfonction_name');
     }
 
     /**

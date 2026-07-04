@@ -74,6 +74,7 @@
               </select>
             </div>
             <button
+              v-if="permissions.peutEcrire('Poste')"
               @click="openPosteModal()"
               class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
             >
@@ -116,7 +117,12 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ poste.ville_nom || 'N/A' }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ poste.entite_nom || 'N/A' }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {{ formatDate(poste.date_debut) }} - {{ poste.date_fin ? formatDate(poste.date_fin) : 'À ce jour' }}
+                    {{ formatDate(poste.date_debut) }} -
+                    <span v-if="poste.statut === 'terminee'">
+                      {{ formatDate(poste.date_fin) }}
+                      <span class="block text-xs text-gray-500">{{ motifFinLabel(poste.motif_fin) }}</span>
+                    </span>
+                    <span v-else class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">En cours</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center">
                     <div class="flex items-center justify-center gap-2">
@@ -127,13 +133,19 @@
                         </svg>
                         Détail
                       </button>
-                      <button @click="openPosteModal(poste)" class="inline-flex items-center gap-1 bg-gabon-blue-50 hover:bg-gabon-blue-100 text-gabon-blue-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Modifier">
+                      <button v-if="poste.statut !== 'terminee' && permissions.peutEcrire('Poste')" @click="openClotureModal(poste)" class="inline-flex items-center gap-1 bg-orange-50 hover:bg-orange-100 text-orange-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Clôturer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Clôturer
+                      </button>
+                      <button v-if="permissions.peutEcrire('Poste')" @click="openPosteModal(poste)" class="inline-flex items-center gap-1 bg-gabon-blue-50 hover:bg-gabon-blue-100 text-gabon-blue-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Modifier">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
                         Modifier
                       </button>
-                      <button @click="deletePoste(poste.id)" class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Supprimer">
+                      <button v-if="permissions.peutSupprimer()" @click="deletePoste(poste.id)" class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Supprimer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
@@ -378,8 +390,11 @@
                 <p class="text-gray-900">{{ formatDate(selectedPosteDetail.date_debut) }}</p>
               </div>
               <div class="bg-gray-50 rounded-lg p-4">
-                <p class="text-sm font-semibold text-gray-500 mb-1">Date de fin</p>
-                <p class="text-gray-900">{{ selectedPosteDetail.date_fin ? formatDate(selectedPosteDetail.date_fin) : 'À ce jour' }}</p>
+                <p class="text-sm font-semibold text-gray-500 mb-1">Statut</p>
+                <p class="text-gray-900">
+                  {{ selectedPosteDetail.statut === 'terminee' ? `Terminé (${formatDate(selectedPosteDetail.date_fin)})` : 'En cours' }}
+                  <span v-if="selectedPosteDetail.statut === 'terminee'" class="block text-sm text-gray-500">{{ motifFinLabel(selectedPosteDetail.motif_fin) }}</span>
+                </p>
               </div>
             </div>
           </div>
@@ -387,6 +402,38 @@
             <button @click="closePosteDetailModal" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Fermer</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal Clôture Poste -->
+    <div v-if="showClotureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeClotureModal">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+          <h4 class="text-xl font-bold text-white">Clôturer le poste</h4>
+        </div>
+        <form @submit.prevent="confirmCloture" class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Motif <span class="text-red-500">*</span></label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 border rounded-lg px-4 py-3 cursor-pointer hover:bg-gray-50">
+                <input type="radio" v-model="clotureForm.motif_fin" value="fin_fonction" required>
+                <span>Fin de fonction formelle</span>
+              </label>
+              <label class="flex items-center gap-2 border rounded-lg px-4 py-3 cursor-pointer hover:bg-gray-50">
+                <input type="radio" v-model="clotureForm.motif_fin" value="mise_a_disposition" required>
+                <span>Mise à disposition de l'administration d'origine</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
+            <input v-model="clotureForm.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button type="button" @click="closeClotureModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
+            <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -502,6 +549,7 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const permissions = usePermissions()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
 
@@ -516,8 +564,10 @@ const villes = ref([])
 const loading = ref(true)
 const showPosteModal = ref(false)
 const showPosteDetailModal = ref(false)
+const showClotureModal = ref(false)
 const selectedPoste = ref(null)
 const selectedPosteDetail = ref(null)
+const posteToClose = ref(null)
 const currentPagePostes = ref(1)
 const itemsPerPage = 10
 
@@ -534,6 +584,17 @@ const formPoste = reactive({
   date_debut: '',
   date_fin: ''
 })
+
+const clotureForm = reactive({
+  motif_fin: '',
+  date_fin: new Date().toISOString().slice(0, 10)
+})
+
+function motifFinLabel(motif) {
+  if (motif === 'mise_a_disposition') return 'Mise à disposition'
+  if (motif === 'fin_fonction') return 'Fin de fonction'
+  return ''
+}
 
 // ENTITÉS
 const entitesData = ref([])
@@ -643,6 +704,47 @@ function openPosteDetailModal(poste) {
 function closePosteDetailModal() {
   showPosteDetailModal.value = false
   selectedPosteDetail.value = null
+}
+
+function openClotureModal(poste) {
+  posteToClose.value = poste
+  clotureForm.motif_fin = ''
+  clotureForm.date_fin = new Date().toISOString().slice(0, 10)
+  showClotureModal.value = true
+}
+
+function closeClotureModal() {
+  showClotureModal.value = false
+  posteToClose.value = null
+}
+
+async function confirmCloture() {
+  try {
+    await $fetch(`${config.public.apiBase}/postes/${posteToClose.value.id}/cloturer`, {
+      method: 'POST',
+      body: clotureForm,
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    })
+
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'success',
+      title: 'Poste clôturé',
+      timer: 2000,
+      showConfirmButton: false
+    })
+
+    closeClotureModal()
+    loadPostes()
+  } catch (error) {
+    console.error('Erreur:', error)
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'error',
+      title: 'Erreur',
+      text: error.data?.message || 'Erreur lors de la clôture'
+    })
+  }
 }
 
 async function savePoste() {

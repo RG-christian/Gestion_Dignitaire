@@ -32,7 +32,7 @@
                   <td class="px-4 py-2">{{ user.nom_complet }}</td>
                   <td class="px-4 py-2">{{ user.email }}</td>
                   <td class="px-4 py-2">
-                    <span :class="user.role_name === 'Superadmin' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'" class="px-2 py-1 rounded text-xs">
+                    <span :class="roleBadgeClass(user.role_name)" class="px-2 py-1 rounded text-xs">
                       {{ user.role_name }}
                     </span>
                   </td>
@@ -95,18 +95,30 @@
 
           <div class="mt-4">
             <label class="block mb-2 text-sm">Sous-fonctions autorisées</label>
-            <div class="grid grid-cols-2 gap-2">
-              <label v-for="sf in filteredSousfonctions" :key="sf.id" class="flex items-center">
-                <input v-model="form.sousfonctions" :value="sf.id" type="checkbox" class="mr-2">
-                {{ sf.sousfonction_name }}
-                <span class="text-xs text-gray-400 ml-1">({{ sf.fonction_name }})</span>
-              </label>
+            <p class="text-xs text-gray-500 mb-2">Le niveau (lecture seule / modification) ne s'applique qu'aux rôles Assistant et Gestionnaire — Administrateur et Super Administrateur ont toujours un accès complet.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div v-for="sf in filteredSousfonctions" :key="sf.id" class="flex items-center justify-between border rounded px-3 py-2">
+                <label class="flex items-center">
+                  <input v-model="form.sousfonctionIds" :value="sf.id" type="checkbox" class="mr-2">
+                  {{ sf.sousfonction_name }}
+                  <span class="text-xs text-gray-400 ml-1">({{ sf.fonction_name }})</span>
+                </label>
+                <select v-if="form.sousfonctionIds.includes(sf.id)" v-model="form.niveaux[sf.id]" class="text-xs border rounded px-2 py-1">
+                  <option value="lecture">Lecture seule</option>
+                  <option value="ecriture">Modification</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <button type="submit" class="w-full mt-6 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-            Créer l'utilisateur
-          </button>
+          <div class="flex gap-3 mt-6">
+            <button type="button" v-if="editingUserId" @click="cancelEdit" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded">
+              Annuler
+            </button>
+            <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+              {{ editingUserId ? 'Modifier l\'utilisateur' : 'Créer l\'utilisateur' }}
+            </button>
+          </div>
         </form>
       </div>
     </template>
@@ -129,6 +141,8 @@ const sousfonctions = ref([])
 const loading = ref(true)
 const error = ref('')
 
+const editingUserId = ref<number | null>(null)
+
 const form = reactive({
   username: '',
   nom_complet: '',
@@ -136,14 +150,39 @@ const form = reactive({
   password: '',
   role_id: '',
   fonctions: [] as number[],
-  sousfonctions: [] as number[]
+  sousfonctionIds: [] as number[],
+  niveaux: {} as Record<number, string>
 })
 
 const filteredSousfonctions = computed(() => {
-  return sousfonctions.value.filter((sf: any) => 
+  return sousfonctions.value.filter((sf: any) =>
     form.fonctions.includes(sf.fonction_id)
   )
 })
+
+function roleBadgeClass(roleName: string) {
+  const classes: Record<string, string> = {
+    'Super Administrateur': 'bg-blue-200 text-blue-800',
+    'Administrateur': 'bg-indigo-200 text-indigo-800',
+    'Gestionnaire': 'bg-yellow-200 text-yellow-800',
+    'Assistant': 'bg-green-200 text-green-800'
+  }
+  return classes[roleName] || 'bg-gray-200 text-gray-800'
+}
+
+function resetForm() {
+  editingUserId.value = null
+  Object.assign(form, {
+    username: '',
+    nom_complet: '',
+    email: '',
+    password: '',
+    role_id: '',
+    fonctions: [],
+    sousfonctionIds: [],
+    niveaux: {}
+  })
+}
 
 async function loadData() {
   loading.value = true
@@ -187,55 +226,82 @@ async function loadData() {
   }
 }
 
+function buildPayload() {
+  return {
+    username: form.username,
+    nom_complet: form.nom_complet,
+    email: form.email,
+    password: form.password,
+    role_id: form.role_id,
+    fonctions: form.fonctions,
+    sousfonctions: form.sousfonctionIds.map((id: number) => ({
+      id,
+      niveau: form.niveaux[id] || 'lecture'
+    }))
+  }
+}
+
 async function createUser() {
   // Validation
   if (form.fonctions.length === 0) {
     alert('Sélectionnez au moins une fonction')
     return
   }
-  if (form.sousfonctions.length === 0) {
+  if (form.sousfonctionIds.length === 0) {
     alert('Sélectionnez au moins une sous-fonction')
     return
   }
 
   try {
-    await $fetch(`${config.public.apiBase}/admin/users`, {
-      method: 'POST',
-      body: form,
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    
-    alert('Utilisateur créé avec succès')
-    
-    // Réinitialiser le formulaire
-    Object.assign(form, {
-      username: '',
-      nom_complet: '',
-      email: '',
-      password: '',
-      role_id: '',
-      fonctions: [],
-      sousfonctions: []
-    })
-    
+    if (editingUserId.value) {
+      await $fetch(`${config.public.apiBase}/admin/users/${editingUserId.value}`, {
+        method: 'PUT',
+        body: buildPayload(),
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+      alert('Utilisateur modifié avec succès')
+    } else {
+      await $fetch(`${config.public.apiBase}/admin/users`, {
+        method: 'POST',
+        body: buildPayload(),
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      })
+      alert('Utilisateur créé avec succès')
+    }
+
+    resetForm()
     loadData()
   } catch (error: any) {
     console.error('Erreur:', error)
-    alert(error.data?.message || 'Erreur lors de la création')
+    alert(error.data?.message || 'Erreur lors de l\'enregistrement')
   }
 }
 
 async function editUser(user: any) {
-  // Charger les données de l'utilisateur dans le formulaire
-  form.username = user.username
-  form.nom_complet = user.nom_complet
-  form.email = user.email
-  form.password = ''
-  form.role_id = user.role_id
-  
-  // Récupérer les IDs des fonctions et sous-fonctions
-  // TODO: Implémenter la récupération des IDs depuis le backend
-  alert('Fonctionnalité en cours de développement')
+  try {
+    const detail: any = await $fetch(`${config.public.apiBase}/admin/users/${user.id}`, {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    })
+
+    editingUserId.value = detail.id
+    form.username = detail.username
+    form.nom_complet = detail.nom_complet
+    form.email = detail.email
+    form.password = ''
+    form.role_id = detail.role_id
+    form.fonctions = detail.fonctions
+    form.sousfonctionIds = detail.sousfonctions.map((sf: any) => sf.id)
+    form.niveaux = Object.fromEntries(detail.sousfonctions.map((sf: any) => [sf.id, sf.niveau]))
+
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  } catch (error: any) {
+    console.error('Erreur:', error)
+    alert(error.data?.message || 'Erreur lors du chargement de l\'utilisateur')
+  }
+}
+
+function cancelEdit() {
+  resetForm()
 }
 
 async function deleteUser(user: any) {

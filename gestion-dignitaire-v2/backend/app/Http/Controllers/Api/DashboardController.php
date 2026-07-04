@@ -50,12 +50,43 @@ class DashboardController extends Controller
                 'totalPays' => DB::table('pays')->count(),
                 'totalRegions' => DB::table('region')->count(),
                 'totalDiplomes' => DB::table('diplome')->count(),
+                'totalActifs' => DB::table('dignitaire')->where('statut', 'actif')->count(),
+                'totalRetraites' => DB::table('dignitaire')->where('statut', 'retraite')->count(),
+                'totalNonLocalises' => DB::table('dignitaire')->where('statut', 'non_localise')->count(),
             ];
 
             return response()->json($stats);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la récupération des statistiques',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Statistiques publiques pour la page d'accueil (aucune authentification requise)
+     */
+    public function publicStats()
+    {
+        try {
+            $candidaturesTraitees = \App\Models\Candidat::valide()->count();
+
+            $delaiMoyenJours = \App\Models\Candidat::valide()
+                ->whereNotNull('date_validation')
+                ->get()
+                ->map(fn ($candidat) => $candidat->date_candidature->diffInDays($candidat->date_validation))
+                ->avg();
+
+            return response()->json([
+                'totalDignitaires' => DB::table('dignitaire')->count(),
+                'totalPaysCouverts' => DB::table('pays')->count(),
+                'candidaturesTraitees' => $candidaturesTraitees,
+                'delaiMoyenJours' => $delaiMoyenJours !== null ? round($delaiMoyenJours) : null,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur lors de la récupération des statistiques publiques',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -92,10 +123,21 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
+            // Répartition par statut
+            $parStatut = DB::table('dignitaire')
+                ->select('statut as nom', DB::raw('COUNT(*) as count'))
+                ->groupBy('statut')
+                ->get()
+                ->map(function ($row) {
+                    $row->nom = ['actif' => 'Actif', 'retraite' => 'Retraité', 'non_localise' => 'Non localisé'][$row->nom] ?? $row->nom;
+                    return $row;
+                });
+
             return response()->json([
                 'parGenre' => $parGenre,
                 'parRegion' => $parRegion,
                 'parPoste' => $parPoste,
+                'parStatut' => $parStatut,
             ]);
         } catch (\Exception $e) {
             return response()->json([

@@ -21,6 +21,9 @@ class Nomination extends Model
         'date_debut',
         'date_fin',
         'fonction',
+        'numero_decret',
+        'statut',
+        'motif_fin',
     ];
 
     protected $casts = [
@@ -50,6 +53,6 @@ class Nomination extends Model
 
     public function scopeActives($query)
     {
-        return $query->whereNull('date_fin')->orWhere('date_fin', '>=', now());
+        return $query->where('statut', 'en_cours');
     }
 }

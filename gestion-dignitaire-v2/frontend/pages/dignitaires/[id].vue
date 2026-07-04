@@ -49,6 +49,9 @@
                   <span class="text-white/80 text-sm">Matricule:</span>
                   <span class="ml-2 font-semibold">{{ dignitaire.matricule }}</span>
                 </div>
+                <span class="px-4 py-2 rounded-lg text-sm font-semibold" :class="statutBadgeClass(dignitaire.statut)">
+                  {{ statutLabel(dignitaire.statut) }}
+                </span>
               </div>
               <p class="text-white/90 text-lg">
                 {{ dignitaire.genre }} • {{ dignitaire.etat_civil || 'N/A' }}
@@ -133,8 +136,10 @@
                     <div class="col-span-2">
                       <span class="text-gray-600">Période:</span>
                       <span class="ml-1 font-medium text-gray-800">
-                        {{ formatDate(poste.date_debut) }} - {{ poste.date_fin ? formatDate(poste.date_fin) : 'En cours' }}
+                        {{ formatDate(poste.date_debut) }} -
+                        {{ poste.statut === 'terminee' ? formatDate(poste.date_fin) : 'En cours' }}
                       </span>
+                      <span v-if="poste.statut === 'terminee' && poste.motif_fin" class="ml-2 text-xs text-gray-500">({{ motifFinLabel(poste.motif_fin) }})</span>
                     </div>
                   </div>
                 </div>
@@ -153,11 +158,15 @@
               </div>
               <div class="p-6 space-y-4">
                 <div v-for="nomination in dignitaire.nominations" :key="nomination.id" class="border-l-4 border-gabon-blue-600 bg-blue-50 p-4 rounded-r-lg hover:shadow-md transition">
-                  <h3 class="font-bold text-lg text-gray-800 mb-2">{{ nomination.poste?.intitule || 'N/A' }}</h3>
+                  <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-lg text-gray-800">{{ nomination.fonction || nomination.poste?.intitule || 'N/A' }}</h3>
+                    <span v-if="nomination.statut === 'terminee'" class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Terminée</span>
+                    <span v-else class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">En cours</span>
+                  </div>
                   <div class="space-y-1 text-sm">
-                    <p><span class="text-gray-600">Date de nomination:</span> <span class="font-medium text-gray-800">{{ formatDate(nomination.date_nomination) }}</span></p>
-                    <p v-if="nomination.date_fin"><span class="text-gray-600">Date de fin:</span> <span class="font-medium text-gray-800">{{ formatDate(nomination.date_fin) }}</span></p>
-                    <p v-if="nomination.reference"><span class="text-gray-600">Référence:</span> <span class="font-medium text-gray-800">{{ nomination.reference }}</span></p>
+                    <p><span class="text-gray-600">Date de début:</span> <span class="font-medium text-gray-800">{{ formatDate(nomination.date_debut) }}</span></p>
+                    <p v-if="nomination.statut === 'terminee'"><span class="text-gray-600">Date de fin:</span> <span class="font-medium text-gray-800">{{ formatDate(nomination.date_fin) }}</span> <span class="text-gray-500">({{ motifFinLabel(nomination.motif_fin) }})</span></p>
+                    <p v-if="nomination.numero_decret"><span class="text-gray-600">Numéro de décret:</span> <span class="font-medium text-gray-800">{{ nomination.numero_decret }}</span></p>
                   </div>
                 </div>
               </div>
@@ -297,6 +306,35 @@
                 </div>
               </div>
             </div>
+
+            <!-- Historique -->
+            <div v-if="historique.length > 0" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div class="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                  <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Historique
+                </h2>
+              </div>
+              <div class="p-6">
+                <div class="space-y-3">
+                  <div v-for="log in historique" :key="log.id" class="flex items-start gap-3 border-l-4 border-gray-300 bg-gray-50 p-3 rounded-r-lg">
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0" :class="{
+                      'bg-green-100 text-green-700': log.action === 'created',
+                      'bg-blue-100 text-blue-700': log.action === 'updated',
+                      'bg-red-100 text-red-700': log.action === 'deleted'
+                    }">
+                      {{ log.action === 'created' ? 'Créé' : log.action === 'updated' ? 'Modifié' : 'Supprimé' }}
+                    </span>
+                    <div class="flex-1 text-sm">
+                      <span class="font-medium text-gray-800">{{ log.causer_label || 'Système' }}</span>
+                      <span class="text-gray-500"> — {{ formatDate(log.created_at) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -324,6 +362,7 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 
 const dignitaire = ref(null)
+const historique = ref([])
 const loading = ref(true)
 
 onMounted(async () => {
@@ -339,7 +378,38 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+
+  try {
+    const historiqueResponse: any = await $fetch(`${config.public.apiBase}/admin/audit-logs`, {
+      params: { auditable_type: 'Dignitaire', auditable_id: route.params.id, per_page: 50 },
+      headers: {
+        Authorization: `Bearer ${authStore.token}`
+      }
+    })
+    historique.value = historiqueResponse.logs.data
+  } catch (error) {
+    console.error('Erreur chargement historique:', error)
+  }
 })
+
+function statutLabel(statut: string | null) {
+  return { actif: 'Actif', retraite: 'Retraité', non_localise: 'Non localisé' }[statut || ''] || 'Actif'
+}
+
+function statutBadgeClass(statut: string | null) {
+  const classes: Record<string, string> = {
+    actif: 'bg-white/20 backdrop-blur-sm text-white',
+    retraite: 'bg-gray-800/60 backdrop-blur-sm text-white',
+    non_localise: 'bg-orange-500/80 backdrop-blur-sm text-white'
+  }
+  return classes[statut || ''] || classes.actif
+}
+
+function motifFinLabel(motif: string | null) {
+  if (motif === 'mise_a_disposition') return 'Mise à disposition'
+  if (motif === 'fin_fonction') return 'Fin de fonction'
+  return ''
+}
 
 function formatDate(date: string | null) {
   if (!date) return 'N/A'

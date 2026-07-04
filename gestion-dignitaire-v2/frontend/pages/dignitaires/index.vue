@@ -93,6 +93,7 @@
             >
           </div>
           <button
+            v-if="permissions.peutEcrire('Dignitaire')"
             @click="openModal()"
             class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg whitespace-nowrap"
           >
@@ -150,6 +151,13 @@
             </option>
           </select>
 
+          <select v-model="filters.statut" @change="loadDignitaires" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Tous les statuts</option>
+            <option value="actif">Actif</option>
+            <option value="retraite">Retraité</option>
+            <option value="non_localise">Non localisé</option>
+          </select>
+
           <div class="flex gap-2">
             <button
               @click="viewMode = 'grille'"
@@ -200,7 +208,11 @@
             <h4 class="text-lg font-bold text-gray-800 text-center mb-1">
               {{ d.prenom }} {{ d.nom }}
             </h4>
-            
+
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold mb-2" :class="statutBadgeClass(d.statut)">
+              {{ statutLabel(d.statut) }}
+            </span>
+
             <!-- Poste actuel avec année -->
             <div v-if="d.poste_actuel" class="text-center mb-2 w-full px-2">
               <div class="text-sm font-medium text-green-700 flex items-center justify-center gap-1">
@@ -239,6 +251,7 @@
                 </svg>
               </NuxtLink>
               <button
+                v-if="permissions.peutEcrire('Dignitaire')"
                 @click="openModal(d)"
                 class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg"
                 title="Modifier"
@@ -248,6 +261,7 @@
                 </svg>
               </button>
               <button
+                v-if="permissions.peutSupprimer()"
                 @click="deleteDignitaire(d.id)"
                 class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg"
                 title="Supprimer"
@@ -285,6 +299,7 @@
                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Ville</th>
                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Entité</th>
                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Genre</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Statut</th>
                 <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -365,6 +380,11 @@
                   </span>
                   <span v-else class="text-sm text-gray-400">—</span>
                 </td>
+                <td class="px-4 py-3">
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="statutBadgeClass(d.statut)">
+                    {{ statutLabel(d.statut) }}
+                  </span>
+                </td>
                 <td class="px-4 py-3 whitespace-nowrap text-center">
                   <div class="flex items-center justify-center gap-2">
                     <NuxtLink
@@ -378,6 +398,7 @@
                       </svg>
                     </NuxtLink>
                     <button
+                      v-if="permissions.peutEcrire('Dignitaire')"
                       @click="openModal(d)"
                       class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow transition-all"
                       title="Modifier"
@@ -387,6 +408,7 @@
                       </svg>
                     </button>
                     <button
+                      v-if="permissions.peutSupprimer()"
                       @click="deleteDignitaire(d.id)"
                       class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow transition-all"
                       title="Supprimer"
@@ -589,6 +611,19 @@
               </select>
             </div>
 
+            <!-- Statut -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Statut</label>
+              <select
+                v-model="form.statut"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              >
+                <option value="actif">Actif</option>
+                <option value="retraite">Retraité</option>
+                <option value="non_localise">Non localisé</option>
+              </select>
+            </div>
+
             <!-- Photo -->
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -638,6 +673,7 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const permissions = usePermissions()
 const showModal = ref(false)
 const selectedDignitaire = ref(null)
 const viewMode = ref('grille')
@@ -650,7 +686,8 @@ const filters = reactive({
   letter: '',
   genre: '',
   ville_id: '',
-  entite_id: ''
+  entite_id: '',
+  statut: ''
 })
 
 const form = reactive({
@@ -662,8 +699,22 @@ const form = reactive({
   lieu_naissance: '',
   genre: '',
   etat_civil: '',
-  photo: ''
+  photo: '',
+  statut: 'actif'
 })
+
+function statutLabel(statut: string) {
+  return { actif: 'Actif', retraite: 'Retraité', non_localise: 'Non localisé' }[statut] || 'Actif'
+}
+
+function statutBadgeClass(statut: string) {
+  const classes: Record<string, string> = {
+    actif: 'bg-green-100 text-green-700',
+    retraite: 'bg-gray-200 text-gray-700',
+    non_localise: 'bg-orange-100 text-orange-700'
+  }
+  return classes[statut] || classes.actif
+}
 
 // Charger les statistiques (lazy loading)
 const stats = ref({ totalDignitaires: 0, totalPostes: 0, totalDecorations: 0, totalVilles: 0 })
@@ -698,6 +749,7 @@ async function loadDignitaires() {
     if (filters.genre) params.append('genre', filters.genre)
     if (filters.ville_id) params.append('ville_id', filters.ville_id)
     if (filters.entite_id) params.append('entite_id', filters.entite_id)
+    if (filters.statut) params.append('statut', filters.statut)
     params.append('per_page', '100')
     
     const response = await $fetch(`${config.public.apiBase}/dignitaires?${params.toString()}`, {
@@ -768,6 +820,7 @@ function openModal(dignitaire: any = null) {
     form.genre = dignitaire.genre
     form.etat_civil = dignitaire.etat_civil
     form.photo = dignitaire.photo || ''
+    form.statut = dignitaire.statut || 'actif'
   } else {
     // Reset form
     form.nip = ''
@@ -779,6 +832,7 @@ function openModal(dignitaire: any = null) {
     form.genre = ''
     form.etat_civil = ''
     form.photo = ''
+    form.statut = 'actif'
   }
   showModal.value = true
 }
@@ -807,16 +861,43 @@ async function saveDignitaire() {
         }
       })
     }
+    
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'success',
+      title: 'Succès',
+      text: selectedDignitaire.value ? 'Dignitaire modifié avec succès' : 'Dignitaire ajouté avec succès',
+      timer: 2000,
+      showConfirmButton: false
+    })
+    
     closeModal()
     loadDignitaires()
   } catch (error) {
     console.error('Erreur sauvegarde:', error)
-    alert('Erreur lors de la sauvegarde')
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'error',
+      title: 'Erreur',
+      text: 'Une erreur est survenue lors de la sauvegarde'
+    })
   }
 }
 
 async function deleteDignitaire(id: number) {
-  if (confirm('Supprimer ce dignitaire ?')) {
+  const { $swal } = useNuxtApp()
+  const result = await $swal.fire({
+    title: 'Êtes-vous sûr ?',
+    text: 'Cette action supprimera définitivement ce dignitaire',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#dc2626',
+    confirmButtonText: 'Oui, supprimer',
+    cancelButtonText: 'Annuler'
+  })
+  
+  if (result.isConfirmed) {
     try {
       await $fetch(`${config.public.apiBase}/dignitaires/${id}`, {
         method: 'DELETE',
@@ -824,10 +905,23 @@ async function deleteDignitaire(id: number) {
           Authorization: `Bearer ${authStore.token}`
         }
       })
+      
+      $swal.fire({
+        icon: 'success',
+        title: 'Supprimé',
+        text: 'Le dignitaire a été supprimé avec succès',
+        timer: 2000,
+        showConfirmButton: false
+      })
+      
       loadDignitaires()
     } catch (error) {
       console.error('Erreur suppression:', error)
-      alert('Erreur lors de la suppression')
+      $swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Une erreur est survenue lors de la suppression'
+      })
     }
   }
 }

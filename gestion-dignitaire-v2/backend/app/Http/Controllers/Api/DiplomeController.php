@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Diplome;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,7 @@ class DiplomeController extends Controller
         ]);
 
         $diplome = Diplome::create($validated);
+        AuditLogger::log($request, 'created', 'Diplome', $diplome->id, $diplome->intitule, null, $validated);
         return response()->json($diplome, 201);
     }
 
@@ -81,14 +83,19 @@ class DiplomeController extends Controller
             'type' => 'nullable|string|max:30',
         ]);
 
+        $old = $diplome->getOriginal();
         $diplome->update($validated);
+        AuditLogger::log($request, 'updated', 'Diplome', $diplome->id, $diplome->intitule, $old, $validated);
         return response()->json($diplome);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $diplome = Diplome::findOrFail($id);
+        $old = $diplome->getOriginal();
+        $label = $diplome->intitule;
         $diplome->delete();
+        AuditLogger::log($request, 'deleted', 'Diplome', $id, $label, $old, null);
         return response()->json(['message' => 'Diplôme supprimé avec succès']);
     }
 }

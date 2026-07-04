@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Fonction;
 use App\Models\Sousfonction;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -43,6 +44,28 @@ class AdminController extends Controller
         ");
 
         return response()->json($users);
+    }
+
+    /**
+     * Détail d'un utilisateur : fonctions, sous-fonctions et leur niveau
+     * (nécessaire pour préremplir le formulaire de modification)
+     */
+    public function show(int $id): JsonResponse
+    {
+        $user = User::with(['role', 'fonctions', 'sousfonctions'])->findOrFail($id);
+
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'nom_complet' => $user->nom_complet,
+            'email' => $user->email,
+            'role_id' => $user->role_id,
+            'fonctions' => $user->fonctions->pluck('id'),
+            'sousfonctions' => $user->sousfonctions->map(fn ($sf) => [
+                'id' => $sf->id,
+                'niveau' => $sf->pivot->niveau,
+            ]),
+        ]);
     }
 
     /**
@@ -91,7 +114,8 @@ class AdminController extends Controller
             'fonctions' => 'required|array|min:1',
             'fonctions.*' => 'exists:fonctions,id',
             'sousfonctions' => 'required|array|min:1',
-            'sousfonctions.*' => 'exists:sousfonctions,id',
+            'sousfonctions.*.id' => 'exists:sousfonctions,id',
+            'sousfonctions.*.niveau' => 'nullable|in:lecture,ecriture',
         ]);
 
         DB::beginTransaction();
@@ -113,15 +137,25 @@ class AdminController extends Controller
                 ]);
             }
 
-            // Attacher les sous-fonctions
-            foreach ($validated['sousfonctions'] as $sousfonctionId) {
+            // Attacher les sous-fonctions, avec leur niveau (lecture/écriture)
+            foreach ($validated['sousfonctions'] as $sf) {
                 DB::table('user_sousfonctions')->insert([
                     'user_id' => $user->id,
-                    'sousfonction_id' => $sousfonctionId
+                    'sousfonction_id' => $sf['id'],
+                    'niveau' => $sf['niveau'] ?? 'lecture',
                 ]);
             }
 
             DB::commit();
+
+            AuditLogger::log($request, 'created', 'User', $user->id, $user->nom_complet, null, [
+                'username' => $validated['username'],
+                'nom_complet' => $validated['nom_complet'],
+                'email' => $validated['email'],
+                'role_id' => $validated['role_id'],
+                'fonctions' => $validated['fonctions'],
+                'sousfonctions' => $validated['sousfonctions'],
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -154,8 +188,16 @@ class AdminController extends Controller
             'fonctions' => 'required|array|min:1',
             'fonctions.*' => 'exists:fonctions,id',
             'sousfonctions' => 'required|array|min:1',
-            'sousfonctions.*' => 'exists:sousfonctions,id',
+            'sousfonctions.*.id' => 'exists:sousfonctions,id',
+            'sousfonctions.*.niveau' => 'nullable|in:lecture,ecriture',
         ]);
+
+        $old = [
+            'username' => $user->username,
+            'nom_complet' => $user->nom_complet,
+            'email' => $user->email,
+            'role_id' => $user->role_id,
+        ];
 
         DB::beginTransaction();
         try {
@@ -183,15 +225,25 @@ class AdminController extends Controller
                 ]);
             }
 
-            // Attacher les nouvelles sous-fonctions
-            foreach ($validated['sousfonctions'] as $sousfonctionId) {
+            // Attacher les nouvelles sous-fonctions, avec leur niveau
+            foreach ($validated['sousfonctions'] as $sf) {
                 DB::table('user_sousfonctions')->insert([
                     'user_id' => $id,
-                    'sousfonction_id' => $sousfonctionId
+                    'sousfonction_id' => $sf['id'],
+                    'niveau' => $sf['niveau'] ?? 'lecture',
                 ]);
             }
 
             DB::commit();
+
+            AuditLogger::log($request, 'updated', 'User', $user->id, $user->nom_complet, $old, [
+                'username' => $validated['username'],
+                'nom_complet' => $validated['nom_complet'],
+                'email' => $validated['email'],
+                'role_id' => $validated['role_id'],
+                'fonctions' => $validated['fonctions'],
+                'sousfonctions' => $validated['sousfonctions'],
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -210,17 +262,25 @@ class AdminController extends Controller
     /**
      * Supprimer un utilisateur
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         try {
             $user = User::findOrFail($id);
-            
+            $old = [
+                'username' => $user->username,
+                'nom_complet' => $user->nom_complet,
+                'email' => $user->email,
+                'role_id' => $user->role_id,
+            ];
+
             // Supprimer les associations
             DB::table('user_fonctions')->where('user_id', $id)->delete();
             DB::table('user_sousfonctions')->where('user_id', $id)->delete();
-            
+
             // Supprimer l'utilisateur
             $user->delete();
+
+            AuditLogger::log($request, 'deleted', 'User', $id, $old['nom_complet'], $old, null);
 
             return response()->json([
                 'success' => true,

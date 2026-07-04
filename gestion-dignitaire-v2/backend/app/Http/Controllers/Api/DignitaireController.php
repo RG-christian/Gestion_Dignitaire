@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dignitaire;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,11 @@ class DignitaireController extends Controller
         // Filtre par ville
         if ($request->has('ville_id') && $request->ville_id) {
             $query->where('dignitaire.lieu_naissance', $request->ville_id);
+        }
+
+        // Filtre par statut
+        if ($request->has('statut') && $request->statut) {
+            $query->where('dignitaire.statut', $request->statut);
         }
 
         // Filtre par entité (via postes)
@@ -99,21 +105,24 @@ class DignitaireController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'nip' => 'nullable|string|max:20|unique:dignitaires',
-            'matricule' => 'required|string|max:20|unique:dignitaires',
+            'nip' => 'nullable|string|max:20|unique:dignitaire',
+            'matricule' => 'required|string|max:20|unique:dignitaire',
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
             'date_naissance' => 'nullable|date',
-            'lieu_naissance' => 'nullable|exists:villes,id',
+            'lieu_naissance' => 'nullable|exists:ville,id',
             'nationalite' => 'nullable|string|max:100',
             'genre' => 'nullable|in:Homme,Femme',
             'etat_civil' => 'nullable|string|max:20',
             'photo' => 'nullable|string|max:255',
             'adresse' => 'nullable|string|max:255',
             'telephone' => 'nullable|string|max:20',
+            'statut' => 'nullable|in:actif,retraite,non_localise',
         ]);
 
         $dignitaire = Dignitaire::create($validated);
+
+        AuditLogger::log($request, 'created', 'Dignitaire', $dignitaire->id, "{$dignitaire->prenom} {$dignitaire->nom}", null, $validated);
 
         return response()->json($dignitaire, 201);
     }
@@ -126,21 +135,25 @@ class DignitaireController extends Controller
         $dignitaire = Dignitaire::findOrFail($id);
 
         $validated = $request->validate([
-            'nip' => 'nullable|string|max:20|unique:dignitaires,nip,' . $id,
-            'matricule' => 'required|string|max:20|unique:dignitaires,matricule,' . $id,
+            'nip' => 'nullable|string|max:20|unique:dignitaire,nip,' . $id,
+            'matricule' => 'required|string|max:20|unique:dignitaire,matricule,' . $id,
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
             'date_naissance' => 'nullable|date',
-            'lieu_naissance' => 'nullable|exists:villes,id',
+            'lieu_naissance' => 'nullable|exists:ville,id',
             'nationalite' => 'nullable|string|max:100',
             'genre' => 'nullable|in:Homme,Femme',
             'etat_civil' => 'nullable|string|max:20',
             'photo' => 'nullable|string|max:255',
             'adresse' => 'nullable|string|max:255',
             'telephone' => 'nullable|string|max:20',
+            'statut' => 'nullable|in:actif,retraite,non_localise',
         ]);
 
+        $old = $dignitaire->getOriginal();
         $dignitaire->update($validated);
+
+        AuditLogger::log($request, 'updated', 'Dignitaire', $dignitaire->id, "{$dignitaire->prenom} {$dignitaire->nom}", $old, $validated);
 
         return response()->json($dignitaire);
     }
@@ -148,10 +161,14 @@ class DignitaireController extends Controller
     /**
      * Supprimer un dignitaire
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $dignitaire = Dignitaire::findOrFail($id);
+        $old = $dignitaire->getOriginal();
+        $label = "{$dignitaire->prenom} {$dignitaire->nom}";
         $dignitaire->delete();
+
+        AuditLogger::log($request, 'deleted', 'Dignitaire', $id, $label, $old, null);
 
         return response()->json(['message' => 'Dignitaire supprimé avec succès']);
     }
@@ -168,6 +185,9 @@ class DignitaireController extends Controller
             'total_villes' => \App\Models\Ville::count(),
             'par_genre' => Dignitaire::selectRaw('genre, COUNT(*) as count')
                 ->groupBy('genre')
+                ->get(),
+            'par_statut' => Dignitaire::selectRaw('statut, COUNT(*) as count')
+                ->groupBy('statut')
                 ->get(),
         ]);
     }

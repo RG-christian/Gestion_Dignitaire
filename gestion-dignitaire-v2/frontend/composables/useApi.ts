@@ -9,12 +9,19 @@ export const useApi = () => {
     onRequest({ options }) {
       const token = authStore.token
       if (token) {
-        options.headers = {
+        // Ne pas définir Content-Type pour FormData (le navigateur le fait automatiquement)
+        const headers: any = {
           ...options.headers,
           'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Accept': 'application/json'
         }
+        
+        // Ajouter Content-Type seulement si ce n'est pas un FormData
+        if (!(options.body instanceof FormData)) {
+          headers['Content-Type'] = 'application/json'
+        }
+        
+        options.headers = headers
       }
     },
 
@@ -85,6 +92,9 @@ export const useApi = () => {
     updateEnfant: (id: number, data: any) => apiFetch(`/enfants/${id}`, { method: 'PUT', body: data }),
     deleteEnfant: (id: number) => apiFetch(`/enfants/${id}`, { method: 'DELETE' }),
 
+    // Traçabilité / audit log
+    getAuditLogs: (params?: any) => apiFetch('/admin/audit-logs', { params }),
+
     // Référentiels (toujours en cache)
     getPays: () => cachedFetch('/pays'),
     getVilles: (params?: any) => cachedFetch('/villes', { params }),
@@ -98,6 +108,32 @@ export const useApi = () => {
       apiFetch('/login', { method: 'POST', body: credentials }),
     logout: () => apiFetch('/logout', { method: 'POST' }),
     getUser: () => apiFetch('/user'),
+
+    // Profil
+    updateProfile: (data: any) => apiFetch('/profile', { method: 'PUT', body: data }),
+    uploadPhoto: async (formData: FormData) => {
+      // Utiliser fetch natif pour FormData car $fetch peut avoir des problèmes
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      
+      const response = await fetch(`${config.public.apiBase}/profile/photo`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`,
+          'Accept': 'application/json'
+          // Ne PAS définir Content-Type, le navigateur le fait automatiquement pour FormData
+        }
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw error
+      }
+      
+      return await response.json()
+    },
+    updatePassword: (data: any) => apiFetch('/profile/password', { method: 'PUT', body: data }),
     
     // Méthode pour vider le cache
     clearCache: () => cache.clear()

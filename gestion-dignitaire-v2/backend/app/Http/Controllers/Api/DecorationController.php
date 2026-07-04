@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Decoration;
+use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -63,6 +64,8 @@ class DecorationController extends Controller
 
         $decoration = Decoration::create($data);
 
+        AuditLogger::log($request, 'created', 'Decoration', $decoration->id, $data['deco_nom'], null, $data);
+
         return response()->json($decoration, 201);
     }
 
@@ -95,15 +98,22 @@ class DecorationController extends Controller
             'deco_fichierAttestation' => $validated['fichier_attestation'] ?? null,
         ];
 
+        $old = $decoration->getOriginal();
         $decoration->update($data);
+
+        AuditLogger::log($request, 'updated', 'Decoration', $decoration->id, $data['deco_nom'], $old, $data);
 
         return response()->json($decoration);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $decoration = Decoration::findOrFail($id);
+        $old = $decoration->getOriginal();
+        $label = $decoration->deco_nom;
         $decoration->delete();
+
+        AuditLogger::log($request, 'deleted', 'Decoration', $id, $label, $old, null);
 
         return response()->json(['message' => 'Décoration supprimée avec succès']);
     }

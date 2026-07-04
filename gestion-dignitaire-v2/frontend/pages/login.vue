@@ -191,7 +191,7 @@ async function handleLogin() {
     if (success) {
       // Récupérer l'URL de redirection depuis les query params
       const route = useRoute()
-      const redirectTo = (route.query.redirect as string) || '/'
+      const redirectTo = (route.query.redirect as string) || '/dashboard'
       
       // SweetAlert succès avec redirection immédiate
       Swal.fire({
@@ -244,7 +244,7 @@ onMounted(async () => {
   }
   
   if (authStore.isAuthenticated) {
-    router.push('/')
+    router.push('/dashboard')
   }
 })
 </script>

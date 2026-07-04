@@ -30,6 +30,7 @@ class Dignitaire extends Model
         'telephone',
         'casier_judiciaire',
         'certificats_medicaux',
+        'statut',
     ];
 
     protected $casts = [
@@ -57,6 +58,16 @@ class Dignitaire extends Model
     public function enfants(): HasMany
     {
         return $this->hasMany(Enfant::class);
+    }
+
+    public function conjoints(): HasMany
+    {
+        return $this->hasMany(Conjoint::class);
+    }
+
+    public function conjointActif(): HasMany
+    {
+        return $this->hasMany(Conjoint::class)->where('statut', 'actif');
     }
 
     public function languesParlees(): HasMany
@@ -114,5 +125,10 @@ class Dignitaire extends Model
     public function scopeByVille($query, $villeId)
     {
         return $query->where('lieu_naissance', $villeId);
+    }
+
+    public function scopeByStatut($query, $statut)
+    {
+        return $query->where('statut', $statut);
     }
 }
