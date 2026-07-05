@@ -93,6 +93,18 @@
             >
           </div>
           <button
+            @click="exportListe('pdf')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+          >
+            Exporter PDF
+          </button>
+          <button
+            @click="exportListe('excel')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+          >
+            Exporter Excel
+          </button>
+          <button
             v-if="permissions.peutEcrire('Dignitaire')"
             @click="openModal()"
             class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg whitespace-nowrap"
@@ -674,6 +686,7 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const permissions = usePermissions()
+const fileDownload = useFileDownload()
 const showModal = ref(false)
 const selectedDignitaire = ref(null)
 const viewMode = ref('grille')
@@ -702,6 +715,21 @@ const form = reactive({
   photo: '',
   statut: 'actif'
 })
+
+async function exportListe(format: 'pdf' | 'excel') {
+  try {
+    await fileDownload.download('/dignitaires-export', {
+      search: filters.search,
+      genre: filters.genre,
+      ville_id: filters.ville_id,
+      entite_id: filters.entite_id,
+      statut: filters.statut,
+      format
+    }, `dignitaires.${format === 'excel' ? 'xlsx' : 'pdf'}`)
+  } catch (error) {
+    console.error('Erreur export dignitaires:', error)
+  }
+}
 
 function statutLabel(statut: string) {
   return { actif: 'Actif', retraite: 'Retraité', non_localise: 'Non localisé' }[statut] || 'Actif'

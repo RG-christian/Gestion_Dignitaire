@@ -24,6 +24,7 @@ class Nomination extends Model
         'numero_decret',
         'statut',
         'motif_fin',
+        'rappel_envoye',
     ];
 
     protected $casts = [

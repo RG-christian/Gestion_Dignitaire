@@ -74,6 +74,18 @@
               </select>
             </div>
             <button
+              @click="exportPostes('pdf')"
+              class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+            >
+              Exporter PDF
+            </button>
+            <button
+              @click="exportPostes('excel')"
+              class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+            >
+              Exporter Excel
+            </button>
+            <button
               v-if="permissions.peutEcrire('Poste')"
               @click="openPosteModal()"
               class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
@@ -187,6 +199,18 @@
                 @update:modelValue="debouncedLoadEntites"
               />
             </div>
+            <button
+              @click="exportEntites('pdf')"
+              class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+            >
+              Exporter PDF
+            </button>
+            <button
+              @click="exportEntites('excel')"
+              class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+            >
+              Exporter Excel
+            </button>
             <button
               @click="openEntiteModal()"
               class="bg-gradient-to-r from-gabon-blue-600 to-gabon-blue-700 hover:from-gabon-blue-700 hover:to-gabon-blue-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
@@ -552,6 +576,30 @@ const authStore = useAuthStore()
 const permissions = usePermissions()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
+const fileDownload = useFileDownload()
+
+async function exportPostes(format) {
+  try {
+    await fileDownload.download('/postes-export', {
+      search: filters.search,
+      dignitaire_id: filters.dignitaire_id,
+      format
+    }, `postes.${format === 'excel' ? 'xlsx' : 'pdf'}`)
+  } catch (error) {
+    console.error('Erreur export postes:', error)
+  }
+}
+
+async function exportEntites(format) {
+  try {
+    await fileDownload.download('/entites-export', {
+      search: filtersEntites.search,
+      format
+    }, `entites.${format === 'excel' ? 'xlsx' : 'pdf'}`)
+  } catch (error) {
+    console.error('Erreur export entités:', error)
+  }
+}
 
 // État général
 const activeTab = ref('postes')

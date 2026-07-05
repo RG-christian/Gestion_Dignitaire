@@ -12,7 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->command('mandats:rappels')->daily();
+
+        $schedule->command('rapports:generer --periode=mensuel')->monthlyOn(1, '02:00');
+        $schedule->command('rapports:generer --periode=trimestriel')->quarterlyOn(1, '02:15');
+        $schedule->command('rapports:generer --periode=annuel')->yearlyOn(1, 1, '02:30');
     }
 
     /**

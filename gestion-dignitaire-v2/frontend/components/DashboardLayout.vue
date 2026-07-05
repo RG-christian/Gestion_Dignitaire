@@ -100,6 +100,21 @@
                 </NuxtLink>
               </li>
 
+              <!-- Rapports & Exports -->
+              <li v-if="permissions.aAccesComplet.value">
+                <NuxtLink
+                  to="/admin/rapports"
+                  class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
+                  :title="isSidebarCollapsed ? 'Rapports & Exports' : ''"
+                >
+                  <i class="fas fa-file-export w-6 text-lg text-blue-500"></i>
+                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium">Rapports &amp; Exports</span>
+                  <div v-if="isSidebarCollapsed" class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    Rapports & Exports
+                  </div>
+                </NuxtLink>
+              </li>
+
               <!-- Menus dynamiques basés sur les droits d'accès -->
               <li v-for="fonction in fonctionsAvecSousfonctions" :key="fonction.id" class="relative">
                 <button

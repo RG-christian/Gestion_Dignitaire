@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\CandidatDiplomeController;
 use App\Http\Controllers\Api\CandidatLangueController;
 use App\Http\Controllers\Api\CandidatExperienceController;
 use App\Http\Controllers\Api\ConjointController;
+use App\Http\Controllers\Api\DignitaireDocumentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +44,7 @@ Route::prefix('candidats')->group(function () {
 
 // Routes publiques - Référentiels & statistiques pour la page d'accueil / inscription
 Route::get('/public/stats', [DashboardController::class, 'publicStats']);
+Route::get('/public/pays', [ReferentielController::class, 'pays']);
 Route::get('/public/villes', [ReferentielController::class, 'villes']);
 
 // Route publique pour servir les photos de profil
@@ -89,18 +91,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:Dignitaire')->group(function () {
         Route::apiResource('dignitaires', DignitaireController::class);
         Route::get('/dignitaires-stats', [DignitaireController::class, 'stats']);
+        Route::get('/dignitaires-export', [DignitaireController::class, 'export']);
+        Route::get('/dignitaires/{id}/export-pdf', [DignitaireController::class, 'exportFichePdf']);
     });
 
     // Nominations
     Route::middleware('permission:Nomination')->group(function () {
         Route::apiResource('nominations', NominationController::class);
         Route::post('/nominations/{id}/cloturer', [NominationController::class, 'cloturer']);
+        Route::get('/nominations-export', [NominationController::class, 'export']);
     });
 
     // Décorations
     Route::middleware('permission:Décoration')->group(function () {
         Route::apiResource('decorations', DecorationController::class);
         Route::post('/dignitaires/{id}/decorations', [DecorationController::class, 'attachToDignitaire']);
+        Route::get('/decorations-export', [DecorationController::class, 'export']);
     });
 
     // Diplômes
@@ -109,6 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/diplomes/{id}', [DignitaireController::class, 'updateDiplome']);
         Route::delete('/diplomes/{id}', [DignitaireController::class, 'deleteDiplome']);
         Route::apiResource('diplomes', \App\Http\Controllers\Api\DiplomeController::class);
+        Route::get('/diplomes-export', [\App\Http\Controllers\Api\DiplomeController::class, 'export']);
     });
 
     // Enfants
@@ -133,10 +140,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:Poste')->group(function () {
         Route::apiResource('postes', PosteController::class);
         Route::post('/postes/{id}/cloturer', [PosteController::class, 'cloturer']);
+        Route::get('/postes-export', [PosteController::class, 'export']);
     });
 
     // Entités (CRUD complet) — pas de sous-fonction dédiée à ce jour, laissé ouvert à tout utilisateur authentifié
     Route::apiResource('entites', \App\Http\Controllers\Api\EntiteController::class);
+    Route::get('/entites-export', [\App\Http\Controllers\Api\EntiteController::class, 'export']);
 
     // Référentiels (lecture seule)
     Route::get('/pays', [ReferentielController::class, 'pays']);
@@ -162,6 +171,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Structures
     Route::middleware('permission:Structure')->group(function () {
         Route::apiResource('structures', StructureController::class);
+        Route::get('/structures-export', [StructureController::class, 'export']);
     });
 
     // Candidats - Routes protégées pour candidats connectés
@@ -194,20 +204,38 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Conjoints
-    Route::prefix('dignitaires/{dignitaireId}')->group(function () {
-        Route::get('/conjoints', [ConjointController::class, 'index']);
-        Route::post('/conjoints', [ConjointController::class, 'store']);
+    Route::middleware('permission:Dignitaire')->group(function () {
+        Route::prefix('dignitaires/{dignitaireId}')->group(function () {
+            Route::get('/conjoints', [ConjointController::class, 'index']);
+            Route::post('/conjoints', [ConjointController::class, 'store']);
+        });
+        Route::prefix('conjoints')->group(function () {
+            Route::get('/{id}', [ConjointController::class, 'show']);
+            Route::put('/{id}', [ConjointController::class, 'update']);
+            Route::delete('/{id}', [ConjointController::class, 'destroy']);
+            Route::post('/{id}/terminer-union', [ConjointController::class, 'terminerUnion']);
+        });
     });
-    Route::prefix('conjoints')->group(function () {
-        Route::get('/{id}', [ConjointController::class, 'show']);
-        Route::put('/{id}', [ConjointController::class, 'update']);
-        Route::delete('/{id}', [ConjointController::class, 'destroy']);
-        Route::post('/{id}/terminer-union', [ConjointController::class, 'terminerUnion']);
+
+    // Documents dignitaires (BLOC 6 - Gestion Documentaire)
+    Route::middleware('permission:Dignitaire')->group(function () {
+        Route::prefix('dignitaires/{dignitaireId}')->group(function () {
+            Route::get('/documents', [DignitaireDocumentController::class, 'index']);
+            Route::post('/documents', [DignitaireDocumentController::class, 'store']);
+        });
+        Route::prefix('dignitaire-documents')->group(function () {
+            Route::get('/{id}/download', [DignitaireDocumentController::class, 'download']);
+            Route::delete('/{id}', [DignitaireDocumentController::class, 'destroy']);
+        });
     });
 
     // Administration des utilisateurs (Super Administrateur uniquement)
     Route::prefix('admin')->group(function () {
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+        // Rapports périodiques archivés
+        Route::get('/rapports', [\App\Http\Controllers\Api\RapportController::class, 'index']);
+        Route::get('/rapports/{id}/download', [\App\Http\Controllers\Api\RapportController::class, 'download']);
 
         Route::middleware('super-admin')->group(function () {
             Route::get('/users', [AdminController::class, 'index']);

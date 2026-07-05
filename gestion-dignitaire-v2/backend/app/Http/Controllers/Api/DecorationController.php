@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Decoration;
 use App\Support\AuditLogger;
+use App\Support\Exports\GenericArrayExport;
+use App\Support\Exports\ListPdfExporter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DecorationController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    private function baseQuery(Request $request)
     {
         $query = Decoration::query();
 
@@ -24,9 +27,46 @@ class DecorationController extends Controller
             });
         }
 
-        $decorations = $query->orderBy('deco_nom')->get();
+        return $query;
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $decorations = $this->baseQuery($request)->orderBy('deco_nom')->get();
 
         return response()->json($decorations);
+    }
+
+    private function filtresResume(Request $request): ?string
+    {
+        return $request->filled('search') ? "Recherche: {$request->search}" : null;
+    }
+
+    /**
+     * Export de la liste des décorations (PDF ou Excel), avec les mêmes
+     * filtres que index().
+     */
+    public function export(Request $request)
+    {
+        $rows = $this->baseQuery($request)->orderBy('deco_nom')->get();
+
+        $headings = ['Nom', 'Type', 'Niveau', 'Grade', 'Date d\'obtention', 'Autorité'];
+        $data = $rows->map(fn ($d) => [
+            $d->nom,
+            $d->type,
+            $d->niveau,
+            $d->grade,
+            $d->date_obtention?->format('d/m/Y'),
+            $d->autorite,
+        ]);
+
+        if ($request->get('format') === 'excel') {
+            return Excel::download(new GenericArrayExport($headings, $data, 'Décorations'), 'decorations.xlsx');
+        }
+
+        return app(ListPdfExporter::class)
+            ->render('Liste des décorations', $headings, $data, $this->filtresResume($request))
+            ->download('decorations.pdf');
     }
 
     public function show(int $id): JsonResponse

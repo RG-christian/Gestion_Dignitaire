@@ -50,6 +50,18 @@
             </select>
           </div>
           <button
+            @click="exportListe('pdf')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+          >
+            Exporter PDF
+          </button>
+          <button
+            @click="exportListe('excel')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+          >
+            Exporter Excel
+          </button>
+          <button
             v-if="permissions.peutEcrire('Nomination')"
             @click="openModal()"
             class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
@@ -329,6 +341,7 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const permissions = usePermissions()
+const fileDownload = useFileDownload()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
 
@@ -366,6 +379,19 @@ const clotureForm = reactive({
   motif_fin: '',
   date_fin: new Date().toISOString().slice(0, 10)
 })
+
+async function exportListe(format) {
+  try {
+    await fileDownload.download('/nominations-export', {
+      search: filters.search,
+      dignitaire_id: filters.dignitaire_id,
+      entite_id: filters.entite_id,
+      format
+    }, `nominations.${format === 'excel' ? 'xlsx' : 'pdf'}`)
+  } catch (error) {
+    console.error('Erreur export nominations:', error)
+  }
+}
 
 function motifFinLabel(motif) {
   if (motif === 'mise_a_disposition') return 'Mise à disposition'

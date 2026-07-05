@@ -13,15 +13,29 @@
           </h2>
           <p class="text-gray-600 mt-1">{{ diplomes.length }} diplôme(s) enregistré(s)</p>
         </div>
-        <button
-          @click="openModal()"
-          class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Ajouter un diplôme
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button
+            @click="exportListe('pdf')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+          >
+            Exporter PDF
+          </button>
+          <button
+            @click="exportListe('excel')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+          >
+            Exporter Excel
+          </button>
+          <button
+            @click="openModal()"
+            class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Ajouter un diplôme
+          </button>
+        </div>
       </div>
 
       <!-- Filtres améliorés -->
@@ -414,6 +428,19 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
+const fileDownload = useFileDownload()
+
+async function exportListe(format: 'pdf' | 'excel') {
+  try {
+    await fileDownload.download('/diplomes-export', {
+      search: filters.search,
+      dignitaire_id: filters.dignitaire_id,
+      format
+    }, `diplomes.${format === 'excel' ? 'xlsx' : 'pdf'}`)
+  } catch (error) {
+    console.error('Erreur export diplômes:', error)
+  }
+}
 
 const diplomes = ref([])
 const dignitaires = ref([])

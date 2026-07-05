@@ -26,6 +26,18 @@
             />
           </div>
           <button
+            @click="exportListe('pdf')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+          >
+            Exporter PDF
+          </button>
+          <button
+            @click="exportListe('excel')"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
+          >
+            Exporter Excel
+          </button>
+          <button
             @click="openModal()"
             class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
           >
@@ -188,6 +200,18 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { debounce } = useDebounce()
+const fileDownload = useFileDownload()
+
+async function exportListe(format) {
+  try {
+    await fileDownload.download('/structures-export', {
+      search: filters.search,
+      format
+    }, `structures.${format === 'excel' ? 'xlsx' : 'pdf'}`)
+  } catch (error) {
+    console.error('Erreur export structures:', error)
+  }
+}
 
 const structures = ref([])
 const loading = ref(true)

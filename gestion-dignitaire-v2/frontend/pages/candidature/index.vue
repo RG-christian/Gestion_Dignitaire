@@ -117,13 +117,30 @@
                 </select>
               </div>
 
-              <!-- Lieu de naissance -->
-              <div class="md:col-span-2">
-                <label class="block text-sm font-bold text-gray-700 mb-2">Lieu de naissance</label>
-                <select v-model="form.lieu_naissance_id" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all">
-                  <option value="">Sélectionnez une ville...</option>
-                  <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+              <!-- Pays de naissance -->
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                  Pays de naissance <span class="text-red-500">*</span>
+                </label>
+                <select v-model="form.pays_naissance_id" @change="onPaysNaissanceChange" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all">
+                  <option value="">Sélectionnez un pays...</option>
+                  <option v-for="pays in paysListe" :key="pays.id" :value="pays.id">{{ pays.nom }}</option>
                 </select>
+              </div>
+
+              <!-- Lieu de naissance (ville) -->
+              <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                  Ville de naissance <span class="text-red-500">*</span>
+                </label>
+                <select v-if="!showCustomVilleNaissance" v-model="form.lieu_naissance_id" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all">
+                  <option value="">{{ villesNaissanceFiltered.length > 0 ? 'Sélectionnez une ville...' : 'Sélectionnez d\'abord un pays' }}</option>
+                  <option v-for="ville in villesNaissanceFiltered" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+                </select>
+                <input v-else v-model="form.ville_naissance_custom" type="text" required class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all" placeholder="Nom de la ville">
+                <button type="button" @click="showCustomVilleNaissance = !showCustomVilleNaissance" class="mt-2 text-sm text-gabon-green-600 hover:text-gabon-green-700 font-semibold">
+                  {{ showCustomVilleNaissance ? '← Retour à la liste' : 'Ma ville n\'est pas dans la liste' }}
+                </button>
               </div>
 
               <!-- Email -->
@@ -284,8 +301,15 @@
               <p class="text-gray-600">Vérifiez vos informations avant de soumettre</p>
             </div>
 
-            <!-- Résumé des informations -->
+            <!-- Résumé des informations COMPLET -->
             <div class="space-y-4 mb-8">
+              <!-- Photo de profil -->
+              <div v-if="photoPreview" class="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
+                <img :src="photoPreview" class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-white shadow-lg">
+                <p class="text-sm text-gray-600 mt-2">Photo d'identité</p>
+              </div>
+
+              <!-- Informations personnelles -->
               <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <svg class="w-5 h-5 text-gabon-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,23 +322,51 @@
                   <div v-if="form.matricule"><span class="text-gray-600">Matricule :</span> <span class="font-semibold text-gray-900">{{ form.matricule }}</span></div>
                   <div><span class="text-gray-600">Nom :</span> <span class="font-semibold text-gray-900">{{ form.nom }}</span></div>
                   <div><span class="text-gray-600">Prénom :</span> <span class="font-semibold text-gray-900">{{ form.prenom }}</span></div>
-                  <div><span class="text-gray-600">Date de naissance :</span> <span class="font-semibold text-gray-900">{{ form.date_naissance }}</span></div>
+                  <div><span class="text-gray-600">Date de naissance :</span> <span class="font-semibold text-gray-900">{{ formatDateFr(form.date_naissance) }}</span></div>
                   <div><span class="text-gray-600">Genre :</span> <span class="font-semibold text-gray-900">{{ form.genre === 'M' ? 'Masculin' : 'Féminin' }}</span></div>
-                  <div class="md:col-span-2"><span class="text-gray-600">Email :</span> <span class="font-semibold text-gray-900">{{ form.email }}</span></div>
+                  <div class="md:col-span-2" v-if="form.lieu_naissance_id || form.ville_naissance_custom">
+                    <span class="text-gray-600">Lieu de naissance :</span> 
+                    <span class="font-semibold text-gray-900">{{ getLieuNaissanceLabel() }} ({{ getPaysNaissanceLabel() }})</span>
+                  </div>
+                  <div v-if="form.etat_civil" class="md:col-span-2"><span class="text-gray-600">État civil :</span> <span class="font-semibold text-gray-900">{{ form.etat_civil }}</span></div>
                 </div>
               </div>
 
+              <!-- Coordonnées -->
+              <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-gabon-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  Coordonnées
+                </h4>
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                  <div class="md:col-span-2"><span class="text-gray-600">Email :</span> <span class="font-semibold text-gray-900">{{ form.email }}</span></div>
+                  <div v-if="form.telephone"><span class="text-gray-600">Téléphone :</span> <span class="font-semibold text-gray-900">{{ form.telephone }}</span></div>
+                  <div v-if="form.adresse" class="md:col-span-2"><span class="text-gray-600">Adresse :</span> <span class="font-semibold text-gray-900">{{ form.adresse }}</span></div>
+                </div>
+              </div>
+
+              <!-- Documents -->
               <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
                 <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <svg class="w-5 h-5 text-gabon-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                   </svg>
-                  Documents ({{ uploadedFiles.length }})
+                  Documents joints ({{ uploadedFiles.length }})
                 </h4>
                 <div v-if="uploadedFiles.length > 0" class="space-y-2">
-                  <div v-for="(file, index) in uploadedFiles" :key="index" class="flex items-center justify-between text-sm">
-                    <span class="text-gray-900">{{ file.name }}</span>
-                    <span class="px-3 py-1 bg-gabon-blue-100 text-gabon-blue-700 rounded-full text-xs font-semibold">{{ file.type || 'Non spécifié' }}</span>
+                  <div v-for="(file, index) in uploadedFiles" :key="index" class="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
+                    <div class="flex items-center gap-3">
+                      <span class="text-xl">{{ getDocumentIcon(file.type) }}</span>
+                      <div>
+                        <p class="text-sm font-semibold text-gray-900">{{ file.name }}</p>
+                        <p class="text-xs text-gray-500">{{ formatFileSize(file.size) }}</p>
+                      </div>
+                    </div>
+                    <span class="px-3 py-1 bg-gabon-blue-100 text-gabon-blue-700 rounded-full text-xs font-semibold">
+                      {{ getDocumentTypeLabel(file.type) }}
+                    </span>
                   </div>
                 </div>
                 <p v-else class="text-gray-500 text-sm">Aucun document ajouté</p>
@@ -360,7 +412,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -377,7 +429,9 @@ const form = ref({
   nip: '',
   matricule: '',
   photo: '',
+  pays_naissance_id: '',
   lieu_naissance_id: '',
+  ville_naissance_custom: '',
   nom: '',
   prenom: '',
   date_naissance: '',
@@ -408,6 +462,18 @@ const handlePhotoChange = (event) => {
   reader.readAsDataURL(file)
 }
 
+// Liste des pays
+const paysListe = ref([])
+const { data: paysData } = await useAsyncData('candidature-pays', async () => {
+  try {
+    return await $api.get('/public/pays')
+  } catch (error) {
+    console.error('Erreur chargement pays:', error)
+    return []
+  }
+})
+paysListe.value = Array.isArray(paysData.value) ? paysData.value : (paysData.value?.data || [])
+
 // Villes (pour le lieu de naissance) - endpoint public, avant authentification du candidat
 const villes = ref([])
 const { data: villesData } = await useAsyncData('candidature-villes', async () => {
@@ -420,6 +486,25 @@ const { data: villesData } = await useAsyncData('candidature-villes', async () =
 })
 villes.value = Array.isArray(villesData.value) ? villesData.value : (villesData.value?.data || [])
 
+// Toggle pour afficher le champ custom de ville
+const showCustomVilleNaissance = ref(false)
+
+// Computed - Villes filtrées par pays sélectionné
+const villesNaissanceFiltered = computed(() => {
+  if (!form.value.pays_naissance_id) {
+    return []
+  }
+  return villes.value.filter(ville => ville.pays_id == form.value.pays_naissance_id)
+})
+
+// Événement lors du changement de pays
+const onPaysNaissanceChange = () => {
+  // Réinitialiser la ville sélectionnée et le champ custom
+  form.value.lieu_naissance_id = ''
+  form.value.ville_naissance_custom = ''
+  showCustomVilleNaissance.value = false
+}
+
 // Fichiers uploadés
 const uploadedFiles = ref([])
 
@@ -427,7 +512,7 @@ const uploadedFiles = ref([])
 const nextStep = () => {
   // Validation étape 1
   if (currentStep.value === 1) {
-    if (!form.value.nom || !form.value.prenom || !form.value.date_naissance || !form.value.genre || !form.value.email || !form.value.password) {
+    if (!form.value.nom || !form.value.prenom || !form.value.date_naissance || !form.value.genre || !form.value.email || !form.value.password || !form.value.pays_naissance_id) {
       $swal.fire({
         icon: 'error',
         title: 'Champs manquants',
@@ -435,6 +520,17 @@ const nextStep = () => {
       })
       return
     }
+    
+    // Vérifier qu'une ville est renseignée (soit sélectionnée, soit custom)
+    if (!form.value.lieu_naissance_id && !form.value.ville_naissance_custom) {
+      $swal.fire({
+        icon: 'error',
+        title: 'Champs manquants',
+        text: 'Veuillez sélectionner ou saisir votre ville de naissance'
+      })
+      return
+    }
+    
     if (form.value.password !== form.value.password_confirmation) {
       $swal.fire({
         icon: 'error',
@@ -493,6 +589,57 @@ const formatFileSize = (bytes) => {
   const sizes = ['Bytes', 'Ko', 'Mo', 'Go']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+}
+
+// Méthodes helper pour le récapitulatif
+const formatDateFr = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const options = { year: 'numeric', month: 'long', day: 'numeric' }
+  return date.toLocaleDateString('fr-FR', options)
+}
+
+const getLieuNaissanceLabel = () => {
+  if (form.value.ville_naissance_custom) {
+    return form.value.ville_naissance_custom
+  }
+  if (form.value.lieu_naissance_id) {
+    const ville = villes.value.find(v => v.id == form.value.lieu_naissance_id)
+    return ville ? ville.nom : 'Non spécifié'
+  }
+  return 'Non spécifié'
+}
+
+const getPaysNaissanceLabel = () => {
+  if (!form.value.pays_naissance_id) return 'Non spécifié'
+  const pays = paysListe.value.find(p => p.id == form.value.pays_naissance_id)
+  return pays ? pays.nom : 'Non spécifié'
+}
+
+const getDocumentIcon = (type) => {
+  const icons = {
+    cv: '📄',
+    diplome: '🎓',
+    attestation: '📜',
+    lettre: '✉️',
+    casier: '⚖️',
+    medical: '🏥',
+    autre: '📎'
+  }
+  return icons[type] || '📄'
+}
+
+const getDocumentTypeLabel = (type) => {
+  const labels = {
+    cv: 'CV',
+    diplome: 'Diplôme',
+    attestation: 'Attestation',
+    lettre: 'Lettre',
+    casier: 'Casier judiciaire',
+    medical: 'Certificat médical',
+    autre: 'Autre'
+  }
+  return labels[type] || 'Non classé'
 }
 
 // Soumission du formulaire

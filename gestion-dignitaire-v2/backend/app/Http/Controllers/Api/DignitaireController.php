@@ -5,16 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Dignitaire;
 use App\Support\AuditLogger;
+use App\Support\Exports\GenericArrayExport;
+use App\Support\Exports\ListPdfExporter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DignitaireController extends Controller
 {
-    /**
-     * Liste des dignitaires avec filtres et recherche
-     */
-    public function index(Request $request): JsonResponse
+    private function baseQuery(Request $request)
     {
         $query = Dignitaire::query()
             ->select([
@@ -63,6 +64,16 @@ class DignitaireController extends Controller
             });
         }
 
+        return $query;
+    }
+
+    /**
+     * Liste des dignitaires avec filtres et recherche
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = $this->baseQuery($request);
+
         // Tri alphabétique par nom par défaut
         $sortBy = $request->get('sort_by', 'nom');
         $sortOrder = $request->get('sort_order', 'asc');
@@ -73,6 +84,87 @@ class DignitaireController extends Controller
         $dignitaires = $query->paginate($perPage);
 
         return response()->json($dignitaires);
+    }
+
+    private function filtresResume(Request $request): ?string
+    {
+        $parts = [];
+        if ($request->filled('search')) $parts[] = "Recherche: {$request->search}";
+        if ($request->filled('genre')) $parts[] = "Genre: {$request->genre}";
+        if ($request->filled('statut')) $parts[] = "Statut: {$request->statut}";
+        if ($request->filled('ville_id')) $parts[] = "Ville #{$request->ville_id}";
+        if ($request->filled('entite_id')) $parts[] = "Entité #{$request->entite_id}";
+
+        return $parts ? implode(' — ', $parts) : null;
+    }
+
+    /**
+     * Export de la liste des dignitaires (PDF ou Excel), avec les mêmes
+     * filtres que index().
+     */
+    public function export(Request $request)
+    {
+        $rows = $this->baseQuery($request)->orderBy('dignitaire.nom')->get();
+
+        $headings = ['Nom', 'Prénom', 'NIP', 'Matricule', 'Genre', 'Statut', 'Poste actuel', 'Entité', 'Ville'];
+        $data = $rows->map(fn ($d) => [
+            $d->nom,
+            $d->prenom,
+            $d->nip,
+            $d->matricule,
+            $d->genre,
+            $d->statut,
+            $d->poste_actuel,
+            $d->nom_entite,
+            $d->ville_poste,
+        ]);
+
+        if ($request->get('format') === 'excel') {
+            return Excel::download(new GenericArrayExport($headings, $data, 'Dignitaires'), 'dignitaires.xlsx');
+        }
+
+        return app(ListPdfExporter::class)
+            ->render('Liste des dignitaires', $headings, $data, $this->filtresResume($request))
+            ->download('dignitaires.pdf');
+    }
+
+    /**
+     * Export PDF de la fiche complète d'un dignitaire.
+     */
+    public function exportFichePdf(int $id)
+    {
+        $dignitaire = Dignitaire::with([
+            'lieuNaissance.pays',
+            'diplomes.etablissement',
+            'diplomes.domaine',
+            'enfants.lieuNaissance',
+            'languesParlees.langue',
+            'experiences.structure',
+            'postes.entite',
+            'postes.ville',
+            'nominations.entite',
+            'nominations.poste',
+            'decorations',
+            'telephones',
+            'emails',
+            'conjoints',
+        ])->findOrFail($id);
+
+        $photoBase64 = null;
+        if ($dignitaire->photo) {
+            $path = public_path('uploads/photos/' . $dignitaire->photo);
+            if (file_exists($path)) {
+                $photoBase64 = 'data:' . mime_content_type($path) . ';base64,' . base64_encode(file_get_contents($path));
+            }
+        }
+
+        $pdf = Pdf::loadView('exports.pdf.dignitaire-fiche', [
+            'dignitaire' => $dignitaire,
+            'photoBase64' => $photoBase64,
+            'genereLe' => now()->format('d/m/Y à H:i'),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('fiche-' . $dignitaire->matricule . '.pdf');
     }
 
     /**

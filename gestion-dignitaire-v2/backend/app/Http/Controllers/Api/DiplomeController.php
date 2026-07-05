@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Diplome;
 use App\Support\AuditLogger;
+use App\Support\Exports\GenericArrayExport;
+use App\Support\Exports\ListPdfExporter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DiplomeController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    private function baseQuery(Request $request)
     {
         $query = DB::table('diplome as d')
             ->select([
@@ -39,9 +42,49 @@ class DiplomeController extends Controller
             });
         }
 
-        $diplomes = $query->orderBy('d.annee', 'desc')->get();
+        return $query;
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $diplomes = $this->baseQuery($request)->orderBy('d.annee', 'desc')->get();
 
         return response()->json($diplomes);
+    }
+
+    private function filtresResume(Request $request): ?string
+    {
+        $parts = [];
+        if ($request->filled('search')) $parts[] = "Recherche: {$request->search}";
+        if ($request->filled('dignitaire_id')) $parts[] = "Dignitaire #{$request->dignitaire_id}";
+
+        return $parts ? implode(' — ', $parts) : null;
+    }
+
+    /**
+     * Export de la liste des diplômes (PDF ou Excel), avec les mêmes
+     * filtres que index().
+     */
+    public function export(Request $request)
+    {
+        $rows = $this->baseQuery($request)->orderBy('d.annee', 'desc')->get();
+
+        $headings = ['Dignitaire', 'Intitulé', 'Établissement', 'Année', 'Domaine'];
+        $data = $rows->map(fn ($d) => [
+            $d->dignitaire_nom,
+            $d->intitule,
+            $d->etablissement_nom,
+            $d->annee,
+            $d->domaine_nom,
+        ]);
+
+        if ($request->get('format') === 'excel') {
+            return Excel::download(new GenericArrayExport($headings, $data, 'Diplômes'), 'diplomes.xlsx');
+        }
+
+        return app(ListPdfExporter::class)
+            ->render('Liste des diplômes', $headings, $data, $this->filtresResume($request))
+            ->download('diplomes.pdf');
     }
 
     public function show(int $id): JsonResponse

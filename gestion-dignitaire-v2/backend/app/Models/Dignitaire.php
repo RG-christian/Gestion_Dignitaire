@@ -65,6 +65,11 @@ class Dignitaire extends Model
         return $this->hasMany(Conjoint::class);
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(DignitaireDocument::class);
+    }
+
     public function conjointActif(): HasMany
     {
         return $this->hasMany(Conjoint::class)->where('statut', 'actif');
@@ -104,6 +109,19 @@ class Dignitaire extends Model
     public function emails(): HasMany
     {
         return $this->hasMany(DignitaireEmail::class);
+    }
+
+    /**
+     * Email à utiliser pour les notifications : celui marqué "principal",
+     * sinon le premier disponible, sinon null (le dignitaire n'a aucune
+     * adresse enregistrée — les envois doivent alors être ignorés en silence).
+     */
+    public function emailNotification(): ?string
+    {
+        $email = $this->emails()->where('principal', true)->first()
+            ?? $this->emails()->first();
+
+        return $email?->email;
     }
 
     // Scopes

@@ -5,16 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Entite;
 use App\Support\AuditLogger;
+use App\Support\Exports\GenericArrayExport;
+use App\Support\Exports\ListPdfExporter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
 
 class EntiteController extends Controller
 {
-    /**
-     * Liste toutes les entités avec leurs relations
-     */
-    public function index(Request $request): JsonResponse
+    private function baseQuery(Request $request)
     {
         $query = Entite::with(['parent', 'enfants']);
 
@@ -28,9 +28,47 @@ class EntiteController extends Controller
             });
         }
 
-        $entites = $query->orderBy('nom')->get();
+        return $query;
+    }
+
+    /**
+     * Liste toutes les entités avec leurs relations
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $entites = $this->baseQuery($request)->orderBy('nom')->get();
 
         return response()->json($entites);
+    }
+
+    private function filtresResume(Request $request): ?string
+    {
+        return $request->filled('search') ? "Recherche: {$request->search}" : null;
+    }
+
+    /**
+     * Export de la liste des entités (PDF ou Excel), avec les mêmes
+     * filtres que index().
+     */
+    public function export(Request $request)
+    {
+        $rows = $this->baseQuery($request)->orderBy('nom')->get();
+
+        $headings = ['Nom', 'Type', 'Entité parente', 'Description'];
+        $data = $rows->map(fn ($e) => [
+            $e->nom,
+            $e->type,
+            $e->parent?->nom,
+            $e->description,
+        ]);
+
+        if ($request->get('format') === 'excel') {
+            return Excel::download(new GenericArrayExport($headings, $data, 'Entités'), 'entites.xlsx');
+        }
+
+        return app(ListPdfExporter::class)
+            ->render('Liste des entités', $headings, $data, $this->filtresResume($request))
+            ->download('entites.pdf');
     }
 
     /**

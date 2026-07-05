@@ -92,8 +92,42 @@ export const useApi = () => {
     updateEnfant: (id: number, data: any) => apiFetch(`/enfants/${id}`, { method: 'PUT', body: data }),
     deleteEnfant: (id: number) => apiFetch(`/enfants/${id}`, { method: 'DELETE' }),
 
+    // Conjoints
+    getConjoints: (dignitaireId: number) => apiFetch(`/dignitaires/${dignitaireId}/conjoints`),
+    createConjoint: (dignitaireId: number, data: any) => apiFetch(`/dignitaires/${dignitaireId}/conjoints`, { method: 'POST', body: data }),
+    updateConjoint: (id: number, data: any) => apiFetch(`/conjoints/${id}`, { method: 'PUT', body: data }),
+    deleteConjoint: (id: number) => apiFetch(`/conjoints/${id}`, { method: 'DELETE' }),
+    terminerUnionConjoint: (id: number, data: any) => apiFetch(`/conjoints/${id}/terminer-union`, { method: 'POST', body: data }),
+
+    // Documents dignitaires
+    getDignitaireDocuments: (dignitaireId: number) => apiFetch(`/dignitaires/${dignitaireId}/documents`),
+    uploadDignitaireDocument: async (dignitaireId: number, formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+
+      const response = await fetch(`${config.public.apiBase}/dignitaires/${dignitaireId}/documents`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`,
+          'Accept': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw error
+      }
+
+      return await response.json()
+    },
+    deleteDignitaireDocument: (id: number) => apiFetch(`/dignitaire-documents/${id}`, { method: 'DELETE' }),
+
     // Traçabilité / audit log
     getAuditLogs: (params?: any) => apiFetch('/admin/audit-logs', { params }),
+
+    // Rapports périodiques archivés
+    getRapports: (params?: any) => apiFetch('/admin/rapports', { params }),
 
     // Référentiels (toujours en cache)
     getPays: () => cachedFetch('/pays'),

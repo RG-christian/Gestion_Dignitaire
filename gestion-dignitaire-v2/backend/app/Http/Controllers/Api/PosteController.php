@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Support\AuditLogger;
+use App\Support\Exports\GenericArrayExport;
+use App\Support\Exports\ListPdfExporter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PosteController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    private function baseQuery(Request $request)
     {
         $query = DB::table('postes as p')
             ->select([
@@ -37,9 +40,51 @@ class PosteController extends Controller
             });
         }
 
-        $postes = $query->orderBy('p.date_debut', 'desc')->get();
+        return $query;
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $postes = $this->baseQuery($request)->orderBy('p.date_debut', 'desc')->get();
 
         return response()->json($postes);
+    }
+
+    private function filtresResume(Request $request): ?string
+    {
+        $parts = [];
+        if ($request->filled('search')) $parts[] = "Recherche: {$request->search}";
+        if ($request->filled('dignitaire_id')) $parts[] = "Dignitaire #{$request->dignitaire_id}";
+
+        return $parts ? implode(' — ', $parts) : null;
+    }
+
+    /**
+     * Export de la liste des postes (PDF ou Excel), avec les mêmes
+     * filtres que index().
+     */
+    public function export(Request $request)
+    {
+        $rows = $this->baseQuery($request)->orderBy('p.date_debut', 'desc')->get();
+
+        $headings = ['Dignitaire', 'Intitulé', 'Entité', 'Ville', 'Date début', 'Date fin', 'Statut'];
+        $data = $rows->map(fn ($p) => [
+            $p->dignitaire_nom,
+            $p->intitule,
+            $p->entite_nom,
+            $p->ville_nom,
+            $p->date_debut,
+            $p->date_fin,
+            $p->statut,
+        ]);
+
+        if ($request->get('format') === 'excel') {
+            return Excel::download(new GenericArrayExport($headings, $data, 'Postes'), 'postes.xlsx');
+        }
+
+        return app(ListPdfExporter::class)
+            ->render('Liste des postes', $headings, $data, $this->filtresResume($request))
+            ->download('postes.pdf');
     }
 
     public function show(int $id): JsonResponse

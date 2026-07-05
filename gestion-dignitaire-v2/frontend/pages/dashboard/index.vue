@@ -163,6 +163,8 @@
               <option value="region">Par Région</option>
               <option value="poste">Par Poste</option>
               <option value="statut">Par Statut</option>
+              <option value="nominations_mois">Nominations par mois</option>
+              <option value="candidatures_mois">Candidatures traitées par mois</option>
             </select>
           </div>
           <div class="h-64">
@@ -338,7 +340,9 @@ const { data: chartData } = await useAsyncData('chart-data', async () => {
       parGenre: { hommes: 0, femmes: 0 },
       parRegion: [],
       parPoste: [],
-      parStatut: []
+      parStatut: [],
+      nominationsParMois: [],
+      candidaturesParMois: []
     }
   }
 })
@@ -445,6 +449,22 @@ function getChartData() {
         'rgba(107, 114, 128, 1)',
         'rgba(249, 115, 22, 1)'
       ]
+    }
+  } else if (chartType.value === 'nominations_mois') {
+    const rows = chartData.value?.nominationsParMois || []
+    return {
+      labels: rows.map((r: any) => r.mois),
+      data: rows.map((r: any) => r.count),
+      colors: rows.map(() => 'rgba(37, 99, 235, 0.8)'),
+      borderColors: rows.map(() => 'rgba(37, 99, 235, 1)')
+    }
+  } else if (chartType.value === 'candidatures_mois') {
+    const rows = chartData.value?.candidaturesParMois || []
+    return {
+      labels: rows.map((r: any) => r.mois),
+      data: rows.map((r: any) => r.count),
+      colors: rows.map(() => 'rgba(22, 163, 74, 0.8)'),
+      borderColors: rows.map(() => 'rgba(22, 163, 74, 1)')
     }
   }
 

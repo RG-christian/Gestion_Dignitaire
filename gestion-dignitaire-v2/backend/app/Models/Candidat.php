@@ -12,7 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 /**
  * Modèle Candidat - Préinscription avant validation
- * 
+ *
  * Ce modèle étend Authenticatable pour permettre aux candidats de se connecter
  * et consulter le statut de leur candidature.
  */
@@ -31,7 +31,9 @@ class Candidat extends Authenticatable
         'genre',
         'nip',
         'matricule',
+        'pays_naissance_id',
         'lieu_naissance_id',
+        'ville_naissance_custom',
         'etat_civil',
         'photo',
         'cv_path',
@@ -91,6 +93,11 @@ class Candidat extends Authenticatable
     /**
      * Relations
      */
+    public function paysNaissance(): BelongsTo
+    {
+        return $this->belongsTo(Pays::class, 'pays_naissance_id');
+    }
+
     public function lieuNaissance(): BelongsTo
     {
         return $this->belongsTo(Ville::class, 'lieu_naissance_id');
@@ -168,7 +175,7 @@ class Candidat extends Authenticatable
     /**
      * Méthodes métier
      */
-    
+
     /**
      * Vérifier si le candidat peut se connecter
      */

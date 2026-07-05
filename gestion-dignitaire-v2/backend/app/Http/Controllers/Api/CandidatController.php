@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\CandidatureRefusee;
+use App\Mail\CandidatureValidee;
 use App\Models\Candidat;
 use App\Models\Dignitaire;
 use App\Models\Diplome;
@@ -13,6 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Contrôleur de gestion des candidats (Admin)
@@ -163,8 +167,14 @@ class CandidatController extends Controller
 
             DB::commit();
 
-            // TODO: Envoyer email de confirmation au candidat
-            // Mail::to($candidat->email)->send(new CandidatureValidee($candidat));
+            try {
+                Mail::to($candidat->email)->send(new CandidatureValidee($candidat));
+            } catch (\Exception $e) {
+                Log::warning('Echec envoi email de validation de candidature', [
+                    'candidat_id' => $candidat->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -209,8 +219,14 @@ class CandidatController extends Controller
 
             AuditLogger::log($request, 'refused', 'Candidat', $candidat->id, "{$candidat->prenom} {$candidat->nom}", ['statut' => 'en_attente'], ['statut' => 'refuse', 'motif_refus' => $request->motif]);
 
-            // TODO: Envoyer email de refus au candidat
-            // Mail::to($candidat->email)->send(new CandidatureRefusee($candidat));
+            try {
+                Mail::to($candidat->email)->send(new CandidatureRefusee($candidat, $request->motif));
+            } catch (\Exception $e) {
+                Log::warning('Echec envoi email de refus de candidature', [
+                    'candidat_id' => $candidat->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,

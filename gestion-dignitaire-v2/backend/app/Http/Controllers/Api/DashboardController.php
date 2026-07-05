@@ -133,11 +133,30 @@ class DashboardController extends Controller
                     return $row;
                 });
 
+            // Évolution des nominations créées sur les 12 derniers mois
+            $nominationsParMois = DB::table('nominations')
+                ->selectRaw("DATE_FORMAT(date_debut, '%Y-%m') as mois, COUNT(*) as count")
+                ->where('date_debut', '>=', now()->subMonths(11)->startOfMonth())
+                ->groupBy('mois')
+                ->orderBy('mois')
+                ->get();
+
+            // Évolution des candidatures traitées (validées) sur les 12 derniers mois
+            $candidaturesParMois = \App\Models\Candidat::valide()
+                ->whereNotNull('date_validation')
+                ->where('date_validation', '>=', now()->subMonths(11)->startOfMonth())
+                ->get()
+                ->groupBy(fn ($c) => $c->date_validation->format('Y-m'))
+                ->map(fn ($group, $mois) => (object) ['mois' => $mois, 'count' => $group->count()])
+                ->values();
+
             return response()->json([
                 'parGenre' => $parGenre,
                 'parRegion' => $parRegion,
                 'parPoste' => $parPoste,
                 'parStatut' => $parStatut,
+                'nominationsParMois' => $nominationsParMois,
+                'candidaturesParMois' => $candidaturesParMois,
             ]);
         } catch (\Exception $e) {
             return response()->json([
