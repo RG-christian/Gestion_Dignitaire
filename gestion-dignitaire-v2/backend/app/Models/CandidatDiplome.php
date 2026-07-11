@@ -23,8 +23,16 @@ class CandidatDiplome extends Model
         'ville_id',
         'domaine_id',
         'annee',
+        'type',
         'justificatif_path',
     ];
+
+    protected $appends = ['justificatif_url'];
+
+    public function getJustificatifUrlAttribute(): ?string
+    {
+        return $this->justificatif_path ? Storage::url($this->justificatif_path) : null;
+    }
 
     public function candidat(): BelongsTo
     {

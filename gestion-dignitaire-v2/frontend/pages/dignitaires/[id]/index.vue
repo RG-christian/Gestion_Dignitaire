@@ -54,7 +54,7 @@
                 @error="(e) => (e.target as HTMLImageElement).src = '/default-avatar.svg'"
               >
             </div>
-            
+
             <!-- Informations principales -->
             <div class="flex-1 text-center md:text-left">
               <h1 class="text-4xl font-bold mb-3 drop-shadow-lg">
@@ -84,7 +84,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Colonne gauche (2/3) -->
           <div class="lg:col-span-2 space-y-6">
-            
+
             <!-- Informations personnelles -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-6 py-4">
@@ -263,7 +263,7 @@
 
           <!-- Colonne droite (1/3) -->
           <div class="space-y-6">
-            
+
             <!-- Téléphones -->
             <div v-if="dignitaire.telephones && dignitaire.telephones.length > 0" class="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-6 py-4">

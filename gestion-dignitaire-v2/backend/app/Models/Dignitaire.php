@@ -21,6 +21,7 @@ class Dignitaire extends Model
         'nom',
         'prenom',
         'date_naissance',
+        'date_prise_fonction',
         'lieu_naissance',
         'nationalite',
         'genre',
@@ -35,13 +36,42 @@ class Dignitaire extends Model
 
     protected $casts = [
         'date_naissance' => 'date',
+        'date_prise_fonction' => 'date',
     ];
 
-    protected $appends = ['nom_complet'];
+    protected $appends = ['nom_complet', 'anciennete_annees', 'date_reference_anciennete'];
 
     public function getNomCompletAttribute(): string
     {
         return trim("{$this->prenom} {$this->nom}");
+    }
+
+    /**
+     * Date de référence pour l'ancienneté : date_prise_fonction si renseignée,
+     * sinon la date de début du plus ancien poste occupé (demande du CR de
+     * réunion : ancienneté basée sur la date d'acceptation ou d'affectation).
+     */
+    public function getDateReferenceAncienneteAttribute(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->date_prise_fonction) {
+            return $this->date_prise_fonction;
+        }
+
+        $premierPoste = $this->relationLoaded('postes')
+            ? $this->postes->sortBy('date_debut')->first()
+            : $this->postes()->orderBy('date_debut')->first();
+
+        return $premierPoste?->date_debut;
+    }
+
+    /**
+     * Ancienneté en années entières, ou null si aucune date de référence.
+     */
+    public function getAncienneteAnneesAttribute(): ?int
+    {
+        $reference = $this->date_reference_anciennete;
+
+        return $reference ? $reference->diffInYears(now()) : null;
     }
 
     // Relations

@@ -226,6 +226,40 @@
                 <input v-model="form.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
               </div>
             </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Type de nomination</label>
+                <select v-model="form.type_nomination" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                  <option value="">-- Sélectionner --</option>
+                  <option value="election">Élection</option>
+                  <option value="designation">Désignation</option>
+                  <option value="cooptation">Cooptation</option>
+                  <option value="nomination_officielle">Nomination officielle</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Autorité nominatrice</label>
+                <input v-model="form.autorite_nominatrice" type="text" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition" placeholder="Ex: Assemblée Générale">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Preuve de nomination (document/image)</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                @change="handleDocumentChange"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gabon-green-50 file:text-gabon-green-700 file:font-semibold"
+              >
+              <p class="text-xs text-gray-500 mt-1">PDF ou image, 10 Mo max.</p>
+              <a
+                v-if="form.document_nomination_path"
+                :href="siteRoot + '/storage/' + form.document_nomination_path"
+                target="_blank"
+                class="inline-flex items-center gap-1 text-sm text-gabon-blue-700 hover:underline mt-1"
+              >
+                Voir le document actuel
+              </a>
+            </div>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t">
             <button type="button" @click="closeModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
@@ -280,6 +314,16 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Type de nomination</p>
+                <p class="text-gray-900">{{ typeNominationLabel(selectedDetail.type_nomination) }}</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Autorité nominatrice</p>
+                <p class="text-gray-900">{{ selectedDetail.autorite_nominatrice || 'N/A' }}</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 rounded-lg p-4">
                 <p class="text-sm font-semibold text-gray-500 mb-1">Date de début</p>
                 <p class="text-gray-900">{{ formatDate(selectedDetail.date_debut) }}</p>
               </div>
@@ -290,6 +334,12 @@
                   <span v-if="selectedDetail.statut === 'terminee'" class="block text-sm text-gray-500">{{ motifFinLabel(selectedDetail.motif_fin) }}</span>
                 </p>
               </div>
+            </div>
+            <div v-if="selectedDetail.document_nomination_path" class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm font-semibold text-gray-500 mb-1">Preuve de nomination</p>
+              <a :href="siteRoot + '/storage/' + selectedDetail.document_nomination_path" target="_blank" class="inline-flex items-center gap-1 text-gabon-blue-700 hover:underline font-semibold">
+                Voir le document
+              </a>
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
@@ -344,6 +394,9 @@ const permissions = usePermissions()
 const fileDownload = useFileDownload()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
+const api = useApi()
+
+const siteRoot = computed(() => (config.public.apiBase).replace(/\/api\/?$/, ''))
 
 const nominations = ref([])
 const dignitaires = ref([])
@@ -372,8 +425,26 @@ const form = reactive({
   fonction: '',
   numero_decret: '',
   date_debut: '',
-  date_fin: ''
+  date_fin: '',
+  type_nomination: '',
+  autorite_nominatrice: '',
+  document_nomination_path: ''
 })
+const documentFile = ref(null)
+
+function handleDocumentChange(event) {
+  documentFile.value = event.target.files[0] || null
+}
+
+function typeNominationLabel(type) {
+  const labels = {
+    election: 'Élection',
+    designation: 'Désignation',
+    cooptation: 'Cooptation',
+    nomination_officielle: 'Nomination officielle'
+  }
+  return labels[type] || 'N/A'
+}
 
 const clotureForm = reactive({
   motif_fin: '',
@@ -462,6 +533,7 @@ async function loadPostes() {
 
 function openModal(nomination = null) {
   selectedNomination.value = nomination
+  documentFile.value = null
   if (nomination) {
     form.dignitaire_id = nomination.dignitaire_id
     form.entite_id = nomination.entite_id || ''
@@ -470,6 +542,9 @@ function openModal(nomination = null) {
     form.numero_decret = nomination.numero_decret || ''
     form.date_debut = nomination.date_debut || ''
     form.date_fin = nomination.date_fin || ''
+    form.type_nomination = nomination.type_nomination || ''
+    form.autorite_nominatrice = nomination.autorite_nominatrice || ''
+    form.document_nomination_path = nomination.document_nomination_path || ''
   } else {
     form.dignitaire_id = ''
     form.entite_id = ''
@@ -478,6 +553,9 @@ function openModal(nomination = null) {
     form.numero_decret = ''
     form.date_debut = ''
     form.date_fin = ''
+    form.type_nomination = ''
+    form.autorite_nominatrice = ''
+    form.document_nomination_path = ''
   }
   showModal.value = true
 }
@@ -485,6 +563,7 @@ function openModal(nomination = null) {
 function closeModal() {
   showModal.value = false
   selectedNomination.value = null
+  documentFile.value = null
 }
 
 function openDetailModal(nomination) {
@@ -540,20 +619,24 @@ async function confirmCloture() {
 
 async function saveNomination() {
   try {
+    const formData = new FormData()
+    formData.append('dignitaire_id', form.dignitaire_id)
+    if (form.entite_id) formData.append('entite_id', form.entite_id)
+    if (form.poste_id) formData.append('poste_id', form.poste_id)
+    if (form.fonction) formData.append('fonction', form.fonction)
+    if (form.numero_decret) formData.append('numero_decret', form.numero_decret)
+    if (form.date_debut) formData.append('date_debut', form.date_debut)
+    if (form.date_fin) formData.append('date_fin', form.date_fin)
+    if (form.type_nomination) formData.append('type_nomination', form.type_nomination)
+    if (form.autorite_nominatrice) formData.append('autorite_nominatrice', form.autorite_nominatrice)
+    if (documentFile.value) formData.append('document_nomination', documentFile.value)
+
     if (selectedNomination.value) {
-      await $fetch(`${config.public.apiBase}/nominations/${selectedNomination.value.id}`, {
-        method: 'PUT',
-        body: form,
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
+      await api.updateNomination(selectedNomination.value.id, formData)
     } else {
-      await $fetch(`${config.public.apiBase}/nominations`, {
-        method: 'POST',
-        body: form,
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
+      await api.createNomination(formData)
     }
-    
+
     const { $swal } = useNuxtApp()
     $swal.fire({
       icon: 'success',
@@ -571,7 +654,7 @@ async function saveNomination() {
     $swal.fire({
       icon: 'error',
       title: 'Erreur',
-      text: error.data?.message || 'Erreur lors de la sauvegarde'
+      text: error.message || 'Erreur lors de la sauvegarde'
     })
   }
 }

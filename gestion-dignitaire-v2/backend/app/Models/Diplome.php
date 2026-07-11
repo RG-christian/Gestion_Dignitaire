@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Diplome extends Model
 {
@@ -22,7 +23,26 @@ class Diplome extends Model
         'domaine_id',
         'code',
         'type',
+        'justificatif_path',
     ];
+
+    protected $appends = ['justificatif_url'];
+
+    public function getJustificatifUrlAttribute(): ?string
+    {
+        return $this->justificatif_path ? Storage::url($this->justificatif_path) : null;
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function (Diplome $diplome) {
+            if ($diplome->justificatif_path && Storage::disk('public')->exists($diplome->justificatif_path)) {
+                Storage::disk('public')->delete($diplome->justificatif_path);
+            }
+        });
+    }
 
     public function dignitaire(): BelongsTo
     {

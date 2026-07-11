@@ -12,5 +12,5 @@ class Langue extends Model
     protected $table = 'langue'; // Table au singulier
     public $timestamps = false;
 
-    protected $fillable = ['nom'];
+    protected $fillable = ['nom', 'code_iso', 'famille', 'nb_locuteurs'];
 }

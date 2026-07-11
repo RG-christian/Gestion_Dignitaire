@@ -248,12 +248,10 @@
               <!-- Établissement -->
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Établissement</label>
-                <select v-model="form.etablissement_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent">
-                  <option value="">Sélectionner</option>
-                  <option v-for="etab in etablissements" :key="etab.id" :value="etab.id">
-                    {{ etab.nom }}
-                  </option>
-                </select>
+                <EtablissementPicker
+                  v-model="form.etablissement_id"
+                  :initial-label="form.etablissement_nom"
+                />
               </div>
 
               <!-- Année -->
@@ -304,12 +302,31 @@
               <!-- Type -->
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Type</label>
-                <input
-                  v-model="form.type"
-                  placeholder="Ex: Master, Licence, Doctorat"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent"
-                >
+                <select v-model="form.type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent">
+                  <option value="">Sélectionner</option>
+                  <option v-for="t in TYPES_DIPLOME" :key="t" :value="t">{{ t }}</option>
+                </select>
               </div>
+            </div>
+
+            <!-- Justificatif PDF -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Justificatif (PDF)</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                @change="handleJustificatifChange"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gabon-green-50 file:text-gabon-green-700 file:font-semibold"
+              >
+              <p class="text-xs text-gray-500 mt-1">PDF uniquement, 10 Mo max.</p>
+              <a
+                v-if="form.justificatif_url"
+                :href="siteRoot + form.justificatif_url"
+                target="_blank"
+                class="inline-flex items-center gap-1 text-sm text-gabon-blue-700 hover:underline mt-1"
+              >
+                Voir le justificatif actuel
+              </a>
             </div>
 
             <!-- Boutons -->
@@ -401,6 +418,19 @@
                 <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Code</p>
                 <p class="text-sm font-medium text-gray-800">{{ selectedDetail.code || 'Non spécifié' }}</p>
               </div>
+
+              <div class="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Justificatif</p>
+                <a
+                  v-if="selectedDetail.justificatif_path"
+                  :href="`${siteRoot}/storage/${selectedDetail.justificatif_path}`"
+                  target="_blank"
+                  class="text-sm font-medium text-gabon-blue-700 hover:underline"
+                >
+                  Voir le PDF
+                </a>
+                <p v-else class="text-sm font-medium text-gray-800">Non fourni</p>
+              </div>
             </div>
           </div>
 
@@ -429,6 +459,11 @@ const authStore = useAuthStore()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
 const fileDownload = useFileDownload()
+const api = useApi()
+
+const TYPES_DIPLOME = ['BEPC', 'Baccalauréat', 'BTS/DUT', 'Licence', 'Master', 'Doctorat', "Diplôme d'ingénieur", 'Autre']
+const siteRoot = computed(() => (config.public.apiBase as string).replace(/\/api\/?$/, ''))
+const justificatifFile = ref<File | null>(null)
 
 async function exportListe(format: 'pdf' | 'excel') {
   try {
@@ -444,7 +479,6 @@ async function exportListe(format: 'pdf' | 'excel') {
 
 const diplomes = ref([])
 const dignitaires = ref([])
-const etablissements = ref([])
 const villes = ref([])
 const domaines = ref([])
 const loading = ref(true)
@@ -463,12 +497,14 @@ const filters = reactive({
 const form = reactive({
   dignitaire_id: '',
   intitule: '',
-  etablissement_id: '',
+  etablissement_id: '' as number | string,
+  etablissement_nom: '',
   annee: '',
   ville_id: '',
   domaine_id: '',
   code: '',
-  type: ''
+  type: '',
+  justificatif_url: ''
 })
 
 // Pagination
@@ -517,42 +553,48 @@ async function loadDignitaires() {
   }
 }
 
-async function loadEtablissements() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/etablissements`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    etablissements.value = response || []
-  } catch (error) {
-    console.error('Erreur:', error)
-  }
-}
-
 // Version debouncée pour optimiser les requêtes AJAX
 const debouncedLoadDiplomes = debounce(loadDiplomes, 500)
 
 function openModal(diplome: any = null) {
   selectedDiplome.value = diplome
+  justificatifFile.value = null
   if (diplome) {
     form.dignitaire_id = diplome.dignitaire_id
     form.intitule = diplome.intitule
     form.etablissement_id = diplome.etablissement_id || ''
+    form.etablissement_nom = diplome.etablissement_nom || ''
     form.annee = diplome.annee || ''
     form.ville_id = diplome.ville_id || ''
     form.domaine_id = diplome.domaine_id || ''
     form.code = diplome.code || ''
     form.type = diplome.type || ''
+    form.justificatif_url = diplome.justificatif_url || (diplome.justificatif_path ? `/storage/${diplome.justificatif_path}` : '')
   } else {
     form.dignitaire_id = ''
     form.intitule = ''
     form.etablissement_id = ''
+    form.etablissement_nom = ''
     form.annee = ''
     form.ville_id = ''
     form.domaine_id = ''
     form.code = ''
     form.type = ''
+    form.justificatif_url = ''
   }
   showModal.value = true
+}
+
+function handleJustificatifChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  if (file.size > 10 * 1024 * 1024) {
+    const { $swal } = useNuxtApp()
+    $swal.fire({ icon: 'error', title: 'Fichier trop volumineux', text: 'Le PDF dépasse 10 Mo' })
+    ;(event.target as HTMLInputElement).value = ''
+    return
+  }
+  justificatifFile.value = file
 }
 
 function closeModal() {
@@ -572,20 +614,23 @@ function closeDetailModal() {
 
 async function saveDiplome() {
   try {
+    const formData = new FormData()
+    formData.append('dignitaire_id', String(form.dignitaire_id))
+    formData.append('intitule', form.intitule)
+    if (form.etablissement_id) formData.append('etablissement_id', String(form.etablissement_id))
+    if (form.annee) formData.append('annee', String(form.annee))
+    if (form.ville_id) formData.append('ville_id', String(form.ville_id))
+    if (form.domaine_id) formData.append('domaine_id', String(form.domaine_id))
+    if (form.code) formData.append('code', form.code)
+    if (form.type) formData.append('type', form.type)
+    if (justificatifFile.value) formData.append('justificatif', justificatifFile.value)
+
     if (selectedDiplome.value) {
-      await $fetch(`${config.public.apiBase}/diplomes/${selectedDiplome.value.id}`, {
-        method: 'PUT',
-        body: form,
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
+      await api.updateDiplome(selectedDiplome.value.id, formData)
     } else {
-      await $fetch(`${config.public.apiBase}/diplomes`, {
-        method: 'POST',
-        body: form,
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
+      await api.createDiplome(formData)
     }
-    
+
     const { $swal } = useNuxtApp()
     $swal.fire({
       icon: 'success',
@@ -623,11 +668,8 @@ async function deleteDiplome(id: number) {
   
   if (result.isConfirmed) {
     try {
-      await $fetch(`${config.public.apiBase}/diplomes/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
-      
+      await api.deleteDiplome(id)
+
       $swal.fire({
         icon: 'success',
         title: 'Supprimé',
@@ -651,7 +693,6 @@ async function deleteDiplome(id: number) {
 onMounted(async () => {
   villes.value = await referentiels.getVilles()
   domaines.value = await referentiels.getDomaines()
-  await loadEtablissements()
   await loadDignitaires()
   await loadDiplomes()
 })

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\CandidatureRefusee;
 use App\Mail\CandidatureValidee;
 use App\Models\Candidat;
+use App\Models\CandidatMessage;
 use App\Models\Dignitaire;
 use App\Models\Diplome;
 use App\Models\LangueParlee;
@@ -79,7 +80,12 @@ class CandidatController extends Controller
             'villeResidence',
             'validePar',
             'dignitaire',
-            'documents'
+            'documents',
+            'diplomes.etablissement',
+            'diplomes.domaine',
+            'langues.langue',
+            'experiences.structure',
+            'messages',
         ])->findOrFail($id);
 
         return response()->json([
@@ -165,6 +171,14 @@ class CandidatController extends Controller
 
             AuditLogger::log($request, 'validated', 'Candidat', $candidat->id, "{$candidat->prenom} {$candidat->nom}", ['statut' => 'en_attente'], ['statut' => 'valide', 'dignitaire_id' => $dignitaire->id]);
 
+            CandidatMessage::create([
+                'candidat_id' => $candidat->id,
+                'user_id' => $request->user()?->id,
+                'user_label' => $request->user()?->username ?? $request->user()?->email,
+                'type' => 'validation',
+                'contenu' => 'Votre candidature a été validée. Bienvenue !',
+            ]);
+
             DB::commit();
 
             try {
@@ -218,6 +232,14 @@ class CandidatController extends Controller
             $candidat->refuser((int) $request->user()->id, $request->motif);
 
             AuditLogger::log($request, 'refused', 'Candidat', $candidat->id, "{$candidat->prenom} {$candidat->nom}", ['statut' => 'en_attente'], ['statut' => 'refuse', 'motif_refus' => $request->motif]);
+
+            CandidatMessage::create([
+                'candidat_id' => $candidat->id,
+                'user_id' => $request->user()?->id,
+                'user_label' => $request->user()?->username ?? $request->user()?->email,
+                'type' => 'refus',
+                'contenu' => $request->motif,
+            ]);
 
             try {
                 Mail::to($candidat->email)->send(new CandidatureRefusee($candidat, $request->motif));

@@ -25,6 +25,9 @@ class Nomination extends Model
         'statut',
         'motif_fin',
         'rappel_envoye',
+        'type_nomination',
+        'autorite_nominatrice',
+        'document_nomination_path',
     ];
 
     protected $casts = [

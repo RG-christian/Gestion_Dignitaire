@@ -46,7 +46,8 @@ class CandidatDiplomeController extends Controller
             'ville_id' => 'nullable|exists:ville,id',
             'domaine_id' => 'nullable|exists:domaine,id',
             'annee' => 'nullable|string|max:10',
-            'justificatif' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
+            'type' => 'nullable|in:' . implode(',', \App\Http\Controllers\Api\DiplomeController::TYPES),
+            'justificatif' => 'nullable|file|max:10240|mimes:pdf',
         ]);
 
         $path = null;
@@ -60,6 +61,7 @@ class CandidatDiplomeController extends Controller
             'ville_id' => $request->ville_id,
             'domaine_id' => $request->domaine_id,
             'annee' => $request->annee,
+            'type' => $request->type,
             'justificatif_path' => $path,
         ]);
 
@@ -92,7 +94,8 @@ class CandidatDiplomeController extends Controller
             'ville_id' => 'nullable|exists:ville,id',
             'domaine_id' => 'nullable|exists:domaine,id',
             'annee' => 'nullable|string|max:10',
-            'justificatif' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
+            'type' => 'nullable|in:' . implode(',', \App\Http\Controllers\Api\DiplomeController::TYPES),
+            'justificatif' => 'nullable|file|max:10240|mimes:pdf',
         ]);
 
         if ($request->hasFile('justificatif')) {
@@ -102,7 +105,7 @@ class CandidatDiplomeController extends Controller
             $diplome->justificatif_path = $request->file('justificatif')->store('candidats/diplomes', 'public');
         }
 
-        $diplome->fill($request->only(['intitule', 'etablissement_id', 'ville_id', 'domaine_id', 'annee']));
+        $diplome->fill($request->only(['intitule', 'etablissement_id', 'ville_id', 'domaine_id', 'annee', 'type']));
         $diplome->save();
 
         return response()->json([

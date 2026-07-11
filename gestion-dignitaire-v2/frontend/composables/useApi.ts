@@ -77,9 +77,55 @@ export const useApi = () => {
 
     // Nominations
     getNominations: (params?: any) => cachedFetch('/nominations', { params }),
-    createNomination: (data: any) => apiFetch('/nominations', { method: 'POST', body: data }),
-    updateNomination: (id: number, data: any) => apiFetch(`/nominations/${id}`, { method: 'PUT', body: data }),
+    createNomination: async (formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      const response = await fetch(`${config.public.apiBase}/nominations`, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      })
+      if (!response.ok) throw await response.json()
+      return await response.json()
+    },
+    updateNomination: async (id: number, formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      formData.append('_method', 'PUT')
+      const response = await fetch(`${config.public.apiBase}/nominations/${id}`, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      })
+      if (!response.ok) throw await response.json()
+      return await response.json()
+    },
     deleteNomination: (id: number) => apiFetch(`/nominations/${id}`, { method: 'DELETE' }),
+
+    // Entités
+    createEntite: async (formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      const response = await fetch(`${config.public.apiBase}/entites`, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      })
+      if (!response.ok) throw await response.json()
+      return await response.json()
+    },
+    updateEntite: async (id: number, formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      formData.append('_method', 'PUT')
+      const response = await fetch(`${config.public.apiBase}/entites/${id}`, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      })
+      if (!response.ok) throw await response.json()
+      return await response.json()
+    },
 
     // Décorations
     getDecorations: () => cachedFetch('/decorations'),
@@ -94,10 +140,55 @@ export const useApi = () => {
 
     // Conjoints
     getConjoints: (dignitaireId: number) => apiFetch(`/dignitaires/${dignitaireId}/conjoints`),
+    getAllConjoints: (params?: any) => apiFetch('/conjoints', { params }),
     createConjoint: (dignitaireId: number, data: any) => apiFetch(`/dignitaires/${dignitaireId}/conjoints`, { method: 'POST', body: data }),
     updateConjoint: (id: number, data: any) => apiFetch(`/conjoints/${id}`, { method: 'PUT', body: data }),
     deleteConjoint: (id: number) => apiFetch(`/conjoints/${id}`, { method: 'DELETE' }),
     terminerUnionConjoint: (id: number, data: any) => apiFetch(`/conjoints/${id}/terminer-union`, { method: 'POST', body: data }),
+
+    // Diplômes (upload avec fichier justificatif)
+    createDiplome: async (formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      const response = await fetch(`${config.public.apiBase}/diplomes`, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      })
+      if (!response.ok) throw await response.json()
+      return await response.json()
+    },
+    updateDiplome: async (id: number, formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      formData.append('_method', 'PUT')
+      const response = await fetch(`${config.public.apiBase}/diplomes/${id}`, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      })
+      if (!response.ok) throw await response.json()
+      return await response.json()
+    },
+    deleteDiplome: (id: number) => apiFetch(`/diplomes/${id}`, { method: 'DELETE' }),
+
+    // Établissements (recherche ou création à la volée)
+    getEtablissements: (params?: any) => apiFetch('/etablissements', { params }),
+    createEtablissement: (nom: string, villeId?: number | null) =>
+      apiFetch('/etablissements', { method: 'POST', body: { nom, ville_id: villeId || null } }),
+
+    // Photo dignitaire
+    uploadDignitairePhoto: async (dignitaireId: number, formData: FormData) => {
+      const authStore = useAuthStore()
+      const config = useRuntimeConfig()
+      const response = await fetch(`${config.public.apiBase}/dignitaires/${dignitaireId}/photo`, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${authStore.token}`, 'Accept': 'application/json' }
+      })
+      if (!response.ok) throw await response.json()
+      return await response.json()
+    },
 
     // Documents dignitaires
     getDignitaireDocuments: (dignitaireId: number) => apiFetch(`/dignitaires/${dignitaireId}/documents`),

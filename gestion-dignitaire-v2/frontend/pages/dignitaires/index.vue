@@ -106,6 +106,16 @@
           </button>
           <button
             v-if="permissions.peutEcrire('Dignitaire')"
+            @click="showImportModal = true"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+            </svg>
+            Importer Excel
+          </button>
+          <button
+            v-if="permissions.peutEcrire('Dignitaire')"
             @click="openModal()"
             class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg whitespace-nowrap"
           >
@@ -168,6 +178,11 @@
             <option value="actif">Actif</option>
             <option value="retraite">Retraité</option>
             <option value="non_localise">Non localisé</option>
+          </select>
+
+          <select v-model="filters.sort_by" @change="loadDignitaires" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="nom">Trier par nom</option>
+            <option value="anciennete">Trier par ancienneté</option>
           </select>
 
           <div class="flex gap-2">
@@ -250,6 +265,11 @@
               {{ d.ville_poste }}
             </div>
 
+            <!-- Ancienneté -->
+            <div v-if="d.anciennete_annees !== null && d.anciennete_annees !== undefined" class="text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full mb-2">
+              {{ d.anciennete_annees }} an{{ d.anciennete_annees > 1 ? 's' : '' }} d'ancienneté
+            </div>
+
             <!-- Actions flottantes au hover -->
             <div class="absolute top-0 right-0 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <NuxtLink
@@ -311,6 +331,7 @@
                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Ville</th>
                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Entité</th>
                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Genre</th>
+                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Ancienneté</th>
                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Statut</th>
                 <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
               </tr>
@@ -389,6 +410,12 @@
                   </span>
                   <span v-else-if="d.genre === 'Femme'" class="bg-pink-100 text-pink-800 px-2 py-1 rounded-full text-xs font-medium">
                     Femme
+                  </span>
+                  <span v-else class="text-sm text-gray-400">—</span>
+                </td>
+                <td class="px-4 py-3">
+                  <span v-if="d.anciennete_annees !== null && d.anciennete_annees !== undefined" class="text-sm text-indigo-700 bg-indigo-50 px-2 py-1 rounded-full">
+                    {{ d.anciennete_annees }} an{{ d.anciennete_annees > 1 ? 's' : '' }}
                   </span>
                   <span v-else class="text-sm text-gray-400">—</span>
                 </td>
@@ -548,12 +575,30 @@
                   Date de naissance <span class="text-red-500">*</span>
                 </span>
               </label>
-              <input 
-                v-model="form.date_naissance" 
+              <input
+                v-model="form.date_naissance"
                 type="date"
-                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                 required
               >
+            </div>
+
+            <!-- Date de prise de fonction (référence pour l'ancienneté) -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Date d'acceptation / d'affectation
+                </span>
+              </label>
+              <input
+                v-model="form.date_prise_fonction"
+                type="date"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              >
+              <p class="text-xs text-gray-500 mt-1">Sert de référence pour calculer l'ancienneté. À défaut, la date du plus ancien poste est utilisée.</p>
             </div>
 
             <!-- Lieu de naissance -->
@@ -643,16 +688,23 @@
                   <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                   </svg>
-                  Nom du fichier photo
+                  Photo
                 </span>
               </label>
-              <input 
-                v-model="form.photo" 
-                type="text"
-                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" 
-                placeholder="exemple: photo.jpg"
-              >
-              <p class="text-xs text-gray-500 mt-1">Le fichier doit être uploadé dans /uploads/photos/</p>
+              <div class="flex items-center gap-4">
+                <img
+                  v-if="photoPreview || (selectedDignitaire && selectedDignitaire.photo)"
+                  :src="photoPreview || `/uploads/photos/${selectedDignitaire.photo}`"
+                  class="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                >
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg"
+                  @change="handlePhotoChange"
+                  class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 file:font-semibold"
+                >
+              </div>
+              <p class="text-xs text-gray-500 mt-1">JPG ou PNG, 2 Mo max.</p>
             </div>
           </div>
 
@@ -675,6 +727,69 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal Import Excel -->
+    <div v-if="showImportModal" class="fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" @click.self="closeImportModal">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between">
+          <h4 class="text-xl font-bold text-white">Importer des dignitaires (Excel)</h4>
+          <button @click="closeImportModal" class="text-white hover:text-gray-200 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-gray-600">
+            Le fichier doit contenir les colonnes : Nom, Prenom, NIP, Matricule, Date naissance, Genre, Etat civil,
+            Nationalite, Telephone, Adresse, Statut. Nom et Prénom sont obligatoires ; le matricule est
+            auto-généré s'il est laissé vide.
+          </p>
+          <button
+            type="button"
+            @click="downloadTemplate"
+            class="text-sm text-green-700 hover:text-green-800 font-semibold underline"
+          >
+            Télécharger le modèle Excel
+          </button>
+
+          <div>
+            <input
+              ref="importFileInput"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              @change="onImportFileChange"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 file:font-semibold"
+            >
+          </div>
+
+          <div v-if="importResult" class="rounded-lg border p-4 text-sm space-y-2" :class="importResult.nb_erreurs ? 'border-orange-300 bg-orange-50' : 'border-green-300 bg-green-50'">
+            <p class="font-semibold text-gray-800">
+              {{ importResult.nb_crees }} dignitaire(s) créé(s), {{ importResult.nb_erreurs }} ligne(s) en erreur.
+            </p>
+            <ul v-if="importResult.erreurs?.length" class="list-disc list-inside text-gray-700 max-h-40 overflow-y-auto">
+              <li v-for="err in importResult.erreurs" :key="err.ligne">
+                Ligne {{ err.ligne }} ({{ err.prenom }} {{ err.nom }}) : {{ err.messages.join(', ') }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="button" @click="closeImportModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">
+              Fermer
+            </button>
+            <button
+              type="button"
+              @click="runImport"
+              :disabled="!importFile || importing"
+              class="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ importing ? 'Import en cours…' : 'Importer' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </DashboardLayout>
 </template>
 
@@ -685,6 +800,9 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const api = useApi()
+const photoFile = ref<File | null>(null)
+const photoPreview = ref<string | null>(null)
 const permissions = usePermissions()
 const fileDownload = useFileDownload()
 const showModal = ref(false)
@@ -700,7 +818,8 @@ const filters = reactive({
   genre: '',
   ville_id: '',
   entite_id: '',
-  statut: ''
+  statut: '',
+  sort_by: 'nom'
 })
 
 const form = reactive({
@@ -709,10 +828,10 @@ const form = reactive({
   nom: '',
   prenom: '',
   date_naissance: '',
+  date_prise_fonction: '',
   lieu_naissance: '',
   genre: '',
   etat_civil: '',
-  photo: '',
   statut: 'actif'
 })
 
@@ -778,6 +897,7 @@ async function loadDignitaires() {
     if (filters.ville_id) params.append('ville_id', filters.ville_id)
     if (filters.entite_id) params.append('entite_id', filters.entite_id)
     if (filters.statut) params.append('statut', filters.statut)
+    params.append('sort_by', filters.sort_by)
     params.append('per_page', '100')
     
     const response = await $fetch(`${config.public.apiBase}/dignitaires?${params.toString()}`, {
@@ -793,12 +913,14 @@ async function loadDignitaires() {
       data = data.filter(d => d.nom.toUpperCase().startsWith(filters.letter))
     }
     
-    // Tri alphabétique par nom
-    data.sort((a, b) => {
-      const nomA = a.nom.toUpperCase()
-      const nomB = b.nom.toUpperCase()
-      return nomA.localeCompare(nomB)
-    })
+    // Tri alphabétique par nom côté client (le tri par ancienneté vient déjà du serveur)
+    if (filters.sort_by === 'nom') {
+      data.sort((a, b) => {
+        const nomA = a.nom.toUpperCase()
+        const nomB = b.nom.toUpperCase()
+        return nomA.localeCompare(nomB)
+      })
+    }
     
     // Enrichir avec l'année du poste
     dignitaires.value = data.map(d => {
@@ -838,16 +960,18 @@ function formatDateRange(dateDebut: string, dateFin: string | null) {
 
 function openModal(dignitaire: any = null) {
   selectedDignitaire.value = dignitaire
+  photoFile.value = null
+  photoPreview.value = null
   if (dignitaire) {
     form.nip = dignitaire.nip
     form.matricule = dignitaire.matricule
     form.nom = dignitaire.nom
     form.prenom = dignitaire.prenom
     form.date_naissance = dignitaire.date_naissance
+    form.date_prise_fonction = dignitaire.date_prise_fonction || ''
     form.lieu_naissance = dignitaire.lieu_naissance
     form.genre = dignitaire.genre
     form.etat_civil = dignitaire.etat_civil
-    form.photo = dignitaire.photo || ''
     form.statut = dignitaire.statut || 'actif'
   } else {
     // Reset form
@@ -856,10 +980,10 @@ function openModal(dignitaire: any = null) {
     form.nom = ''
     form.prenom = ''
     form.date_naissance = ''
+    form.date_prise_fonction = ''
     form.lieu_naissance = ''
     form.genre = ''
     form.etat_civil = ''
-    form.photo = ''
     form.statut = 'actif'
   }
   showModal.value = true
@@ -868,10 +992,27 @@ function openModal(dignitaire: any = null) {
 function closeModal() {
   showModal.value = false
   selectedDignitaire.value = null
+  photoFile.value = null
+  photoPreview.value = null
+}
+
+function handlePhotoChange(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  if (file.size > 2 * 1024 * 1024) {
+    const { $swal } = useNuxtApp()
+    $swal.fire({ icon: 'error', title: 'Fichier trop volumineux', text: 'L\'image dépasse 2 Mo' })
+    ;(event.target as HTMLInputElement).value = ''
+    return
+  }
+  photoFile.value = file
+  photoPreview.value = URL.createObjectURL(file)
 }
 
 async function saveDignitaire() {
   try {
+    let dignitaireId = selectedDignitaire.value?.id
+
     if (selectedDignitaire.value) {
       await $fetch(`${config.public.apiBase}/dignitaires/${selectedDignitaire.value.id}`, {
         method: 'PUT',
@@ -881,15 +1022,22 @@ async function saveDignitaire() {
         }
       })
     } else {
-      await $fetch(`${config.public.apiBase}/dignitaires`, {
+      const created: any = await $fetch(`${config.public.apiBase}/dignitaires`, {
         method: 'POST',
         body: form,
         headers: {
           Authorization: `Bearer ${authStore.token}`
         }
       })
+      dignitaireId = created.id
     }
-    
+
+    if (photoFile.value && dignitaireId) {
+      const photoFormData = new FormData()
+      photoFormData.append('photo', photoFile.value)
+      await api.uploadDignitairePhoto(dignitaireId, photoFormData)
+    }
+
     const { $swal } = useNuxtApp()
     $swal.fire({
       icon: 'success',
@@ -898,7 +1046,7 @@ async function saveDignitaire() {
       timer: 2000,
       showConfirmButton: false
     })
-    
+
     closeModal()
     loadDignitaires()
   } catch (error) {
@@ -909,6 +1057,63 @@ async function saveDignitaire() {
       title: 'Erreur',
       text: 'Une erreur est survenue lors de la sauvegarde'
     })
+  }
+}
+
+// ===== Import Excel =====
+const showImportModal = ref(false)
+const importFile = ref<File | null>(null)
+const importFileInput = ref<HTMLInputElement | null>(null)
+const importing = ref(false)
+const importResult = ref<any>(null)
+
+function onImportFileChange(event: Event) {
+  importFile.value = (event.target as HTMLInputElement).files?.[0] || null
+}
+
+function closeImportModal() {
+  showImportModal.value = false
+  importFile.value = null
+  importResult.value = null
+  if (importFileInput.value) importFileInput.value.value = ''
+}
+
+async function downloadTemplate() {
+  try {
+    await fileDownload.download('/dignitaires-import-template', {}, 'modele-import-dignitaires.xlsx')
+  } catch (error) {
+    console.error('Erreur téléchargement modèle:', error)
+  }
+}
+
+async function runImport() {
+  if (!importFile.value) return
+  importing.value = true
+  importResult.value = null
+  try {
+    const formData = new FormData()
+    formData.append('fichier', importFile.value)
+
+    const response = await fetch(`${config.public.apiBase}/dignitaires-import`, {
+      method: 'POST',
+      body: formData,
+      headers: { Authorization: `Bearer ${authStore.token}`, Accept: 'application/json' }
+    })
+
+    if (!response.ok) throw await response.json()
+
+    importResult.value = await response.json()
+    loadDignitaires()
+  } catch (error: any) {
+    console.error('Erreur import:', error)
+    const { $swal } = useNuxtApp()
+    $swal.fire({
+      icon: 'error',
+      title: 'Erreur',
+      text: error?.message || 'Erreur lors de l\'import du fichier'
+    })
+  } finally {
+    importing.value = false
   }
 }
 

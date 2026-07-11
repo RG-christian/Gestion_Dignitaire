@@ -10,10 +10,13 @@ use App\Support\Exports\ListPdfExporter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class DiplomeController extends Controller
 {
+    public const TYPES = ['BEPC', 'Baccalauréat', 'BTS/DUT', 'Licence', 'Master', 'Doctorat', "Diplôme d'ingénieur", 'Autre'];
+
     private function baseQuery(Request $request)
     {
         $query = DB::table('diplome as d')
@@ -103,8 +106,14 @@ class DiplomeController extends Controller
             'ville_id' => 'nullable|exists:ville,id',
             'domaine_id' => 'nullable|exists:domaine,id',
             'code' => 'nullable|string|max:30',
-            'type' => 'nullable|string|max:30',
+            'type' => 'nullable|in:' . implode(',', self::TYPES),
+            'justificatif' => 'nullable|file|max:10240|mimes:pdf',
         ]);
+
+        if ($request->hasFile('justificatif')) {
+            $validated['justificatif_path'] = $request->file('justificatif')->store('dignitaires/diplomes', 'public');
+        }
+        unset($validated['justificatif']);
 
         $diplome = Diplome::create($validated);
         AuditLogger::log($request, 'created', 'Diplome', $diplome->id, $diplome->intitule, null, $validated);
@@ -123,8 +132,17 @@ class DiplomeController extends Controller
             'ville_id' => 'nullable|exists:ville,id',
             'domaine_id' => 'nullable|exists:domaine,id',
             'code' => 'nullable|string|max:30',
-            'type' => 'nullable|string|max:30',
+            'type' => 'nullable|in:' . implode(',', self::TYPES),
+            'justificatif' => 'nullable|file|max:10240|mimes:pdf',
         ]);
+
+        if ($request->hasFile('justificatif')) {
+            if ($diplome->justificatif_path && Storage::disk('public')->exists($diplome->justificatif_path)) {
+                Storage::disk('public')->delete($diplome->justificatif_path);
+            }
+            $validated['justificatif_path'] = $request->file('justificatif')->store('dignitaires/diplomes', 'public');
+        }
+        unset($validated['justificatif']);
 
         $old = $diplome->getOriginal();
         $diplome->update($validated);

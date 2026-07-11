@@ -138,6 +138,11 @@ class Candidat extends Authenticatable
         return $this->hasMany(CandidatExperience::class);
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(CandidatMessage::class)->latest();
+    }
+
     /**
      * Scopes pour filtres
      */

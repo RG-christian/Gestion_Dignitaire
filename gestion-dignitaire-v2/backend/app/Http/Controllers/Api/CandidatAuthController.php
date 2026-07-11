@@ -229,6 +229,46 @@ class CandidatAuthController extends Controller
     }
 
     /**
+     * Changer le mot de passe du candidat connecté.
+     *
+     * Contrairement à updateProfile(), disponible quel que soit le statut de
+     * la candidature (un compte doit toujours pouvoir changer son mot de
+     * passe, y compris une fois le dossier validé/refusé).
+     *
+     * PUT /api/candidats/me/password
+     */
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $candidat = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if (!Hash::check($request->current_password, $candidat->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Le mot de passe actuel est incorrect'
+            ], 401);
+        }
+
+        $candidat->update(['password' => Hash::make($request->new_password)]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mot de passe changé avec succès'
+        ]);
+    }
+
+    /**
      * Vérifier si une chaîne est en base64
      */
     private function isBase64(string $data): bool

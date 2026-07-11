@@ -1,16 +1,13 @@
 export default defineNuxtPlugin(() => {
   const authStore = useAuthStore()
-  
-  // Charger le token depuis localStorage au démarrage (sans await)
+
+  // Restaure la session depuis localStorage au démarrage, puis revalide
+  // auprès de l'API (authStore.loadFromStorage -> fetchUser) pour éviter
+  // d'afficher un menu basé sur des fonctions/sous-fonctions périmées
+  // (ex: droits modifiés côté admin depuis la dernière connexion).
+  // Pas d'await : on ne bloque pas le rendu initial, le store se met à
+  // jour dès que la réponse arrive.
   if (process.client) {
-    const token = localStorage.getItem('auth_token')
-    const user = localStorage.getItem('user')
-    const tokenExpiry = localStorage.getItem('token_expiry')
-    
-    if (token && user) {
-      authStore.token = token
-      authStore.user = JSON.parse(user)
-      authStore.tokenExpiry = tokenExpiry
-    }
+    authStore.loadFromStorage()
   }
 })

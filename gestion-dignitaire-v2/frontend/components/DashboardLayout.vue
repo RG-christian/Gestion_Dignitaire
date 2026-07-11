@@ -7,10 +7,55 @@
       </button>
       <div class="flex items-center space-x-2">
         <i class="fas fa-crown text-lg text-blue-500"></i>
-        <NuxtLink to="/dashboard" class="text-sm sm:text-base font-medium tracking-tight">
+        <NuxtLink to="/dashboard" class="text-sm sm:text-base font-medium tracking-tight hidden sm:block">
           Gestion Dignitaires
         </NuxtLink>
       </div>
+
+      <!-- Recherche globale -->
+      <div ref="globalSearchRef" class="relative ml-4 sm:ml-8 w-full max-w-xs sm:max-w-sm">
+        <div class="relative">
+          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+          <input
+            v-model="globalSearchQuery"
+            @input="onGlobalSearchInput"
+            @focus="globalSearchOpen = globalSearchResults.length > 0"
+            @keydown.esc="closeGlobalSearch"
+            type="text"
+            placeholder="Rechercher un dignitaire, une nomination, un diplôme..."
+            class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          >
+        </div>
+        <div
+          v-if="globalSearchOpen"
+          class="absolute left-0 mt-1 w-full sm:w-96 bg-white rounded-lg shadow-2xl border border-gray-100 max-h-96 overflow-y-auto z-40"
+        >
+          <div v-if="globalSearchLoading" class="p-4 text-center text-sm text-gray-500">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Recherche…
+          </div>
+          <div v-else-if="globalSearchResults.length === 0" class="p-4 text-center text-sm text-gray-500">
+            Aucun résultat pour « {{ globalSearchQuery }} »
+          </div>
+          <ul v-else class="py-1">
+            <li v-for="(r, i) in globalSearchResults" :key="r.type + '-' + r.id + '-' + i">
+              <component
+                :is="r.url ? 'NuxtLink' : 'div'"
+                :to="r.url || undefined"
+                @click="r.url && closeGlobalSearch()"
+                class="flex items-center justify-between px-4 py-2 text-sm"
+                :class="r.url ? 'hover:bg-blue-50 cursor-pointer' : 'opacity-60 cursor-default'"
+              >
+                <span>
+                  <span class="font-medium text-gray-800">{{ r.label }}</span>
+                  <span v-if="r.sublabel" class="text-gray-400"> — {{ r.sublabel }}</span>
+                </span>
+                <span class="text-xs uppercase tracking-wide text-blue-500 ml-2 whitespace-nowrap">{{ r.type_label }}</span>
+              </component>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <nav class="ml-auto flex items-center space-x-2">
         <button @click="toggleTheme" class="text-gray-800 focus:outline-none transition duration-200 hover:bg-gray-100 p-2 rounded-lg">
           <i :class="isDark ? 'fas fa-sun' : 'fas fa-adjust'" class="text-lg"></i>
@@ -53,31 +98,31 @@
           isSidebarCollapsed ? 'w-16' : 'w-72'
         ]"
       >
-        <div class="pt-6 px-2 w-full h-full flex flex-col">
+        <div class="pt-4 px-2 w-full h-full flex flex-col">
           <!-- Header avec bouton toggle -->
-          <div class="flex justify-between items-center mb-6 px-2">
-            <h2 v-show="!isSidebarCollapsed" class="text-base font-semibold text-gray-800 transition-opacity duration-200">Menu Principal</h2>
+          <div class="flex justify-between items-center mb-4 px-2">
+            <h2 v-show="!isSidebarCollapsed" class="text-xs font-semibold text-gray-600 transition-opacity duration-200 uppercase tracking-wider">Menu Principal</h2>
             <button 
               @click="toggleSidebarCollapse" 
               class="text-gray-800 focus:outline-none hover:bg-gray-100 p-2 rounded-lg transition ml-auto"
               :title="isSidebarCollapsed ? 'Déplier le menu' : 'Replier le menu'"
             >
-              <i :class="isSidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" class="text-sm"></i>
+              <i :class="isSidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" class="text-xs"></i>
             </button>
           </div>
 
           <!-- Menu items -->
           <div class="flex-1 overflow-visible">
-            <ul class="space-y-3">
+            <ul class="space-y-2">
               <!-- Tableau de Bord -->
               <li>
                 <NuxtLink
                   to="/dashboard"
-                  class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
+                  class="flex items-center p-2.5 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
                   :title="isSidebarCollapsed ? 'Tableau de Bord' : ''"
                 >
-                  <i class="fas fa-tachometer-alt w-6 text-lg text-blue-500"></i>
-                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium">Tableau de Bord</span>
+                  <i class="fas fa-tachometer-alt w-5 text-base text-blue-500"></i>
+                  <span v-show="!isSidebarCollapsed" class="ml-3 text-sm font-medium">Tableau de Bord</span>
                   <!-- Tooltip pour mode réduit -->
                   <div v-if="isSidebarCollapsed" class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                     Tableau de Bord
@@ -85,57 +130,107 @@
                 </NuxtLink>
               </li>
 
-              <!-- Journal des actions (traçabilité) -->
-              <li v-if="permissions.aAccesComplet.value">
-                <NuxtLink
-                  to="/admin/audit-logs"
-                  class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
-                  :title="isSidebarCollapsed ? 'Journal des actions' : ''"
+              <!-- Groupe : Rapports & Traçabilité (Admin uniquement) -->
+              <li v-if="permissions.aAccesComplet.value" class="relative">
+                <button
+                  @click="toggleDropdown('rapports_tracabilite')"
+                  class="w-full flex items-center p-2.5 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
+                  :title="isSidebarCollapsed ? 'Rapports & Traçabilité' : ''"
                 >
-                  <i class="fas fa-history w-6 text-lg text-blue-500"></i>
-                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium">Journal des actions</span>
-                  <div v-if="isSidebarCollapsed" class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                    Journal des actions
-                  </div>
-                </NuxtLink>
-              </li>
+                  <i class="fas fa-chart-line w-5 text-base text-blue-500"></i>
+                  <span v-show="!isSidebarCollapsed" class="ml-3 text-sm font-medium flex-1 text-left">Rapports & Traçabilité</span>
+                  <i v-show="!isSidebarCollapsed" :class="openDropdown === 'rapports_tracabilite' ? 'fa-chevron-down' : 'fa-chevron-right'" class="fas ml-auto text-xs"></i>
+                </button>
 
-              <!-- Rapports & Exports -->
-              <li v-if="permissions.aAccesComplet.value">
-                <NuxtLink
-                  to="/admin/rapports"
-                  class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
-                  :title="isSidebarCollapsed ? 'Rapports & Exports' : ''"
+                <!-- Sous-menu en mode étendu -->
+                <ul 
+                  v-show="openDropdown === 'rapports_tracabilite' && !isSidebarCollapsed" 
+                  class="dropdown-content bg-gray-50 pl-3 mt-1 space-y-1 rounded overflow-hidden"
                 >
-                  <i class="fas fa-file-export w-6 text-lg text-blue-500"></i>
-                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium">Rapports &amp; Exports</span>
-                  <div v-if="isSidebarCollapsed" class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                    Rapports & Exports
+                  <li>
+                    <NuxtLink
+                      to="/admin/rapports"
+                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    >
+                      Rapports & Exports
+                    </NuxtLink>
+                  </li>
+                  <li>
+                    <NuxtLink
+                      to="/admin/audit-logs"
+                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    >
+                      Journal des actions
+                    </NuxtLink>
+                  </li>
+                </ul>
+
+                <!-- Menu flottant en mode réduit -->
+                <div 
+                  v-if="isSidebarCollapsed && openDropdown === 'rapports_tracabilite'"
+                  class="fixed left-16 bg-white shadow-xl rounded-lg py-2 px-1 min-w-[200px] z-50 border border-gray-200"
+                  style="top: 120px"
+                >
+                  <div class="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-200 mb-1">
+                    Rapports & Traçabilité
                   </div>
-                </NuxtLink>
+                  <NuxtLink
+                    to="/admin/rapports"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    @click="openDropdown = null"
+                  >
+                    Rapports & Exports
+                  </NuxtLink>
+                  <NuxtLink
+                    to="/admin/audit-logs"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    @click="openDropdown = null"
+                  >
+                    Journal des actions
+                  </NuxtLink>
+                </div>
               </li>
 
               <!-- Menus dynamiques basés sur les droits d'accès -->
               <li v-for="fonction in fonctionsAvecSousfonctions" :key="fonction.id" class="relative">
                 <button
                   @click="toggleDropdown(fonction.fonction_name)"
-                  class="w-full flex items-center p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
+                  class="w-full flex items-center p-2.5 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
                   :title="isSidebarCollapsed ? fonction.fonction_name : ''"
                 >
-                  <i :class="['fas', getIcon(fonction.fonction_name), 'w-6', 'text-lg', 'text-blue-500']"></i>
-                  <span v-show="!isSidebarCollapsed" class="ml-3 text-base font-medium flex-1 text-left">{{ fonction.fonction_name }}</span>
-                  <i v-show="!isSidebarCollapsed" :class="openDropdown === fonction.fonction_name ? 'fa-chevron-down' : 'fa-chevron-right'" class="fas ml-auto text-sm"></i>
+                  <i :class="['fas', getIcon(fonction.fonction_name), 'w-5', 'text-base', 'text-blue-500']"></i>
+                  <span v-show="!isSidebarCollapsed" class="ml-3 text-sm font-medium flex-1 text-left">{{ fonction.fonction_name }}</span>
+                  <i v-show="!isSidebarCollapsed" :class="openDropdown === fonction.fonction_name ? 'fa-chevron-down' : 'fa-chevron-right'" class="fas ml-auto text-xs"></i>
                 </button>
 
                 <!-- Sous-menu en mode étendu -->
                 <ul 
                   v-show="openDropdown === fonction.fonction_name && !isSidebarCollapsed" 
-                  class="dropdown-content bg-gray-50 pl-3 mt-2 space-y-2 rounded overflow-hidden"
+                  class="dropdown-content bg-gray-50 pl-3 mt-1 space-y-1 rounded overflow-hidden"
                 >
+                  <!-- Candidatures dans Gest. Pers. -->
+                  <li v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.aAccesComplet.value">
+                    <NuxtLink
+                      to="/admin/candidatures"
+                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    >
+                      Candidatures
+                    </NuxtLink>
+                  </li>
+                  <!-- Conjoints dans Gest. Pers. -->
+                  <li v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')">
+                    <NuxtLink
+                      to="/conjoints"
+                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    >
+                      Conjoints
+                    </NuxtLink>
+                  </li>
+                  <!-- Sous-fonctions existantes -->
                   <li v-for="sf in getSousFonctions(fonction.id)" :key="sf.id">
                     <NuxtLink
                       :to="getRouteForSousfonction(sf.sousfonction_name)"
-                      class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-sm rounded transition"
+                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
                     >
                       {{ sf.sousfonction_name }}
                     </NuxtLink>
@@ -148,14 +243,33 @@
                   class="fixed left-16 bg-white shadow-xl rounded-lg py-2 px-1 min-w-[200px] z-50 border border-gray-200"
                   :style="{ top: getDropdownPosition(fonction.id) }"
                 >
-                  <div class="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-200 mb-1">
+                  <div class="px-3 py-1 text-[10px] font-semibold text-gray-500 border-b border-gray-200 mb-1">
                     {{ fonction.fonction_name }}
                   </div>
+                  <!-- Candidatures dans Gest. Pers. -->
+                  <NuxtLink
+                    v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.aAccesComplet.value"
+                    to="/admin/candidatures"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    @click="openDropdown = null"
+                  >
+                    Candidatures
+                  </NuxtLink>
+                  <!-- Conjoints dans Gest. Pers. -->
+                  <NuxtLink
+                    v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')"
+                    to="/conjoints"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    @click="openDropdown = null"
+                  >
+                    Conjoints
+                  </NuxtLink>
+                  <!-- Sous-fonctions existantes -->
                   <NuxtLink
                     v-for="sf in getSousFonctions(fonction.id)"
                     :key="sf.id"
                     :to="getRouteForSousfonction(sf.sousfonction_name)"
-                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-sm rounded transition"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
                     @click="openDropdown = null"
                   >
                     {{ sf.sousfonction_name }}
@@ -229,6 +343,8 @@ import { ref, computed, onMounted } from 'vue'
 
 const authStore = useAuthStore()
 const permissions = usePermissions()
+const config = useRuntimeConfig()
+const { debounce } = useDebounce()
 const isSidebarCollapsed = ref(false)
 const isDark = ref(false)
 const showProfileMenu = ref(false)
@@ -376,8 +492,48 @@ onMounted(() => {
     if (!target.closest('.relative')) {
       showProfileMenu.value = false
     }
+    if (globalSearchRef.value && !globalSearchRef.value.contains(target)) {
+      globalSearchOpen.value = false
+    }
   })
 })
+
+// ===== Recherche globale =====
+const globalSearchRef = ref<HTMLElement | null>(null)
+const globalSearchQuery = ref('')
+const globalSearchResults = ref<any[]>([])
+const globalSearchLoading = ref(false)
+const globalSearchOpen = ref(false)
+
+async function runGlobalSearch() {
+  const q = globalSearchQuery.value.trim()
+  if (q.length < 2) {
+    globalSearchResults.value = []
+    globalSearchOpen.value = false
+    return
+  }
+
+  globalSearchLoading.value = true
+  globalSearchOpen.value = true
+  try {
+    const response: any = await $fetch(`${config.public.apiBase}/search`, {
+      params: { q },
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    })
+    globalSearchResults.value = response.results || []
+  } catch (error) {
+    console.error('Erreur recherche globale:', error)
+    globalSearchResults.value = []
+  } finally {
+    globalSearchLoading.value = false
+  }
+}
+
+const onGlobalSearchInput = debounce(runGlobalSearch, 350)
+
+function closeGlobalSearch() {
+  globalSearchOpen.value = false
+}
 </script>
 
 <style scoped>

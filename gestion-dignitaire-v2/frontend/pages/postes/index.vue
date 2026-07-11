@@ -500,6 +500,37 @@
               <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
               <textarea v-model="formEntite.description" rows="3" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent transition" placeholder="Description de l'entité..."></textarea>
             </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Téléphone</label>
+                <input v-model="formEntite.telephone" type="text" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent transition" placeholder="Ex: +241 01 23 45 67">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                <input v-model="formEntite.email" type="email" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent transition" placeholder="contact@entite.ga">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Site web</label>
+              <input v-model="formEntite.site_web" type="text" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent transition" placeholder="https://www.entite.ga">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Adresse</label>
+              <textarea v-model="formEntite.adresse" rows="2" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent transition" placeholder="Adresse complète..."></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Logo</label>
+              <div class="flex items-center gap-4">
+                <img v-if="logoPreview" :src="logoPreview" class="w-16 h-16 object-contain rounded-lg border bg-gray-50" alt="Logo actuel">
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png"
+                  @change="handleLogoChange"
+                  class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent transition file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gabon-blue-50 file:text-gabon-blue-700 file:font-semibold"
+                >
+              </div>
+              <p class="text-xs text-gray-500 mt-1">JPEG ou PNG, 2 Mo max.</p>
+            </div>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t">
             <button type="button" @click="closeEntiteModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
@@ -530,9 +561,12 @@
         </div>
         <div v-if="selectedEntiteDetail" class="p-6">
           <div class="space-y-4">
-            <div class="bg-gray-50 rounded-lg p-4">
-              <p class="text-sm font-semibold text-gray-500 mb-1">Nom</p>
-              <p class="text-lg font-bold text-gray-900">{{ selectedEntiteDetail.nom }}</p>
+            <div class="bg-gray-50 rounded-lg p-4 flex items-center gap-4">
+              <img v-if="selectedEntiteDetail.logo_url" :src="siteRoot + selectedEntiteDetail.logo_url" class="w-14 h-14 object-contain rounded-lg border bg-white" alt="Logo">
+              <div>
+                <p class="text-sm font-semibold text-gray-500 mb-1">Nom</p>
+                <p class="text-lg font-bold text-gray-900">{{ selectedEntiteDetail.nom }}</p>
+              </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="bg-gray-50 rounded-lg p-4">
@@ -547,6 +581,26 @@
             <div class="bg-gray-50 rounded-lg p-4">
               <p class="text-sm font-semibold text-gray-500 mb-1">Description</p>
               <p class="text-gray-900">{{ selectedEntiteDetail.description || 'N/A' }}</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Téléphone</p>
+                <p class="text-gray-900">{{ selectedEntiteDetail.telephone || 'N/A' }}</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Email</p>
+                <p class="text-gray-900">{{ selectedEntiteDetail.email || 'N/A' }}</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Site web</p>
+                <p class="text-gray-900">{{ selectedEntiteDetail.site_web || 'N/A' }}</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-semibold text-gray-500 mb-1">Adresse</p>
+                <p class="text-gray-900">{{ selectedEntiteDetail.adresse || 'N/A' }}</p>
+              </div>
             </div>
             <div v-if="selectedEntiteDetail.enfants && selectedEntiteDetail.enfants.length > 0" class="bg-gray-50 rounded-lg p-4">
               <p class="text-sm font-semibold text-gray-500 mb-2">Entités dépendantes ({{ selectedEntiteDetail.enfants.length }})</p>
@@ -577,6 +631,9 @@ const permissions = usePermissions()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
 const fileDownload = useFileDownload()
+const api = useApi()
+
+const siteRoot = computed(() => (config.public.apiBase).replace(/\/api\/?$/, ''))
 
 async function exportPostes(format) {
   try {
@@ -661,8 +718,20 @@ const formEntite = reactive({
   nom: '',
   type: '',
   id_sup: null,
-  description: ''
+  description: '',
+  telephone: '',
+  email: '',
+  site_web: '',
+  adresse: ''
 })
+const logoFile = ref(null)
+const logoPreview = ref(null)
+
+function handleLogoChange(event) {
+  const file = event.target.files[0] || null
+  logoFile.value = file
+  logoPreview.value = file ? URL.createObjectURL(file) : null
+}
 
 // Pagination Postes
 const totalPagesPostes = computed(() => Math.ceil(postes.value.length / itemsPerPage))
@@ -898,16 +967,27 @@ async function loadEntites() {
 
 function openEntiteModal(entite = null) {
   selectedEntite.value = entite
+  logoFile.value = null
   if (entite) {
     formEntite.nom = entite.nom
     formEntite.type = entite.type || ''
     formEntite.id_sup = entite.id_sup || null
     formEntite.description = entite.description || ''
+    formEntite.telephone = entite.telephone || ''
+    formEntite.email = entite.email || ''
+    formEntite.site_web = entite.site_web || ''
+    formEntite.adresse = entite.adresse || ''
+    logoPreview.value = entite.logo_url ? siteRoot.value + entite.logo_url : null
   } else {
     formEntite.nom = ''
     formEntite.type = ''
     formEntite.id_sup = null
     formEntite.description = ''
+    formEntite.telephone = ''
+    formEntite.email = ''
+    formEntite.site_web = ''
+    formEntite.adresse = ''
+    logoPreview.value = null
   }
   showEntiteModal.value = true
 }
@@ -915,6 +995,8 @@ function openEntiteModal(entite = null) {
 function closeEntiteModal() {
   showEntiteModal.value = false
   selectedEntite.value = null
+  logoFile.value = null
+  logoPreview.value = null
 }
 
 function openEntiteDetailModal(entite) {
@@ -929,18 +1011,23 @@ function closeEntiteDetailModal() {
 
 async function saveEntite() {
   try {
-    const url = selectedEntite.value
-      ? `${config.public.apiBase}/entites/${selectedEntite.value.id}`
-      : `${config.public.apiBase}/entites`
-    
-    const method = selectedEntite.value ? 'PUT' : 'POST'
-    
-    await $fetch(url, {
-      method,
-      body: formEntite,
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    
+    const formData = new FormData()
+    formData.append('nom', formEntite.nom)
+    if (formEntite.type) formData.append('type', formEntite.type)
+    if (formEntite.id_sup) formData.append('id_sup', formEntite.id_sup)
+    if (formEntite.description) formData.append('description', formEntite.description)
+    if (formEntite.telephone) formData.append('telephone', formEntite.telephone)
+    if (formEntite.email) formData.append('email', formEntite.email)
+    if (formEntite.site_web) formData.append('site_web', formEntite.site_web)
+    if (formEntite.adresse) formData.append('adresse', formEntite.adresse)
+    if (logoFile.value) formData.append('logo', logoFile.value)
+
+    if (selectedEntite.value) {
+      await api.updateEntite(selectedEntite.value.id, formData)
+    } else {
+      await api.createEntite(formData)
+    }
+
     const { $swal } = useNuxtApp()
     $swal.fire({
       icon: 'success',
@@ -949,7 +1036,7 @@ async function saveEntite() {
       timer: 2000,
       showConfirmButton: false
     })
-    
+
     closeEntiteModal()
     loadEntites()
   } catch (error) {
@@ -958,7 +1045,7 @@ async function saveEntite() {
     $swal.fire({
       icon: 'error',
       title: 'Erreur',
-      text: error.data?.message || 'Erreur lors de la sauvegarde'
+      text: error.message || 'Erreur lors de la sauvegarde'
     })
   }
 }

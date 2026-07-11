@@ -8,6 +8,7 @@ use App\Models\Dignitaire;
 use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Contrôleur de gestion des conjoints des dignitaires
@@ -16,13 +17,13 @@ class ConjointController extends Controller
 {
     /**
      * Liste des conjoints d'un dignitaire
-     * 
+     *
      * GET /api/dignitaires/{dignitaireId}/conjoints
      */
     public function index(int $dignitaireId): JsonResponse
     {
         $dignitaire = Dignitaire::findOrFail($dignitaireId);
-        
+
         $conjoints = $dignitaire->conjoints()
             ->with(['lieuNaissance', 'nationalite'])
             ->latest()
@@ -31,6 +32,45 @@ class ConjointController extends Controller
         return response()->json([
             'success' => true,
             'conjoints' => $conjoints
+        ]);
+    }
+
+    /**
+     * Liste globale des conjoints, tous dignitaires confondus, avec filtres
+     * (page d'administration "Gestion du personnel" > Conjoints).
+     *
+     * GET /api/conjoints
+     */
+    public function indexAll(Request $request): JsonResponse
+    {
+        $query = Conjoint::query()
+            ->select([
+                'conjoints.*',
+                DB::raw("CONCAT(d.prenom, ' ', d.nom) as dignitaire_nom_complet"),
+            ])
+            ->leftJoin('dignitaire as d', 'conjoints.dignitaire_id', '=', 'd.id');
+
+        if ($request->has('dignitaire_id') && $request->dignitaire_id) {
+            $query->where('conjoints.dignitaire_id', $request->dignitaire_id);
+        }
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('conjoints.nom', 'like', "%{$search}%")
+                  ->orWhere('conjoints.prenom', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('statut') && $request->statut) {
+            $query->where('conjoints.statut', $request->statut);
+        }
+
+        $conjoints = $query->orderBy('conjoints.nom')->get();
+
+        return response()->json([
+            'success' => true,
+            'conjoints' => $conjoints,
         ]);
     }
 

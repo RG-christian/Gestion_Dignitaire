@@ -9,6 +9,7 @@ use App\Support\Exports\GenericArrayExport;
 use App\Support\Exports\ListPdfExporter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -16,7 +17,7 @@ class EntiteController extends Controller
 {
     private function baseQuery(Request $request)
     {
-        $query = Entite::with(['parent', 'enfants']);
+        $query = Entite::with(['parent', 'enfants', 'rattachement']);
 
         // Recherche
         if ($request->has('search') && $request->search) {
@@ -54,11 +55,12 @@ class EntiteController extends Controller
     {
         $rows = $this->baseQuery($request)->orderBy('nom')->get();
 
-        $headings = ['Nom', 'Type', 'Entité parente', 'Description'];
+        $headings = ['Nom', 'Type', 'Entité parente', 'Entité de rattachement', 'Description'];
         $data = $rows->map(fn ($e) => [
             $e->nom,
             $e->type,
             $e->parent?->nom,
+            $e->rattachement?->nom,
             $e->description,
         ]);
 
@@ -76,7 +78,7 @@ class EntiteController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $entite = Entite::with(['parent', 'enfants'])->find($id);
+        $entite = Entite::with(['parent', 'enfants', 'rattachement'])->find($id);
 
         if (!$entite) {
             return response()->json([
@@ -96,7 +98,13 @@ class EntiteController extends Controller
             'nom' => 'required|string|max:150|unique:entite,nom',
             'type' => 'nullable|string|max:50',
             'id_sup' => 'nullable|exists:entite,id',
-            'description' => 'nullable|string'
+            'entite_rattachement_id' => 'nullable|exists:entite,id',
+            'description' => 'nullable|string',
+            'telephone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:150',
+            'site_web' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -106,10 +114,17 @@ class EntiteController extends Controller
             ], 422);
         }
 
-        $entite = Entite::create($request->all());
+        $data = $validator->validated();
+        unset($data['logo']);
+
+        if ($request->hasFile('logo')) {
+            $data['logo'] = $request->file('logo')->store('entites/logos', 'public');
+        }
+
+        $entite = Entite::create($data);
         $entite->load(['parent', 'enfants']);
 
-        AuditLogger::log($request, 'created', 'Entite', $entite->id, $entite->nom, null, $request->all());
+        AuditLogger::log($request, 'created', 'Entite', $entite->id, $entite->nom, null, $data);
 
         return response()->json($entite, 201);
     }
@@ -131,7 +146,13 @@ class EntiteController extends Controller
             'nom' => 'required|string|max:150|unique:entite,nom,' . $id,
             'type' => 'nullable|string|max:50',
             'id_sup' => 'nullable|exists:entite,id',
-            'description' => 'nullable|string'
+            'entite_rattachement_id' => 'nullable|exists:entite,id',
+            'description' => 'nullable|string',
+            'telephone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:150',
+            'site_web' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -148,11 +169,27 @@ class EntiteController extends Controller
             ], 422);
         }
 
+        if ($request->entite_rattachement_id && $request->entite_rattachement_id == $id) {
+            return response()->json([
+                'message' => 'Une entité ne peut pas être son propre rattachement'
+            ], 422);
+        }
+
+        $data = $validator->validated();
+        unset($data['logo']);
+
+        if ($request->hasFile('logo')) {
+            if ($entite->logo && Storage::disk('public')->exists($entite->logo)) {
+                Storage::disk('public')->delete($entite->logo);
+            }
+            $data['logo'] = $request->file('logo')->store('entites/logos', 'public');
+        }
+
         $old = $entite->getOriginal();
-        $entite->update($request->all());
+        $entite->update($data);
         $entite->load(['parent', 'enfants']);
 
-        AuditLogger::log($request, 'updated', 'Entite', $entite->id, $entite->nom, $old, $request->all());
+        AuditLogger::log($request, 'updated', 'Entite', $entite->id, $entite->nom, $old, $data);
 
         return response()->json($entite);
     }

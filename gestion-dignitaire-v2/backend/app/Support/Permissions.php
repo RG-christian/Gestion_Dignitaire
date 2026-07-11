@@ -11,27 +11,32 @@ use App\Models\User;
  * Assistant / Gestionnaire : accès module par module, selon les
  * sous-fonctions qui leur sont assignées et le niveau (lecture/écriture)
  * choisi pour chacune. Aucun des deux ne peut jamais supprimer.
+ *
+ * $user peut aussi être un Candidat (guard Sanctum partagé) : ces
+ * utilisateurs n'ont par définition aucun rôle admin, d'où le typage large
+ * plutôt que `?User` — un Candidat ne doit jamais planter ces vérifications,
+ * juste se voir refuser l'accès.
  */
 class Permissions
 {
     private const ROLES_ACCES_COMPLET = ['Administrateur', 'Super Administrateur'];
 
-    public static function estSuperAdmin(?User $user): bool
+    public static function estSuperAdmin(mixed $user): bool
     {
-        return $user?->role_name === 'Super Administrateur';
+        return $user instanceof User && $user->role_name === 'Super Administrateur';
     }
 
-    public static function aAccesComplet(?User $user): bool
+    public static function aAccesComplet(mixed $user): bool
     {
-        return in_array($user?->role_name, self::ROLES_ACCES_COMPLET, true);
+        return $user instanceof User && in_array($user->role_name, self::ROLES_ACCES_COMPLET, true);
     }
 
-    public static function peutSupprimer(?User $user): bool
+    public static function peutSupprimer(mixed $user): bool
     {
         return self::aAccesComplet($user);
     }
 
-    public static function peutLire(?User $user, string $sousfonction): bool
+    public static function peutLire(mixed $user, string $sousfonction): bool
     {
         if (self::aAccesComplet($user)) {
             return true;
@@ -40,7 +45,7 @@ class Permissions
         return self::niveauSousfonction($user, $sousfonction) !== null;
     }
 
-    public static function peutEcrire(?User $user, string $sousfonction): bool
+    public static function peutEcrire(mixed $user, string $sousfonction): bool
     {
         if (self::aAccesComplet($user)) {
             return true;
@@ -49,9 +54,9 @@ class Permissions
         return self::niveauSousfonction($user, $sousfonction) === 'ecriture';
     }
 
-    private static function niveauSousfonction(?User $user, string $sousfonction): ?string
+    private static function niveauSousfonction(mixed $user, string $sousfonction): ?string
     {
-        if (!$user) {
+        if (!$user instanceof User) {
             return null;
         }
 

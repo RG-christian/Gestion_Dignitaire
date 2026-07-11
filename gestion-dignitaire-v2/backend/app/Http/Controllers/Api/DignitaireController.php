@@ -7,9 +7,11 @@ use App\Models\Dignitaire;
 use App\Support\AuditLogger;
 use App\Support\Exports\GenericArrayExport;
 use App\Support\Exports\ListPdfExporter;
+use App\Support\Imports\DignitaireImport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -26,7 +28,8 @@ class DignitaireController extends Controller
                 DB::raw('(SELECT entite.nom FROM postes LEFT JOIN entite ON postes.entite_id = entite.id WHERE postes.dignitaire_id = dignitaire.id AND (postes.date_fin IS NULL OR postes.date_fin >= NOW()) ORDER BY postes.date_debut DESC LIMIT 1) as nom_entite'),
                 DB::raw('(SELECT CONCAT(YEAR(postes.date_debut), " - ", COALESCE(YEAR(postes.date_fin), "à ce jour")) FROM postes WHERE postes.dignitaire_id = dignitaire.id AND (postes.date_fin IS NULL OR postes.date_fin >= NOW()) ORDER BY postes.date_debut DESC LIMIT 1) as poste_annee')
             ])
-            ->leftJoin('ville', 'dignitaire.lieu_naissance', '=', 'ville.id');
+            ->leftJoin('ville', 'dignitaire.lieu_naissance', '=', 'ville.id')
+            ->with(['postes:id,dignitaire_id,date_debut']);
 
         // Recherche
         if ($request->has('search') && $request->search) {
@@ -74,10 +77,20 @@ class DignitaireController extends Controller
     {
         $query = $this->baseQuery($request);
 
-        // Tri alphabétique par nom par défaut
+        // Tri alphabétique par nom par défaut ; "anciennete" trie sur la date
+        // de prise de fonction (les plus anciens en premier par défaut)
         $sortBy = $request->get('sort_by', 'nom');
         $sortOrder = $request->get('sort_order', 'asc');
-        $query->orderBy('dignitaire.' . $sortBy, $sortOrder);
+        if ($sortBy === 'anciennete') {
+            // Même repli que Dignitaire::getDateReferenceAncienneteAttribute() :
+            // date_prise_fonction si renseignée, sinon date de début du plus ancien poste.
+            $query->orderByRaw(
+                'COALESCE(dignitaire.date_prise_fonction, (SELECT MIN(p.date_debut) FROM postes p WHERE p.dignitaire_id = dignitaire.id)) ' .
+                ($sortOrder === 'desc' ? 'DESC' : 'ASC') . ' , dignitaire.nom ASC'
+            );
+        } else {
+            $query->orderBy('dignitaire.' . $sortBy, $sortOrder);
+        }
 
         // Pagination
         $perPage = $request->get('per_page', 20);
@@ -202,6 +215,7 @@ class DignitaireController extends Controller
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
             'date_naissance' => 'nullable|date',
+            'date_prise_fonction' => 'nullable|date',
             'lieu_naissance' => 'nullable|exists:ville,id',
             'nationalite' => 'nullable|string|max:100',
             'genre' => 'nullable|in:Homme,Femme',
@@ -232,6 +246,7 @@ class DignitaireController extends Controller
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
             'date_naissance' => 'nullable|date',
+            'date_prise_fonction' => 'nullable|date',
             'lieu_naissance' => 'nullable|exists:ville,id',
             'nationalite' => 'nullable|string|max:100',
             'genre' => 'nullable|in:Homme,Femme',
@@ -251,6 +266,37 @@ class DignitaireController extends Controller
     }
 
     /**
+     * Téléverser/remplacer la photo d'un dignitaire.
+     *
+     * POST /api/dignitaires/{id}/photo
+     */
+    public function uploadPhoto(Request $request, int $id): JsonResponse
+    {
+        $dignitaire = Dignitaire::findOrFail($id);
+
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $file = $request->file('photo');
+        $filename = $dignitaire->matricule . '_' . time() . '.' . $file->getClientOriginalExtension();
+
+        $ancienPhoto = $dignitaire->photo;
+
+        $file->move(public_path('uploads/photos'), $filename);
+
+        if ($ancienPhoto && file_exists(public_path('uploads/photos/' . $ancienPhoto))) {
+            @unlink(public_path('uploads/photos/' . $ancienPhoto));
+        }
+
+        $dignitaire->update(['photo' => $filename]);
+
+        AuditLogger::log($request, 'updated', 'Dignitaire', $dignitaire->id, "{$dignitaire->prenom} {$dignitaire->nom}", ['photo' => $ancienPhoto], ['photo' => $filename]);
+
+        return response()->json(['photo' => $filename]);
+    }
+
+    /**
      * Supprimer un dignitaire
      */
     public function destroy(Request $request, int $id): JsonResponse
@@ -263,6 +309,45 @@ class DignitaireController extends Controller
         AuditLogger::log($request, 'deleted', 'Dignitaire', $id, $label, $old, null);
 
         return response()->json(['message' => 'Dignitaire supprimé avec succès']);
+    }
+
+    /**
+     * Télécharge un modèle Excel vierge pour l'import de dignitaires.
+     */
+    public function importTemplate()
+    {
+        $headings = ['Nom', 'Prenom', 'NIP', 'Matricule', 'Date naissance', 'Genre', 'Etat civil', 'Nationalite', 'Telephone', 'Adresse', 'Statut'];
+        $exemple = ['Ondo', 'Jean', '', '', '1975-03-12', 'Homme', 'Marié(e)', 'Gabonaise', '074000000', 'Libreville', 'actif'];
+
+        return Excel::download(
+            new GenericArrayExport($headings, new Collection([$exemple]), 'Dignitaires'),
+            'modele-import-dignitaires.xlsx'
+        );
+    }
+
+    /**
+     * Import Excel de dignitaires (CR de réunion). Chaque ligne valide est
+     * créée ; les lignes en erreur sont renvoyées pour correction sans
+     * bloquer les lignes valides.
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fichier' => 'required|file|mimes:xlsx,xls,csv',
+        ]);
+
+        $import = new DignitaireImport();
+        Excel::import($import, $request->file('fichier'));
+
+        foreach ($import->crees as $dignitaire) {
+            AuditLogger::log($request, 'created', 'Dignitaire', $dignitaire->id, "{$dignitaire->prenom} {$dignitaire->nom}", null, ['source' => 'import_excel']);
+        }
+
+        return response()->json([
+            'nb_crees' => count($import->crees),
+            'nb_erreurs' => count($import->erreurs),
+            'erreurs' => $import->erreurs,
+        ]);
     }
 
     /**

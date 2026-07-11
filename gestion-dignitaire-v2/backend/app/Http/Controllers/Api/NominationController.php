@@ -14,10 +14,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class NominationController extends Controller
 {
+    public const TYPES_NOMINATION = ['election', 'designation', 'cooptation', 'nomination_officielle'];
+
     private function baseQuery(Request $request)
     {
         $query = DB::table('nominations as n')
@@ -129,7 +132,15 @@ class NominationController extends Controller
             'date_debut' => 'nullable|date',
             'date_fin' => 'nullable|date',
             'numero_decret' => 'nullable|string|max:100',
+            'type_nomination' => 'nullable|in:' . implode(',', self::TYPES_NOMINATION),
+            'autorite_nominatrice' => 'nullable|string|max:255',
+            'document_nomination' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
         ]);
+
+        if ($request->hasFile('document_nomination')) {
+            $validated['document_nomination_path'] = $request->file('document_nomination')->store('dignitaires/nominations', 'public');
+        }
+        unset($validated['document_nomination']);
 
         $validated['statut'] = 'en_cours';
 
@@ -196,9 +207,21 @@ class NominationController extends Controller
             'date_debut' => 'nullable|date',
             'date_fin' => 'nullable|date',
             'numero_decret' => 'nullable|string|max:100',
+            'type_nomination' => 'nullable|in:' . implode(',', self::TYPES_NOMINATION),
+            'autorite_nominatrice' => 'nullable|string|max:255',
+            'document_nomination' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
         ]);
 
         $old = (array) DB::table('nominations')->where('id', $id)->first();
+
+        if ($request->hasFile('document_nomination')) {
+            if (!empty($old['document_nomination_path']) && Storage::disk('public')->exists($old['document_nomination_path'])) {
+                Storage::disk('public')->delete($old['document_nomination_path']);
+            }
+            $validated['document_nomination_path'] = $request->file('document_nomination')->store('dignitaires/nominations', 'public');
+        }
+        unset($validated['document_nomination']);
+
         DB::table('nominations')->where('id', $id)->update($validated);
 
         AuditLogger::log($request, 'updated', 'Nomination', $id, $validated['fonction'] ?? null, $old, $validated);
@@ -209,6 +232,11 @@ class NominationController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $old = (array) DB::table('nominations')->where('id', $id)->first();
+
+        if (!empty($old['document_nomination_path']) && Storage::disk('public')->exists($old['document_nomination_path'])) {
+            Storage::disk('public')->delete($old['document_nomination_path']);
+        }
+
         DB::table('nominations')->where('id', $id)->delete();
 
         AuditLogger::log($request, 'deleted', 'Nomination', $id, $old['fonction'] ?? null, $old, null);
