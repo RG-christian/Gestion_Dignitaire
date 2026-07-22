@@ -66,7 +66,7 @@ class ExperienceController extends Controller
             'intitule' => 'required|string|max:255',
             'structure_id' => 'nullable|exists:structure,id',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date',
+            'date_fin' => 'nullable|date|after:date_debut',
         ]);
 
         $id = DB::table('experiences')->insertGetId($validated);
@@ -83,7 +83,7 @@ class ExperienceController extends Controller
             'intitule' => 'required|string|max:255',
             'structure_id' => 'nullable|exists:structure,id',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date',
+            'date_fin' => 'nullable|date|after:date_debut',
         ]);
 
         $old = (array) DB::table('experiences')->where('id', $id)->first();

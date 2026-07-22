@@ -36,11 +36,19 @@ use App\Http\Controllers\Api\EtablissementController;
 
 // Routes publiques - Authentification Admin
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 
 // Routes publiques - Candidats (inscription et connexion)
 Route::prefix('candidats')->group(function () {
     Route::post('/register', [CandidatAuthController::class, 'register']);
     Route::post('/login', [CandidatAuthController::class, 'login']);
+    Route::post('/forgot-password', [CandidatAuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [CandidatAuthController::class, 'resetPassword']);
+    Route::post('/verify-otp', [CandidatAuthController::class, 'verifyOtp']);
+    Route::post('/resend-otp', [CandidatAuthController::class, 'resendOtp']);
 });
 
 // Routes publiques - Référentiels & statistiques pour la page d'accueil / inscription
@@ -146,6 +154,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('postes', PosteController::class);
         Route::post('/postes/{id}/cloturer', [PosteController::class, 'cloturer']);
         Route::get('/postes-export', [PosteController::class, 'export']);
+    });
+
+    // Affectations (séjours à l'étranger) — pas de sous-fonction dédiée,
+    // rattachées à Dignitaire comme les Conjoints (même précédent)
+    Route::middleware('permission:Dignitaire')->group(function () {
+        Route::apiResource('affectations', \App\Http\Controllers\Api\AffectationController::class);
+        Route::post('/affectations/{id}/cloturer', [\App\Http\Controllers\Api\AffectationController::class, 'cloturer']);
     });
 
     // Entités (CRUD complet) — pas de sous-fonction dédiée à ce jour, laissé ouvert à tout utilisateur authentifié
@@ -264,6 +279,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/roles', [AdminController::class, 'roles']);
             Route::get('/fonctions', [AdminController::class, 'fonctions']);
             Route::get('/sousfonctions', [AdminController::class, 'sousfonctions']);
+            Route::get('/parametres', [AdminController::class, 'getParametres']);
+            Route::put('/parametres', [AdminController::class, 'updateParametres']);
         });
 
         // Gestion des candidatures (Administrateur / Super Administrateur uniquement)

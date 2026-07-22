@@ -69,11 +69,14 @@
           </div>
 
           <!-- Se souvenir -->
-          <div class="flex items-center text-sm">
+          <div class="flex items-center justify-between text-sm">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" class="w-4 h-4 border-2 border-gray-300 rounded text-gabon-green-600 focus:ring-2 focus:ring-gabon-green-500">
               <span class="text-gray-700">Se souvenir de moi</span>
             </label>
+            <NuxtLink to="/candidature/forgot-password" class="text-gabon-green-700 font-semibold hover:underline">
+              Mot de passe oublié ?
+            </NuxtLink>
           </div>
 
           <!-- Bouton de connexion -->
@@ -145,10 +148,12 @@ const login = async () => {
   try {
     const response = await $api.post('/candidats/login', form.value)
 
-    if (response.success) {
+    if (response.otp_required) {
+      router.push(`/candidature/verify-otp?email=${encodeURIComponent(response.email)}&purpose=connexion`)
+    } else if (response.success) {
       // Stocker le token
       localStorage.setItem('candidat_token', response.token)
-      
+
       // Message de bienvenue
       $swal.fire({
         icon: 'success',

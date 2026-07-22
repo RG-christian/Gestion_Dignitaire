@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\Fonction;
 use App\Models\Sousfonction;
 use App\Support\AuditLogger;
+use App\Support\Parametres;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -293,5 +294,42 @@ class AdminController extends Controller
                 'message' => 'Erreur lors de la suppression: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Réglages applicatifs (Super Administrateur uniquement) : activation
+     * de l'OTP à la connexion, indépendamment pour l'admin et le candidat.
+     *
+     * GET /api/admin/parametres
+     */
+    public function getParametres(): JsonResponse
+    {
+        return response()->json([
+            'otp_login_admin_enabled' => Parametres::getBool(Parametres::OTP_LOGIN_ADMIN),
+            'otp_login_candidat_enabled' => Parametres::getBool(Parametres::OTP_LOGIN_CANDIDAT),
+        ]);
+    }
+
+    /**
+     * PUT /api/admin/parametres
+     */
+    public function updateParametres(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'otp_login_admin_enabled' => 'required|boolean',
+            'otp_login_candidat_enabled' => 'required|boolean',
+        ]);
+
+        Parametres::set(Parametres::OTP_LOGIN_ADMIN, $validated['otp_login_admin_enabled'] ? '1' : '0');
+        Parametres::set(Parametres::OTP_LOGIN_CANDIDAT, $validated['otp_login_candidat_enabled'] ? '1' : '0');
+
+        AuditLogger::log($request, 'updated', 'Parametres', null, 'Réglages OTP', null, $validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Réglages mis à jour avec succès',
+            'otp_login_admin_enabled' => $validated['otp_login_admin_enabled'],
+            'otp_login_candidat_enabled' => $validated['otp_login_candidat_enabled'],
+        ]);
     }
 }

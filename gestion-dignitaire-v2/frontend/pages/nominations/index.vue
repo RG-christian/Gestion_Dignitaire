@@ -223,7 +223,7 @@
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-                <input v-model="form.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                <input v-model="form.date_fin" type="date" :min="minDateFin(form.date_debut)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
               </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,7 +352,7 @@
     <!-- Modal Clôture -->
     <div v-if="showClotureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeClotureModal">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+        <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-6 py-4">
           <h4 class="text-xl font-bold text-white">Clôturer la nomination</h4>
         </div>
         <form @submit.prevent="confirmCloture" class="p-6 space-y-4">
@@ -371,11 +371,11 @@
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-            <input v-model="clotureForm.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+            <input v-model="clotureForm.date_fin" type="date" :min="minDateFin(nominationToClose?.date_debut)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
           </div>
           <div class="flex gap-3 pt-2">
             <button type="button" @click="closeClotureModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
-            <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
+            <button type="submit" class="flex-1 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
           </div>
         </form>
       </div>
@@ -393,6 +393,7 @@ const authStore = useAuthStore()
 const permissions = usePermissions()
 const fileDownload = useFileDownload()
 const referentiels = useReferentiels()
+const { minDateFin } = useDateHelpers()
 const { debounce } = useDebounce()
 const api = useApi()
 

@@ -137,27 +137,27 @@
                     <span v-else class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">En cours</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center">
-                    <div class="flex items-center justify-center gap-2">
-                      <button @click="openPosteDetailModal(poste)" class="inline-flex items-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Détail">
+                    <div class="grid grid-cols-4 gap-2 justify-items-center">
+                      <button @click="openPosteDetailModal(poste)" class="col-start-1 inline-flex items-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Détail">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
                         Détail
                       </button>
-                      <button v-if="poste.statut !== 'terminee' && permissions.peutEcrire('Poste')" @click="openClotureModal(poste)" class="inline-flex items-center gap-1 bg-orange-50 hover:bg-orange-100 text-orange-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Clôturer">
+                      <button v-if="poste.statut !== 'terminee' && permissions.peutEcrire('Poste')" @click="openClotureModal(poste)" class="col-start-2 inline-flex items-center gap-1 bg-orange-50 hover:bg-orange-100 text-orange-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Clôturer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                         Clôturer
                       </button>
-                      <button v-if="permissions.peutEcrire('Poste')" @click="openPosteModal(poste)" class="inline-flex items-center gap-1 bg-gabon-blue-50 hover:bg-gabon-blue-100 text-gabon-blue-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Modifier">
+                      <button v-if="permissions.peutEcrire('Poste')" @click="openPosteModal(poste)" class="col-start-3 inline-flex items-center gap-1 bg-gabon-blue-50 hover:bg-gabon-blue-100 text-gabon-blue-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Modifier">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
                         Modifier
                       </button>
-                      <button v-if="permissions.peutSupprimer()" @click="deletePoste(poste.id)" class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Supprimer">
+                      <button v-if="permissions.peutSupprimer()" @click="deletePoste(poste.id)" class="col-start-4 inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Supprimer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                         </svg>
@@ -357,7 +357,7 @@
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-                <input v-model="formPoste.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                <input v-model="formPoste.date_fin" type="date" :min="minDateFin(formPoste.date_debut)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
               </div>
             </div>
           </div>
@@ -432,7 +432,7 @@
     <!-- Modal Clôture Poste -->
     <div v-if="showClotureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeClotureModal">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+        <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-6 py-4">
           <h4 class="text-xl font-bold text-white">Clôturer le poste</h4>
         </div>
         <form @submit.prevent="confirmCloture" class="p-6 space-y-4">
@@ -440,22 +440,22 @@
             <label class="block text-sm font-semibold text-gray-700 mb-2">Motif <span class="text-red-500">*</span></label>
             <div class="space-y-2">
               <label class="flex items-center gap-2 border rounded-lg px-4 py-3 cursor-pointer hover:bg-gray-50">
-                <input type="radio" v-model="clotureForm.motif_fin" value="fin_fonction" required>
+                <input type="radio" v-model="clotureForm.motif_fin" value="fin_fonction" required class="accent-gabon-green-600">
                 <span>Fin de fonction formelle</span>
               </label>
               <label class="flex items-center gap-2 border rounded-lg px-4 py-3 cursor-pointer hover:bg-gray-50">
-                <input type="radio" v-model="clotureForm.motif_fin" value="mise_a_disposition" required>
+                <input type="radio" v-model="clotureForm.motif_fin" value="mise_a_disposition" required class="accent-gabon-green-600">
                 <span>Mise à disposition de l'administration d'origine</span>
               </label>
             </div>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-            <input v-model="clotureForm.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+            <input v-model="clotureForm.date_fin" type="date" :min="minDateFin(posteToClose?.date_debut)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
           </div>
           <div class="flex gap-3 pt-2">
             <button type="button" @click="closeClotureModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
-            <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
+            <button type="submit" class="flex-1 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
           </div>
         </form>
       </div>
@@ -632,6 +632,7 @@ const referentiels = useReferentiels()
 const { debounce } = useDebounce()
 const fileDownload = useFileDownload()
 const api = useApi()
+const { minDateFin } = useDateHelpers()
 
 const siteRoot = computed(() => (config.public.apiBase).replace(/\/api\/?$/, ''))
 

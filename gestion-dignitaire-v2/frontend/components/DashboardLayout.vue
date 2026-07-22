@@ -163,6 +163,14 @@
                       Journal des actions
                     </NuxtLink>
                   </li>
+                  <li v-if="permissions.estSuperAdmin.value">
+                    <NuxtLink
+                      to="/admin/parametres"
+                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    >
+                      Paramètres (OTP)
+                    </NuxtLink>
+                  </li>
                 </ul>
 
                 <!-- Menu flottant en mode réduit -->
@@ -187,6 +195,14 @@
                     @click="openDropdown = null"
                   >
                     Journal des actions
+                  </NuxtLink>
+                  <NuxtLink
+                    v-if="permissions.estSuperAdmin.value"
+                    to="/admin/parametres"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    @click="openDropdown = null"
+                  >
+                    Paramètres (OTP)
                   </NuxtLink>
                 </div>
               </li>
@@ -224,6 +240,15 @@
                       class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
                     >
                       Conjoints
+                    </NuxtLink>
+                  </li>
+                  <!-- Affectations dans Gest. Pers. -->
+                  <li v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')">
+                    <NuxtLink
+                      to="/affectations"
+                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    >
+                      Affectations
                     </NuxtLink>
                   </li>
                   <!-- Sous-fonctions existantes -->
@@ -264,6 +289,15 @@
                   >
                     Conjoints
                   </NuxtLink>
+                  <!-- Affectations dans Gest. Pers. -->
+                  <NuxtLink
+                    v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')"
+                    to="/affectations"
+                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
+                    @click="openDropdown = null"
+                  >
+                    Affectations
+                  </NuxtLink>
                   <!-- Sous-fonctions existantes -->
                   <NuxtLink
                     v-for="sf in getSousFonctions(fonction.id)"
@@ -282,7 +316,13 @@
             <div v-show="!isSidebarCollapsed" class="mt-auto pt-6 border-t border-gray-200">
               <div class="flex items-start gap-3 mb-3">
                 <div class="flex-shrink-0">
-                  <div class="w-10 h-10 bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                  <img
+                    v-if="userPhotoUrl"
+                    :src="userPhotoUrl"
+                    class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                    alt="Photo de profil"
+                  >
+                  <div v-else class="w-10 h-10 bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                     {{ (authStore.user?.nom_complet || 'A').charAt(0).toUpperCase() }}
                   </div>
                 </div>
@@ -354,6 +394,12 @@ const hoverTimeout = ref<any>(null)
 // Récupérer les fonctions et sous-fonctions depuis le store
 const fonctions = computed(() => authStore.user?.fonctions || [])
 const sousfonctions = computed(() => authStore.user?.sousfonctions || [])
+
+const userPhotoUrl = computed(() => {
+  const photo = authStore.user?.photo
+  if (!photo) return null
+  return `${config.public.apiBase.replace(/\/api\/?$/, '')}/storage/photos/${photo}`
+})
 
 // Filtrer les fonctions qui ont au moins une sous-fonction accessible
 const fonctionsAvecSousfonctions = computed(() => {

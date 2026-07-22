@@ -24,6 +24,7 @@ class Dignitaire extends Model
         'date_prise_fonction',
         'lieu_naissance',
         'nationalite',
+        'nationalite_id',
         'genre',
         'etat_civil',
         'photo',
@@ -78,6 +79,20 @@ class Dignitaire extends Model
     public function lieuNaissance(): BelongsTo
     {
         return $this->belongsTo(Ville::class, 'lieu_naissance');
+    }
+
+    /**
+     * Nationalité d'origine (pays), distincte des affectations qui suivent
+     * les séjours du dignitaire à l'étranger.
+     */
+    public function nationaliteRef(): BelongsTo
+    {
+        return $this->belongsTo(Pays::class, 'nationalite_id');
+    }
+
+    public function affectations(): HasMany
+    {
+        return $this->hasMany(Affectation::class);
     }
 
     public function diplomes(): HasMany

@@ -1,58 +1,59 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gabon-green-50">
-    <!-- Navbar simple -->
-    <nav class="fixed top-4 left-4 right-4 z-50">
-      <div class="max-w-5xl mx-auto">
-        <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 px-6 py-4 flex items-center justify-between">
-          <NuxtLink to="/accueil" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div class="bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 rounded-xl p-2">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-              </svg>
-            </div>
-            <span class="font-bold text-gray-900 hidden sm:block">Gestion Dignitaires</span>
-          </NuxtLink>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600 hidden sm:block">Déjà inscrit ?</span>
-            <NuxtLink to="/candidature/login" class="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-lg border-2 border-gray-200 hover:border-gabon-green-600 transition-all duration-300">
-              Se connecter
-            </NuxtLink>
+  <div class="min-h-screen bg-white overflow-hidden">
+    <!-- Navbar moderne -->
+    <nav class="absolute top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
+      <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+        <NuxtLink to="/accueil" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div class="bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 rounded-xl p-2.5">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
           </div>
+          <span class="font-bold text-gray-900 text-lg">Gestion Dignitaires</span>
+        </NuxtLink>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-600 hidden sm:block">Déjà inscrit ?</span>
+          <NuxtLink to="/candidature/login" class="px-5 py-2.5 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+            Se connecter
+          </NuxtLink>
         </div>
       </div>
     </nav>
 
-    <!-- Formulaire principal -->
-    <div class="pt-32 pb-20 px-4">
-      <div class="max-w-3xl mx-auto">
-        <!-- Header -->
-        <div class="text-center mb-10">
-          <div class="inline-flex items-center gap-2 bg-gabon-green-100 px-4 py-2 rounded-full mb-6">
-            <svg class="w-5 h-5 text-gabon-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span class="text-sm font-semibold text-gabon-green-700">Étape {{ currentStep }} sur 3</span>
-          </div>
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">Formulaire de Candidature Dignitaire</h1>
-          <p class="text-lg text-gray-600">Complétez toutes les informations requises pour votre dossier de candidature</p>
-        </div>
+    <!-- Container principal en split-screen -->
+    <div class="flex h-screen pt-[73px]">
+      <!-- Panneau gauche : Formulaire avec shadow et arrondi -->
+      <div class="w-full lg:w-1/2 overflow-y-auto bg-white lg:shadow-2xl lg:rounded-r-3xl">
+        <div class="px-6 md:px-12 lg:px-16 py-8 lg:py-6 max-w-2xl mx-auto w-full">
+          <!-- Header et Progress -->
+          <div class="mb-6 lg:mb-8">
+            <div class="inline-flex items-center gap-2 bg-gabon-green-100 px-4 py-2 rounded-full mb-6">
+              <svg class="w-5 h-5 text-gabon-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="text-sm font-semibold text-gabon-green-700">Étape {{ currentStep }} sur 4</span>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Candidature Dignitaire</h1>
+            <p class="text-gray-600">Complétez votre dossier en 4 étapes simples</p>
 
-        <!-- Progress bar -->
-        <div class="mb-10">
-          <div class="flex items-center justify-between mb-3 text-xs md:text-sm">
-            <span v-for="step in 3" :key="step" class="font-medium text-center" :class="step <= currentStep ? 'text-gabon-green-600' : 'text-gray-400'">
-              {{ getStepLabel(step) }}
-            </span>
+            <!-- Progress bar -->
+            <div class="mt-8">
+              <div class="flex items-center justify-between mb-3 text-xs md:text-sm">
+                <span v-for="step in 4" :key="step" class="font-medium text-center" :class="step <= currentStep ? 'text-gabon-green-600' : 'text-gray-400'">
+                  {{ getStepLabel(step) }}
+                </span>
+              </div>
+              <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 transition-all duration-700 ease-out" :style="{ width: (currentStep / 4 * 100) + '%' }"></div>
+              </div>
+            </div>
           </div>
-          <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 transition-all duration-500 rounded-full" :style="{ width: (currentStep / 3 * 100) + '%' }"></div>
-          </div>
-        </div>
 
-        <!-- Card principale -->
-        <div class="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden">
+          <!-- Conteneur avec animation de transition -->
+          <Transition :name="transitionName" mode="out-in">
+            <div :key="currentStep">
           <!-- Step 1: Informations personnelles -->
-          <form v-if="currentStep === 1" @submit.prevent="nextStep" class="p-8 space-y-6">
+          <form v-if="currentStep === 1" @submit.prevent="nextStep" class="space-y-4 lg:space-y-5 bg-gray-50/50 rounded-2xl p-6 lg:p-8 shadow-sm border border-gray-100">
             <!-- Photo -->
             <div class="flex justify-center mb-2">
               <label class="relative cursor-pointer group">
@@ -142,7 +143,25 @@
                   {{ showCustomVilleNaissance ? '← Retour à la liste' : 'Ma ville n\'est pas dans la liste' }}
                 </button>
               </div>
+            </div>
 
+            <!-- Actions -->
+            <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+              <NuxtLink to="/accueil" class="px-6 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-semibold transition-colors">
+                Annuler
+              </NuxtLink>
+              <button type="submit" class="px-8 py-3 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-bold rounded-xl shadow-lg shadow-gabon-green-600/30 hover:shadow-xl transition-all duration-300 flex items-center gap-2">
+                Continuer
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+              </button>
+            </div>
+          </form>
+
+          <!-- Step 2: Coordonnées et compte -->
+          <form v-if="currentStep === 2" @submit.prevent="nextStep" class="space-y-4 lg:space-y-5 bg-gray-50/50 rounded-2xl p-6 lg:p-8 shadow-sm border border-gray-100">
+            <div class="grid md:grid-cols-2 gap-4 lg:gap-6">
               <!-- Email -->
               <div class="md:col-span-2">
                 <label class="block text-sm font-bold text-gray-700 mb-2">
@@ -200,9 +219,12 @@
 
             <!-- Actions -->
             <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-              <NuxtLink to="/accueil" class="px-6 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-semibold transition-colors">
-                Annuler
-              </NuxtLink>
+              <button type="button" @click="previousStep" class="px-6 py-3 text-gray-700 hover:bg-gray-100 rounded-xl font-semibold transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+                </svg>
+                Retour
+              </button>
               <button type="submit" class="px-8 py-3 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-bold rounded-xl shadow-lg shadow-gabon-green-600/30 hover:shadow-xl transition-all duration-300 flex items-center gap-2">
                 Continuer
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,65 +234,89 @@
             </div>
           </form>
 
-          <!-- Step 2: Documents -->
-          <form v-if="currentStep === 2" @submit.prevent="nextStep" class="p-8 space-y-6">
-            <div class="text-center mb-8">
-              <div class="w-20 h-20 bg-gabon-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <!-- Step 3: Documents -->
+          <form v-if="currentStep === 3" @submit.prevent="nextStep" class="p-6 lg:p-8 space-y-4 lg:space-y-5 bg-gray-50/50 rounded-2xl shadow-sm border border-gray-100">
+            <div class="text-center mb-4 lg:mb-6">
+              <div class="w-16 lg:w-20 h-16 lg:h-20 bg-gabon-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
                 <svg class="w-10 h-10 text-gabon-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                 </svg>
               </div>
-              <h3 class="text-2xl font-bold text-gray-900 mb-2">Upload de documents</h3>
-              <p class="text-gray-600">Ajoutez vos documents (CV, diplômes, attestations...)</p>
+              <h3 class="text-2xl font-bold text-gray-900 mb-2">Documents</h3>
+              <p class="text-gray-600">Ajoutez les documents demandés ci-dessous</p>
             </div>
 
-            <!-- Zone de drop -->
-            <div @drop.prevent="handleFileDrop" @dragover.prevent="isDragging = true" @dragleave="isDragging = false" :class="{ 'border-gabon-green-500 bg-gabon-green-50': isDragging }" class="border-4 border-dashed border-gray-300 rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer hover:border-gabon-green-500 hover:bg-gabon-green-50" @click="$refs.fileInput.click()">
-              <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            <!-- Info : étape facultative -->
+            <div class="flex items-start gap-3 bg-gabon-blue-50 border border-gabon-blue-200 rounded-xl p-4">
+              <svg class="w-5 h-5 text-gabon-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
-              <p class="text-lg font-semibold text-gray-700 mb-2">Glissez-déposez vos fichiers ici</p>
-              <p class="text-sm text-gray-500 mb-4">ou cliquez pour parcourir</p>
-              <p class="text-xs text-gray-400">PDF, DOC, DOCX, JPG, PNG (Max 10 Mo)</p>
-              <input ref="fileInput" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="handleFileSelect" class="hidden">
+              <p class="text-sm text-gabon-blue-800">
+                Cette étape est <strong>facultative</strong>. Vous pouvez ajouter vos documents maintenant, ou les téléverser plus tard depuis votre tableau de bord, une fois votre inscription validée.
+              </p>
             </div>
 
-            <!-- Liste des fichiers -->
-            <div v-if="uploadedFiles.length > 0" class="space-y-3">
-              <h4 class="font-bold text-gray-900 mb-3">Fichiers ajoutés ({{ uploadedFiles.length }})</h4>
-              <div v-for="(file, index) in uploadedFiles" :key="index" class="flex items-center justify-between bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-gabon-green-500 transition-colors group">
-                <div class="flex items-center gap-3 flex-1">
-                  <div class="w-10 h-10 bg-gabon-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-gabon-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
+            <!-- Documents demandés, par catégorie -->
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div v-for="cat in documentCategories" :key="cat.key" class="bg-white rounded-xl border border-gray-200 p-4 flex flex-col">
+                <div class="flex items-start gap-3 mb-3">
+                  <div class="w-10 h-10 bg-gabon-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <component :is="cat.icon" class="w-5 h-5 text-gabon-blue-600" />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-gray-900 truncate">{{ file.name }}</p>
-                    <p class="text-sm text-gray-500">{{ formatFileSize(file.size) }}</p>
+                    <p class="font-bold text-gray-900">{{ cat.label }}</p>
+                    <p class="text-xs text-gray-500">{{ cat.description }}</p>
                   </div>
-                  <select v-model="file.type" class="px-3 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all">
-                    <option value="">Type...</option>
-                    <option value="cv">CV</option>
-                    <option value="diplome">Diplôme</option>
-                    <option value="attestation">Attestation</option>
-                    <option value="lettre">Lettre</option>
-                    <option value="casier">Casier judiciaire</option>
-                    <option value="medical">Certificat médical</option>
-                    <option value="autre">Autre</option>
-                  </select>
                 </div>
-                <button type="button" @click="removeFile(index)" class="ml-3 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+
+                <div v-if="filesForCategory(cat.key).length" class="space-y-2 mb-3">
+                  <div v-for="f in filesForCategory(cat.key)" :key="f.name + f.size" class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm">
+                    <span class="truncate flex-1 text-gray-700">{{ f.name }}</span>
+                    <button type="button" @click="removeFileByRef(f)" class="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <label :for="'file-' + cat.key" class="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:border-gabon-green-500 hover:text-gabon-green-700 hover:bg-gabon-green-50 cursor-pointer transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                   </svg>
-                </button>
+                  {{ !cat.multiple && filesForCategory(cat.key).length ? 'Remplacer le fichier' : cat.multiple ? 'Ajouter un fichier' : 'Ajouter' }}
+                </label>
+                <input :id="'file-' + cat.key" type="file" :multiple="cat.multiple" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" @change="onCategoryFileSelect($event, cat.key, cat.multiple)">
               </div>
             </div>
 
-            <div v-if="uploadedFiles.length === 0" class="text-center py-8">
-              <p class="text-gray-500">Aucun fichier ajouté pour le moment</p>
+            <!-- Autres documents (zone générique) -->
+            <div>
+              <p class="font-bold text-gray-900 mb-2">Autres documents</p>
+              <p class="text-xs text-gray-500 mb-2">Tout document ne correspondant pas aux catégories ci-dessus.</p>
+              <div @drop.prevent="handleFileDrop" @dragover.prevent="isDragging = true" @dragleave="isDragging = false" :class="{ 'border-gabon-green-500 bg-gabon-green-50': isDragging }" class="border-4 border-dashed border-gray-300 rounded-2xl p-6 lg:p-8 text-center transition-all duration-300 cursor-pointer hover:border-gabon-green-500 hover:bg-gabon-green-50" @click="$refs.fileInput.click()">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p class="text-sm font-semibold text-gray-700 mb-1">Glissez-déposez vos fichiers ici, ou cliquez pour parcourir</p>
+                <p class="text-xs text-gray-400">PDF, DOC, DOCX, JPG, PNG (Max 10 Mo)</p>
+                <input ref="fileInput" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="handleFileSelect" class="hidden">
+              </div>
+              <div v-if="filesForCategory('autre').length" class="space-y-2 mt-3">
+                <div v-for="f in filesForCategory('autre')" :key="f.name + f.size" class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm border border-gray-200">
+                  <span class="truncate flex-1 text-gray-700">{{ f.name }}</span>
+                  <button type="button" @click="removeFileByRef(f)" class="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
+
+            <p v-if="uploadedFiles.length > 0" class="text-sm text-gray-500 text-center">
+              {{ uploadedFiles.length }} fichier{{ uploadedFiles.length > 1 ? 's' : '' }} ajouté{{ uploadedFiles.length > 1 ? 's' : '' }} au total
+            </p>
 
             <!-- Actions -->
             <div class="flex items-center justify-between pt-6 border-t border-gray-200">
@@ -289,10 +335,10 @@
             </div>
           </form>
 
-          <!-- Step 3: Confirmation -->
-          <div v-if="currentStep === 3" class="p-8">
-            <div class="text-center mb-8">
-              <div class="w-20 h-20 bg-gabon-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <!-- Step 4: Confirmation -->
+          <div v-if="currentStep === 4" class="p-6 lg:p-8 bg-gray-50/50 rounded-2xl shadow-sm border border-gray-100">
+            <div class="text-center mb-4 lg:mb-6">
+              <div class="w-16 lg:w-20 h-16 lg:h-20 bg-gabon-green-100 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
                 <svg class="w-10 h-10 text-gabon-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                 </svg>
@@ -302,16 +348,16 @@
             </div>
 
             <!-- Résumé des informations COMPLET -->
-            <div class="space-y-4 mb-8">
+            <div class="space-y-3 lg:space-y-4 mb-4 lg:mb-6">
               <!-- Photo de profil -->
-              <div v-if="photoPreview" class="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
+              <div v-if="photoPreview" class="bg-gray-50 rounded-xl p-4 lg:p-6 border border-gray-200 text-center">
                 <img :src="photoPreview" class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-white shadow-lg">
                 <p class="text-sm text-gray-600 mt-2">Photo d'identité</p>
               </div>
 
               <!-- Informations personnelles -->
-              <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div class="bg-gray-50 rounded-xl p-4 lg:p-6 border border-gray-200">
+                <h4 class="font-bold text-gray-900 mb-3 lg:mb-4 flex items-center gap-2">
                   <svg class="w-5 h-5 text-gabon-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                   </svg>
@@ -333,8 +379,8 @@
               </div>
 
               <!-- Coordonnées -->
-              <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div class="bg-gray-50 rounded-xl p-4 lg:p-6 border border-gray-200">
+                <h4 class="font-bold text-gray-900 mb-3 lg:mb-4 flex items-center gap-2">
                   <svg class="w-5 h-5 text-gabon-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                   </svg>
@@ -348,8 +394,8 @@
               </div>
 
               <!-- Documents -->
-              <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <div class="bg-gray-50 rounded-xl p-4 lg:p-6 border border-gray-200">
+                <h4 class="font-bold text-gray-900 mb-3 lg:mb-4 flex items-center gap-2">
                   <svg class="w-5 h-5 text-gabon-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                   </svg>
@@ -358,7 +404,7 @@
                 <div v-if="uploadedFiles.length > 0" class="space-y-2">
                   <div v-for="(file, index) in uploadedFiles" :key="index" class="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
                     <div class="flex items-center gap-3">
-                      <span class="text-xl">{{ getDocumentIcon(file.type) }}</span>
+                      <component :is="getDocumentIcon(file.type)" class="w-5 h-5 text-gabon-blue-600 flex-shrink-0" />
                       <div>
                         <p class="text-sm font-semibold text-gray-900">{{ file.name }}</p>
                         <p class="text-xs text-gray-500">{{ formatFileSize(file.size) }}</p>
@@ -405,6 +451,82 @@
               </button>
             </div>
           </div>
+            </div>
+          </Transition>
+        </div>
+      </div>
+
+      <!-- Panneau droit : Image cover fixe (caché sur mobile) avec arrondis -->
+      <div class="hidden lg:block lg:w-1/2 relative bg-gradient-to-br from-gabon-green-600 via-gabon-green-700 to-gabon-blue-600 overflow-hidden lg:rounded-l-3xl lg:shadow-2xl">
+        <!-- Pattern décoratif -->
+        <div class="absolute inset-0 opacity-10">
+          <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <circle cx="20" cy="20" r="1.5" fill="white"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)"/>
+          </svg>
+        </div>
+
+        <!-- Contenu de l'image cover -->
+        <div class="relative h-full flex flex-col items-center justify-center p-12 text-white">
+          <!-- Logo/Icône principale -->
+          <div class="mb-12 animate-float">
+            <div class="w-32 h-32 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-2xl">
+              <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Titre et description -->
+          <h2 class="text-4xl font-bold text-center mb-6 leading-tight">
+            Rejoignez la dignité<br/>de la République Gabonaise
+          </h2>
+          <p class="text-lg text-white/90 text-center max-w-md mb-12 leading-relaxed">
+            Devenez dignitaire et contribuez au rayonnement et au développement de notre nation.
+          </p>
+
+          <!-- Avantages/Features -->
+          <div class="space-y-6 w-full max-w-md">
+            <div class="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              <div class="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold mb-1">Processus simplifié</h3>
+                <p class="text-sm text-white/80">Inscription en ligne en 3 étapes rapides</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              <div class="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold mb-1">Sécurisé et confidentiel</h3>
+                <p class="text-sm text-white/80">Vos données sont protégées et cryptées</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              <div class="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold mb-1">Suivi en temps réel</h3>
+                <p class="text-sm text-white/80">Suivez l'état de votre candidature</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -414,15 +536,18 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { FileText, GraduationCap, ScrollText, Mail, Scale, HeartPulse, Paperclip } from 'lucide-vue-next'
 
 const router = useRouter()
 const { $api, $swal } = useNuxtApp()
+const draftStore = useCandidatureDraftStore()
 
 // État du formulaire
 const currentStep = ref(1)
 const loading = ref(false)
 const acceptTerms = ref(false)
 const isDragging = ref(false)
+const transitionName = ref('slide-left')
 
 // Données du formulaire
 const form = ref({
@@ -445,7 +570,7 @@ const form = ref({
 })
 
 const getStepLabel = (step) => {
-  return { 1: 'Identité', 2: 'Documents', 3: 'Confirmation' }[step] || ''
+  return { 1: 'Infos', 2: 'Coordonnées', 3: 'Documents', 4: 'Confirmation' }[step] || ''
 }
 
 // Photo (encodée en base64, comme attendu par l'API)
@@ -508,11 +633,26 @@ const onPaysNaissanceChange = () => {
 // Fichiers uploadés
 const uploadedFiles = ref([])
 
+// Catégories de documents affichées avant le téléversement, pour que le
+// candidat sache précisément ce qui est attendu
+const documentCategories = [
+  { key: 'cv', label: 'CV', description: 'Curriculum vitae à jour', icon: FileText, multiple: false },
+  { key: 'diplome', label: 'Diplômes', description: 'Un ou plusieurs diplômes obtenus', icon: GraduationCap, multiple: true },
+  { key: 'attestation', label: 'Attestations', description: 'Attestations de travail, de formation, etc.', icon: ScrollText, multiple: true },
+  { key: 'lettre', label: 'Lettre de motivation', description: 'Lettre expliquant votre candidature', icon: Mail, multiple: false },
+  { key: 'casier', label: 'Casier judiciaire', description: 'Extrait de casier judiciaire', icon: Scale, multiple: false },
+  { key: 'medical', label: 'Certificat médical', description: "Certificat d'aptitude médicale", icon: HeartPulse, multiple: false }
+]
+
+const filesForCategory = (key) => uploadedFiles.value.filter(f => f.type === key)
+
 // Navigation entre étapes
 const nextStep = () => {
-  // Validation étape 1
+  transitionName.value = 'slide-left'
+
+  // Validation étape 1 - Informations de base
   if (currentStep.value === 1) {
-    if (!form.value.nom || !form.value.prenom || !form.value.date_naissance || !form.value.genre || !form.value.email || !form.value.password || !form.value.pays_naissance_id) {
+    if (!form.value.nom || !form.value.prenom || !form.value.date_naissance || !form.value.genre || !form.value.pays_naissance_id) {
       $swal.fire({
         icon: 'error',
         title: 'Champs manquants',
@@ -520,7 +660,7 @@ const nextStep = () => {
       })
       return
     }
-    
+
     // Vérifier qu'une ville est renseignée (soit sélectionnée, soit custom)
     if (!form.value.lieu_naissance_id && !form.value.ville_naissance_custom) {
       $swal.fire({
@@ -530,7 +670,19 @@ const nextStep = () => {
       })
       return
     }
-    
+  }
+
+  // Validation étape 2 - Coordonnées et compte
+  if (currentStep.value === 2) {
+    if (!form.value.email || !form.value.password) {
+      $swal.fire({
+        icon: 'error',
+        title: 'Champs manquants',
+        text: 'Veuillez remplir l\'email et le mot de passe'
+      })
+      return
+    }
+
     if (form.value.password !== form.value.password_confirmation) {
       $swal.fire({
         icon: 'error',
@@ -540,11 +692,12 @@ const nextStep = () => {
       return
     }
   }
-  
+
   currentStep.value++
 }
 
 const previousStep = () => {
+  transitionName.value = 'slide-right'
   currentStep.value--
 }
 
@@ -560,7 +713,7 @@ const handleFileDrop = (event) => {
   addFiles(files)
 }
 
-const addFiles = (files) => {
+const addFiles = (files, type = 'autre') => {
   files.forEach(file => {
     if (file.size > 10 * 1024 * 1024) {
       $swal.fire({
@@ -574,13 +727,25 @@ const addFiles = (files) => {
       file: file,
       name: file.name,
       size: file.size,
-      type: ''
+      type
     })
   })
 }
 
-const removeFile = (index) => {
-  uploadedFiles.value.splice(index, 1)
+// Sélection d'un fichier depuis la carte d'une catégorie précise. Pour les
+// catégories à fichier unique, le nouveau fichier remplace l'ancien.
+const onCategoryFileSelect = (event, categoryKey, multiple) => {
+  const files = Array.from(event.target.files)
+  if (!multiple) {
+    uploadedFiles.value = uploadedFiles.value.filter(f => f.type !== categoryKey)
+  }
+  addFiles(files, categoryKey)
+  event.target.value = ''
+}
+
+const removeFileByRef = (fileEntry) => {
+  const index = uploadedFiles.value.indexOf(fileEntry)
+  if (index !== -1) uploadedFiles.value.splice(index, 1)
 }
 
 const formatFileSize = (bytes) => {
@@ -618,15 +783,15 @@ const getPaysNaissanceLabel = () => {
 
 const getDocumentIcon = (type) => {
   const icons = {
-    cv: '📄',
-    diplome: '🎓',
-    attestation: '📜',
-    lettre: '✉️',
-    casier: '⚖️',
-    medical: '🏥',
-    autre: '📎'
+    cv: FileText,
+    diplome: GraduationCap,
+    attestation: ScrollText,
+    lettre: Mail,
+    casier: Scale,
+    medical: HeartPulse,
+    autre: Paperclip
   }
-  return icons[type] || '📄'
+  return icons[type] || FileText
 }
 
 const getDocumentTypeLabel = (type) => {
@@ -656,46 +821,17 @@ const submitForm = async () => {
   loading.value = true
 
   try {
-    // 1. Inscription du candidat
+    // 1. Inscription du candidat (déclenche l'envoi d'un code de
+    // vérification par email — l'inscription n'est finalisée qu'après
+    // validation de ce code, cf. candidature/verify-otp.vue)
     const response = await $api.post('/candidats/register', form.value)
 
-    if (response.success) {
-      const token = response.token
-      const candidatId = response.candidat.id
-
-      // Stocker le token
-      localStorage.setItem('candidat_token', token)
-
-      // 2. Upload des documents (si présents)
-      if (uploadedFiles.value.length > 0) {
-        for (const fileData of uploadedFiles.value) {
-          const formData = new FormData()
-          formData.append('fichier', fileData.file)
-          formData.append('type_document', fileData.type || 'autre')
-          
-          await $api.post('/candidats/me/documents', formData, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          })
-        }
-      }
-
-      // 3. Message de succès
-      await $swal.fire({
-        icon: 'success',
-        title: 'Candidature envoyée !',
-        html: `
-          <p class="mb-4">Votre candidature a été enregistrée avec succès.</p>
-          <p class="text-sm text-gray-600">Vous recevrez un email dès qu'un administrateur aura validé votre dossier.</p>
-        `,
-        confirmButtonColor: '#16a34a',
-        confirmButtonText: 'Accéder à mon espace'
-      })
-
-      // 4. Redirection vers le dashboard candidat
-      router.push('/candidat/dashboard')
+    if (response.otp_required) {
+      // Les fichiers ne peuvent pas être uploadés avant d'avoir un token
+      // (délivré seulement après validation du code) : on les garde en
+      // mémoire le temps de la navigation vers la page de vérification.
+      draftStore.setPendingFiles(uploadedFiles.value)
+      router.push(`/candidature/verify-otp?email=${encodeURIComponent(response.email)}&purpose=inscription`)
     }
   } catch (error) {
     console.error('Erreur lors de la soumission:', error)
@@ -729,16 +865,49 @@ useHead({
 </script>
 
 <style scoped>
-/* Animation smooth pour les transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s, transform 0.3s;
+/* Animations de transition entre étapes - Slide gauche (avancer) */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.fade-enter-from {
+
+.slide-left-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateX(30px);
 }
-.fade-leave-to {
+
+.slide-left-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateX(-30px);
+}
+
+/* Animations de transition entre étapes - Slide droit (reculer) */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* Animation du pattern décoratif */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 </style>

@@ -63,15 +63,15 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">N°</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nom de la Structure</th>
                 <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="s in paginatedStructures" :key="s.id" class="hover:bg-gabon-green-50 transition-colors duration-150">
+              <tr v-for="(s, index) in paginatedStructures" :key="s.id" class="hover:bg-gabon-green-50 transition-colors duration-150">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="text-sm font-semibold text-gray-900">{{ s.id }}</span>
+                  <span class="text-sm font-semibold text-gray-900">{{ startIndex + index + 1 }}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="text-sm font-semibold text-gray-900">{{ s.nom }}</span>
@@ -174,10 +174,6 @@
         </div>
         <div v-if="selectedDetail" class="p-6">
           <div class="space-y-4">
-            <div class="bg-gray-50 rounded-lg p-4">
-              <p class="text-sm font-semibold text-gray-500 mb-1">ID</p>
-              <p class="text-lg font-bold text-gray-900">{{ selectedDetail.id }}</p>
-            </div>
             <div class="bg-gray-50 rounded-lg p-4">
               <p class="text-sm font-semibold text-gray-500 mb-1">Nom de la structure</p>
               <p class="text-lg font-bold text-gray-900">{{ selectedDetail.nom }}</p>

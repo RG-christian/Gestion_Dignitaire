@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Conjoint;
 use App\Models\Dignitaire;
 use App\Support\AuditLogger;
+use App\Support\VilleResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +93,7 @@ class ConjointController extends Controller
             // Optionnels
             'date_naissance' => 'nullable|date|before:today',
             'lieu_naissance_id' => 'nullable|exists:ville,id',
+            'lieu_naissance_custom' => 'nullable|string|max:255',
             'nationalite_id' => 'nullable|exists:pays,id',
             'profession' => 'nullable|string|max:255',
             'employeur' => 'nullable|string|max:255',
@@ -99,24 +101,31 @@ class ConjointController extends Controller
             'lieu_mariage' => 'nullable|string|max:255',
             'statut' => 'nullable|in:actif,divorce,veuf,separe',
             'date_fin_union' => 'nullable|date|after:date_mariage',
-            
+
             // Statut spécial
             'est_militaire' => 'nullable|boolean',
             'est_dignitaire' => 'nullable|boolean',
             'grade_militaire' => 'nullable|string|max:100',
             'fonction_dignitaire' => 'nullable|string|max:100',
-            
+
             // Coordonnées
             'telephone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:150',
             'adresse' => 'nullable|string',
-            
+
             // Documents
             'photo' => 'nullable|string',
             'acte_mariage_path' => 'nullable|string',
         ]);
 
         try {
+            $validated['lieu_naissance_id'] = VilleResolver::resoudre(
+                $validated['lieu_naissance_id'] ?? null,
+                $validated['lieu_naissance_custom'] ?? null,
+                $validated['nationalite_id'] ?? null
+            );
+            unset($validated['lieu_naissance_custom']);
+
             $validated['dignitaire_id'] = $dignitaireId;
             $validated['statut'] = $validated['statut'] ?? 'actif';
             $validated['est_militaire'] = $validated['est_militaire'] ?? false;
@@ -172,13 +181,14 @@ class ConjointController extends Controller
             'genre' => 'sometimes|in:M,F',
             'date_naissance' => 'nullable|date|before:today',
             'lieu_naissance_id' => 'nullable|exists:ville,id',
+            'lieu_naissance_custom' => 'nullable|string|max:255',
             'nationalite_id' => 'nullable|exists:pays,id',
             'profession' => 'nullable|string|max:255',
             'employeur' => 'nullable|string|max:255',
             'date_mariage' => 'nullable|date',
             'lieu_mariage' => 'nullable|string|max:255',
             'statut' => 'sometimes|in:actif,divorce,veuf,separe',
-            'date_fin_union' => 'nullable|date',
+            'date_fin_union' => 'nullable|date|after:date_mariage',
             'est_militaire' => 'nullable|boolean',
             'est_dignitaire' => 'nullable|boolean',
             'grade_militaire' => 'nullable|string|max:100',
@@ -189,6 +199,15 @@ class ConjointController extends Controller
             'photo' => 'nullable|string',
             'acte_mariage_path' => 'nullable|string',
         ]);
+
+        if (array_key_exists('lieu_naissance_custom', $validated) || array_key_exists('lieu_naissance_id', $validated)) {
+            $validated['lieu_naissance_id'] = VilleResolver::resoudre(
+                $validated['lieu_naissance_id'] ?? null,
+                $validated['lieu_naissance_custom'] ?? null,
+                $validated['nationalite_id'] ?? $conjoint->nationalite_id
+            );
+        }
+        unset($validated['lieu_naissance_custom']);
 
         try {
             $old = $conjoint->getOriginal();
@@ -250,9 +269,14 @@ class ConjointController extends Controller
     {
         $conjoint = Conjoint::findOrFail($id);
 
+        $dateFinRule = 'nullable|date';
+        if (!empty($conjoint->date_mariage)) {
+            $dateFinRule .= '|after:' . $conjoint->date_mariage->format('Y-m-d');
+        }
+
         $request->validate([
             'nouveau_statut' => 'required|in:divorce,veuf,separe',
-            'date_fin' => 'nullable|date'
+            'date_fin' => $dateFinRule,
         ]);
 
         try {

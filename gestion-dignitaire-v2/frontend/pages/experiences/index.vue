@@ -176,7 +176,7 @@
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-                <input v-model="form.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                <input v-model="form.date_fin" type="date" :min="minDateFin(form.date_debut)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
               </div>
             </div>
           </div>
@@ -250,6 +250,7 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
+const { minDateFin } = useDateHelpers()
 
 const experiences = ref([])
 const dignitaires = ref([])

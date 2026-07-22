@@ -80,6 +80,11 @@
                 </svg>
               </button>
             </div>
+            <div class="text-right mt-2">
+              <NuxtLink to="/forgot-password" class="text-sm font-semibold hover:underline" style="color: #16a34a;">
+                Mot de passe oublié ?
+              </NuxtLink>
+            </div>
           </div>
 
           <!-- Bouton de connexion -->
@@ -187,12 +192,17 @@ async function handleLogin() {
   loading.value = true
 
   try {
-    const success = await authStore.login(credentials)
-    if (success) {
+    const result = await authStore.login(credentials)
+
+    if (result.otpRequired) {
+      const route = useRoute()
+      const redirectTo = (route.query.redirect as string) || '/dashboard'
+      router.push(`/verify-otp?email=${encodeURIComponent(result.email)}&redirect=${encodeURIComponent(redirectTo)}`)
+    } else if (result.success) {
       // Récupérer l'URL de redirection depuis les query params
       const route = useRoute()
       const redirectTo = (route.query.redirect as string) || '/dashboard'
-      
+
       // SweetAlert succès avec redirection immédiate
       Swal.fire({
         icon: 'success',

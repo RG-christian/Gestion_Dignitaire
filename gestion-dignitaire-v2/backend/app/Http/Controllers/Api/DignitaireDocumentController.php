@@ -40,7 +40,7 @@ class DignitaireDocumentController extends Controller
             'nom_document' => 'nullable|string|max:255',
             'numero_document' => 'nullable|string|max:100',
             'date_emission' => 'nullable|date',
-            'date_expiration' => 'nullable|date',
+            'date_expiration' => 'nullable|date|after:date_emission',
             'organisme_emetteur' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:500',
         ]);

@@ -668,6 +668,25 @@
               </select>
             </div>
 
+            <!-- Nationalité (distincte du pays d'affectation, cf. onglet Affectations) -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Nationalité
+                </span>
+              </label>
+              <select
+                v-model="form.nationalite_id"
+                class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              >
+                <option value="">Non renseignée</option>
+                <option v-for="p in pays" :key="p.id" :value="p.id">{{ p.nom }}</option>
+              </select>
+            </div>
+
             <!-- Statut -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Statut</label>
@@ -832,6 +851,7 @@ const form = reactive({
   lieu_naissance: '',
   genre: '',
   etat_civil: '',
+  nationalite_id: '',
   statut: 'actif'
 })
 
@@ -946,10 +966,12 @@ onMounted(() => {
 const referentiels = useReferentiels()
 const villes = ref([])
 const entites = ref([])
+const pays = ref([])
 
 onMounted(async () => {
   villes.value = await referentiels.getVilles()
   entites.value = await referentiels.getEntites()
+  pays.value = await referentiels.getPays()
 })
 
 function formatDateRange(dateDebut: string, dateFin: string | null) {
@@ -972,6 +994,7 @@ function openModal(dignitaire: any = null) {
     form.lieu_naissance = dignitaire.lieu_naissance
     form.genre = dignitaire.genre
     form.etat_civil = dignitaire.etat_civil
+    form.nationalite_id = dignitaire.nationalite_id || ''
     form.statut = dignitaire.statut || 'actif'
   } else {
     // Reset form
@@ -984,6 +1007,7 @@ function openModal(dignitaire: any = null) {
     form.lieu_naissance = ''
     form.genre = ''
     form.etat_civil = ''
+    form.nationalite_id = ''
     form.statut = 'actif'
   }
   showModal.value = true

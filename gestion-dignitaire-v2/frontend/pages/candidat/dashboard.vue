@@ -613,7 +613,7 @@
                     </div>
                     <div>
                       <label class="text-xs font-semibold text-gray-600 block mb-1">Date de fin</label>
-                      <input v-model="newExperience.date_fin" type="date" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm">
+                      <input v-model="newExperience.date_fin" type="date" :min="minDateFin(newExperience.date_debut)" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm">
                     </div>
                     <div class="md:col-span-2">
                       <FileUploadZone
@@ -919,6 +919,7 @@ const router = useRouter()
 const { $api, $swal } = useNuxtApp()
 const config = useRuntimeConfig()
 const siteRoot = computed(() => config.public.apiBase.replace(/\/api\/?$/, ''))
+const { minDateFin } = useDateHelpers()
 
 const loading = ref(true)
 const candidat = ref(null)

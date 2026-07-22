@@ -44,7 +44,7 @@ class CandidatExperienceController extends Controller
             'intitule' => 'required|string|max:150',
             'structure_id' => 'nullable|exists:structure,id',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date|after_or_equal:date_debut',
+            'date_fin' => 'nullable|date|after:date_debut',
             'justificatif' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
         ]);
 
@@ -88,7 +88,7 @@ class CandidatExperienceController extends Controller
             'intitule' => 'required|string|max:150',
             'structure_id' => 'nullable|exists:structure,id',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date|after_or_equal:date_debut',
+            'date_fin' => 'nullable|date|after:date_debut',
             'justificatif' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png',
         ]);
 

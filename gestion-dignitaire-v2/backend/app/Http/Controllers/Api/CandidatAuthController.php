@@ -3,10 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OtpCodeMail;
+use App\Mail\ResetPasswordMail;
 use App\Models\Candidat;
+use App\Support\OtpService;
+use App\Support\Parametres;
+use App\Support\PasswordResetService;
+use App\Support\VilleResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -37,6 +45,8 @@ class CandidatAuthController extends Controller
             'nip' => 'nullable|string|max:50|unique:candidats,nip',
             'matricule' => 'nullable|string|max:50|unique:candidats,matricule',
             'lieu_naissance_id' => 'nullable|exists:ville,id',
+            'ville_naissance_custom' => 'nullable|string|max:255',
+            'pays_naissance_id' => 'nullable|exists:pays,id',
             'etat_civil' => 'nullable|string|max:50',
             'telephone' => 'nullable|string|max:20',
             'adresse' => 'nullable|string|max:255',
@@ -59,6 +69,13 @@ class CandidatAuthController extends Controller
             $data['password'] = Hash::make($data['password']);
             $data['statut'] = 'en_attente';
 
+            $data['lieu_naissance_id'] = VilleResolver::resoudre(
+                $data['lieu_naissance_id'] ?? null,
+                $data['ville_naissance_custom'] ?? null,
+                $data['pays_naissance_id'] ?? null
+            );
+            unset($data['ville_naissance_custom'], $data['pays_naissance_id']);
+
             // Gestion de la photo (si base64)
             if (isset($data['photo']) && $this->isBase64($data['photo'])) {
                 $data['photo'] = $this->saveBase64Image($data['photo'], 'candidats/photos');
@@ -66,14 +83,22 @@ class CandidatAuthController extends Controller
 
             $candidat = Candidat::create($data);
 
-            // Créer le token pour connexion automatique après inscription
-            $token = $candidat->createToken('candidat-token')->plainTextToken;
+            // Vérification d'email obligatoire par OTP avant toute connexion
+            // (pas de token délivré ici : cf. verifyOtp/purpose=inscription).
+            $code = OtpService::genererCode($candidat->email, 'candidat', 'inscription');
+
+            try {
+                Mail::to($candidat->email)->send(new OtpCodeMail($candidat->prenom, $code, 'inscription'));
+            } catch (\Exception $e) {
+                Log::warning('Echec envoi email OTP inscription', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Candidature enregistrée avec succès ! Vous recevrez un email une fois votre dossier validé.',
-                'token' => $token,
-                'candidat' => $candidat->load(['lieuNaissance', 'villeResidence'])
+                'otp_required' => true,
+                'purpose' => 'inscription',
+                'email' => $candidat->email,
+                'message' => 'Un code de vérification vient de vous être envoyé par email.'
             ], 201);
 
         } catch (\Exception $e) {
@@ -115,19 +140,105 @@ class CandidatAuthController extends Controller
             ], 403);
         }
 
-        // Supprimer les anciens tokens
+        // Double authentification à la connexion, si activée par le Super
+        // Administrateur (désactivée par défaut, cf. BLOC 14 du planning).
+        if (Parametres::getBool(Parametres::OTP_LOGIN_CANDIDAT)) {
+            $code = OtpService::genererCode($candidat->email, 'candidat', 'connexion');
+
+            try {
+                Mail::to($candidat->email)->send(new OtpCodeMail($candidat->prenom, $code, 'connexion'));
+            } catch (\Exception $e) {
+                Log::warning('Echec envoi email OTP connexion', ['error' => $e->getMessage()]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'otp_required' => true,
+                'purpose' => 'connexion',
+                'email' => $candidat->email,
+                'message' => 'Un code de connexion vient de vous être envoyé par email.'
+            ]);
+        }
+
+        return response()->json($this->emettreSessionCandidat($candidat));
+    }
+
+    /**
+     * Vérifie un code OTP (inscription ou connexion) et délivre le token de
+     * session une fois validé.
+     *
+     * POST /api/candidats/verify-otp
+     */
+    public function verifyOtp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string',
+            'purpose' => 'required|in:inscription,connexion',
+        ]);
+
+        if (!OtpService::verifierCode($validated['email'], $validated['code'], 'candidat', $validated['purpose'])) {
+            return response()->json(['success' => false, 'message' => 'Code invalide ou expiré.'], 422);
+        }
+
+        $candidat = Candidat::where('email', $validated['email'])->first();
+
+        if (!$candidat) {
+            return response()->json(['success' => false, 'message' => 'Candidat introuvable.'], 404);
+        }
+
+        if ($validated['purpose'] === 'inscription' && !$candidat->email_verifie_le) {
+            $candidat->update(['email_verifie_le' => now()]);
+        }
+
+        return response()->json($this->emettreSessionCandidat($candidat));
+    }
+
+    /**
+     * Renvoie un nouveau code OTP (inscription ou connexion).
+     *
+     * POST /api/candidats/resend-otp
+     */
+    public function resendOtp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'purpose' => 'required|in:inscription,connexion',
+        ]);
+
+        $candidat = Candidat::where('email', $validated['email'])->first();
+
+        if ($candidat) {
+            $code = OtpService::genererCode($candidat->email, 'candidat', $validated['purpose']);
+
+            try {
+                Mail::to($candidat->email)->send(new OtpCodeMail($candidat->prenom, $code, $validated['purpose']));
+            } catch (\Exception $e) {
+                Log::warning('Echec renvoi email OTP', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Si ce compte existe, un nouveau code vient de vous être envoyé.']);
+    }
+
+    /**
+     * Supprime les anciens tokens et en délivre un nouveau — factorisé car
+     * appelé aussi bien par login() (OTP désactivé) que par verifyOtp()
+     * (OTP activé, une fois le code validé).
+     */
+    private function emettreSessionCandidat(Candidat $candidat): array
+    {
         $candidat->tokens()->delete();
 
-        // Créer un nouveau token
         $token = $candidat->createToken('candidat-token', ['*'], now()->addDays(7))->plainTextToken;
 
-        return response()->json([
+        return [
             'success' => true,
             'message' => 'Connexion réussie',
             'token' => $token,
             'candidat' => $candidat->load(['lieuNaissance', 'villeResidence', 'documents']),
             'expires_at' => now()->addDays(7)->toIso8601String()
-        ]);
+        ];
     }
 
     /**
@@ -266,6 +377,74 @@ class CandidatAuthController extends Controller
             'success' => true,
             'message' => 'Mot de passe changé avec succès'
         ]);
+    }
+
+    /**
+     * Demande de réinitialisation de mot de passe (candidat).
+     *
+     * Répond toujours avec succès, que l'email existe ou non, pour ne pas
+     * révéler quels emails sont enregistrés.
+     *
+     * POST /api/candidats/forgot-password
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $candidat = Candidat::where('email', $validated['email'])->first();
+
+        if ($candidat) {
+            $token = PasswordResetService::creerToken($candidat->email, 'candidat');
+            $resetUrl = config('app.frontend_url') . '/candidature/reset-password?token=' . $token . '&email=' . urlencode($candidat->email) . '&type=candidat';
+
+            if (!app()->isProduction()) {
+                Log::info("Réinitialisation mot de passe [candidat] pour {$candidat->email} : {$resetUrl}");
+            }
+
+            try {
+                Mail::to($candidat->email)->send(new ResetPasswordMail($candidat->prenom, $resetUrl));
+            } catch (\Exception $e) {
+                Log::warning('Echec envoi email de réinitialisation (candidat)', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Si cet email existe, un lien de réinitialisation vient de vous être envoyé.'
+        ]);
+    }
+
+    /**
+     * Réinitialisation effective du mot de passe via le token reçu par email.
+     *
+     * POST /api/candidats/reset-password
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if (!PasswordResetService::verifierToken($validated['email'], $validated['token'], 'candidat')) {
+            return response()->json(['success' => false, 'message' => 'Ce lien de réinitialisation est invalide ou a expiré.'], 422);
+        }
+
+        $candidat = Candidat::where('email', $validated['email'])->first();
+
+        if (!$candidat) {
+            return response()->json(['success' => false, 'message' => 'Ce lien de réinitialisation est invalide ou a expiré.'], 422);
+        }
+
+        $candidat->update(['password' => Hash::make($validated['password'])]);
+        PasswordResetService::oublierToken($validated['email'], 'candidat');
+
+        $candidat->tokens()->delete();
+
+        return response()->json(['success' => true, 'message' => 'Mot de passe réinitialisé avec succès.']);
     }
 
     /**

@@ -13,6 +13,64 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class PosteController extends Controller
 {
+    /**
+     * Crée ou met à jour l'affectation liée à ce poste (même ville/pays,
+     * mêmes dates), pour qu'un dignitaire affecté quelque part via un poste
+     * (au Gabon ou à l'étranger, peu importe) apparaisse automatiquement
+     * dans /affectations sans double saisie. N'agit que si le poste a une
+     * ville ; les affectations créées manuellement (poste_id = null) ne
+     * sont jamais touchées ici.
+     */
+    private function synchroniserAffectation(int $posteId, array $poste): void
+    {
+        if (empty($poste['ville_id'])) {
+            return;
+        }
+
+        $paysId = DB::table('ville')->where('id', $poste['ville_id'])->value('pays_id');
+        if (!$paysId) {
+            return;
+        }
+
+        $donnees = [
+            'dignitaire_id' => $poste['dignitaire_id'],
+            'pays_id' => $paysId,
+            'ville_id' => $poste['ville_id'],
+            'date_debut' => $poste['date_debut'] ?? now()->toDateString(),
+            'type_affectation' => $poste['intitule'] ?? null,
+            // Toujours "principale" : cette ligne reflète le poste lui-même,
+            // distincte des missions temporaires ajoutées manuellement.
+            'nature' => 'principale',
+            'updated_at' => now(),
+        ];
+
+        $existante = DB::table('affectations')->where('poste_id', $posteId)->first();
+
+        if ($existante) {
+            DB::table('affectations')->where('id', $existante->id)->update($donnees);
+        } else {
+            DB::table('affectations')->insert($donnees + [
+                'poste_id' => $posteId,
+                'statut' => 'en_cours',
+                'created_at' => now(),
+            ]);
+        }
+    }
+
+    private function cloturerAffectationLiee(int $posteId, ?string $dateFin): void
+    {
+        DB::table('affectations')->where('poste_id', $posteId)->update([
+            'statut' => 'terminee',
+            'date_fin' => $dateFin ?? now()->toDateString(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function supprimerAffectationLiee(int $posteId): void
+    {
+        DB::table('affectations')->where('poste_id', $posteId)->delete();
+    }
+
     private function baseQuery(Request $request)
     {
         $query = DB::table('postes as p')
@@ -117,12 +175,14 @@ class PosteController extends Controller
             'entite_id' => 'nullable|exists:entite,id',
             'ville_id' => 'nullable|exists:ville,id',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date',
+            'date_fin' => 'nullable|date|after:date_debut',
         ]);
 
         $validated['statut'] = 'en_cours';
 
         $id = DB::table('postes')->insertGetId($validated);
+
+        $this->synchroniserAffectation($id, $validated);
 
         AuditLogger::log($request, 'created', 'Poste', $id, $validated['intitule'] ?? null, null, $validated);
 
@@ -143,9 +203,14 @@ class PosteController extends Controller
             return response()->json(['message' => 'Poste non trouvé'], 404);
         }
 
+        $dateFinRule = 'nullable|date';
+        if (!empty($old['date_debut'])) {
+            $dateFinRule .= '|after:' . $old['date_debut'];
+        }
+
         $validated = $request->validate([
             'motif_fin' => 'required|in:fin_fonction,mise_a_disposition',
-            'date_fin' => 'nullable|date',
+            'date_fin' => $dateFinRule,
         ]);
 
         $update = [
@@ -155,6 +220,8 @@ class PosteController extends Controller
         ];
 
         DB::table('postes')->where('id', $id)->update($update);
+
+        $this->cloturerAffectationLiee($id, $update['date_fin']);
 
         AuditLogger::log($request, 'cloturee', 'Poste', $id, $old['intitule'] ?? null, $old, $update);
 
@@ -169,11 +236,13 @@ class PosteController extends Controller
             'entite_id' => 'nullable|exists:entite,id',
             'ville_id' => 'nullable|exists:ville,id',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date',
+            'date_fin' => 'nullable|date|after:date_debut',
         ]);
 
         $old = (array) DB::table('postes')->where('id', $id)->first();
         DB::table('postes')->where('id', $id)->update($validated);
+
+        $this->synchroniserAffectation($id, $validated);
 
         AuditLogger::log($request, 'updated', 'Poste', $id, $validated['intitule'] ?? null, $old, $validated);
 
@@ -184,6 +253,8 @@ class PosteController extends Controller
     {
         $old = (array) DB::table('postes')->where('id', $id)->first();
         DB::table('postes')->where('id', $id)->delete();
+
+        $this->supprimerAffectationLiee($id);
 
         AuditLogger::log($request, 'deleted', 'Poste', $id, $old['intitule'] ?? null, $old, null);
 

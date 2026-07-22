@@ -39,6 +39,7 @@ class Candidat extends Authenticatable
         'cv_path',
         'lettre_motivation_path',
         'email',
+        'email_verifie_le',
         'telephone',
         'adresse',
         'ville_residence_id',
@@ -57,6 +58,7 @@ class Candidat extends Authenticatable
         'date_naissance' => 'date',
         'date_candidature' => 'datetime',
         'date_validation' => 'datetime',
+        'email_verifie_le' => 'datetime',
     ];
 
     protected $appends = ['nom_complet', 'age', 'status_badge'];

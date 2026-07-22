@@ -148,6 +148,7 @@ class DignitaireController extends Controller
     {
         $dignitaire = Dignitaire::with([
             'lieuNaissance.pays',
+            'nationaliteRef',
             'diplomes.etablissement',
             'diplomes.domaine',
             'enfants.lieuNaissance',
@@ -157,6 +158,8 @@ class DignitaireController extends Controller
             'postes.ville',
             'nominations.entite',
             'nominations.poste',
+            'affectations.pays',
+            'affectations.ville',
             'decorations',
             'telephones',
             'emails',
@@ -187,6 +190,7 @@ class DignitaireController extends Controller
     {
         $dignitaire = Dignitaire::with([
             'lieuNaissance.pays',
+            'nationaliteRef',
             'diplomes.etablissement',
             'diplomes.domaine',
             'enfants.lieuNaissance',
@@ -196,6 +200,8 @@ class DignitaireController extends Controller
             'postes.ville',
             'nominations.entite',
             'nominations.poste',
+            'affectations.pays',
+            'affectations.ville',
             'decorations',
             'telephones',
             'emails'
@@ -218,6 +224,7 @@ class DignitaireController extends Controller
             'date_prise_fonction' => 'nullable|date',
             'lieu_naissance' => 'nullable|exists:ville,id',
             'nationalite' => 'nullable|string|max:100',
+            'nationalite_id' => 'nullable|exists:pays,id',
             'genre' => 'nullable|in:Homme,Femme',
             'etat_civil' => 'nullable|string|max:20',
             'photo' => 'nullable|string|max:255',
@@ -249,6 +256,7 @@ class DignitaireController extends Controller
             'date_prise_fonction' => 'nullable|date',
             'lieu_naissance' => 'nullable|exists:ville,id',
             'nationalite' => 'nullable|string|max:100',
+            'nationalite_id' => 'nullable|exists:pays,id',
             'genre' => 'nullable|in:Homme,Femme',
             'etat_civil' => 'nullable|string|max:20',
             'photo' => 'nullable|string|max:255',

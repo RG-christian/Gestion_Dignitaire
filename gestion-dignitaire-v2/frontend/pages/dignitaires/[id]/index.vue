@@ -121,7 +121,7 @@
                   </div>
                   <div class="group">
                     <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nationalité</label>
-                    <p class="text-base font-medium text-gray-800 mt-1">{{ dignitaire.nationalite || 'N/A' }}</p>
+                    <p class="text-base font-medium text-gray-800 mt-1">{{ dignitaire.nationalite_ref?.nom || dignitaire.nationalite || 'N/A' }}</p>
                   </div>
                   <div class="group col-span-2">
                     <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Adresse</label>
@@ -161,6 +161,33 @@
                       </span>
                       <span v-if="poste.statut === 'terminee' && poste.motif_fin" class="ml-2 text-xs text-gray-500">({{ motifFinLabel(poste.motif_fin) }})</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Affectations à l'étranger -->
+            <div v-if="dignitaire.affectations && dignitaire.affectations.length > 0" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div class="bg-gradient-to-r from-gabon-green-600 to-teal-600 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                  <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  Affectations à l'étranger
+                </h2>
+              </div>
+              <div class="p-6 space-y-4">
+                <div v-for="affectation in dignitaire.affectations" :key="affectation.id" class="border-l-4 border-teal-500 bg-teal-50 p-4 rounded-r-lg hover:shadow-md transition">
+                  <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-lg text-gray-800">{{ affectation.pays?.nom || 'N/A' }}<span v-if="affectation.type_affectation" class="text-sm font-normal text-gray-500"> — {{ affectation.type_affectation }}</span></h3>
+                    <span v-if="affectation.statut === 'terminee'" class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Terminée</span>
+                    <span v-else class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">En cours</span>
+                  </div>
+                  <div class="space-y-1 text-sm">
+                    <p v-if="affectation.ville"><span class="text-gray-600">Ville:</span> <span class="font-medium text-gray-800">{{ affectation.ville.nom }}</span></p>
+                    <p><span class="text-gray-600">Date de début:</span> <span class="font-medium text-gray-800">{{ formatDate(affectation.date_debut) }}</span></p>
+                    <p v-if="affectation.statut === 'terminee'"><span class="text-gray-600">Date de fin:</span> <span class="font-medium text-gray-800">{{ formatDate(affectation.date_fin) }}</span></p>
                   </div>
                 </div>
               </div>
@@ -477,18 +504,22 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Lieu de naissance</label>
-                <select v-model="conjointForm.lieu_naissance_id" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
-                  <option value="">-- Sélectionner une ville --</option>
-                  <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
-                </select>
-              </div>
-              <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Nationalité</label>
-                <select v-model="conjointForm.nationalite_id" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                <select v-model="conjointForm.nationalite_id" @change="onConjointNationaliteChange" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
                   <option value="">-- Sélectionner un pays --</option>
                   <option v-for="pays in paysList" :key="pays.id" :value="pays.id">{{ pays.nom }}</option>
                 </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Lieu de naissance</label>
+                <select v-if="!showCustomVilleConjoint" v-model="conjointForm.lieu_naissance_id" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                  <option value="">{{ villesConjointFiltrees.length > 0 ? '-- Sélectionner une ville --' : 'Sélectionnez d\'abord une nationalité' }}</option>
+                  <option v-for="ville in villesConjointFiltrees" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+                </select>
+                <input v-else v-model="conjointForm.lieu_naissance_custom" type="text" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition" placeholder="Nom de la ville">
+                <button type="button" @click="showCustomVilleConjoint = !showCustomVilleConjoint" class="mt-2 text-sm text-gabon-green-600 hover:text-gabon-green-700 font-semibold">
+                  {{ showCustomVilleConjoint ? '← Retour à la liste' : 'Ma ville n\'est pas dans la liste' }}
+                </button>
               </div>
             </div>
 
@@ -576,7 +607,7 @@
       @click.self="closeTerminerUnionModal"
     >
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
-        <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex items-center justify-between">
+        <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-6 py-4 flex items-center justify-between">
           <h4 class="text-xl font-bold text-white">Terminer l'union</h4>
           <button @click="closeTerminerUnionModal" class="text-white hover:text-gray-200 transition">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,7 +619,7 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Nouveau statut <span class="text-red-500">*</span></label>
-              <select v-model="terminerUnionForm.nouveau_statut" required class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+              <select v-model="terminerUnionForm.nouveau_statut" required class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
                 <option value="">-- Sélectionner --</option>
                 <option value="divorce">Divorce</option>
                 <option value="veuf">Veuf/Veuve</option>
@@ -597,12 +628,12 @@
             </div>
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-              <input v-model="terminerUnionForm.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+              <input v-model="terminerUnionForm.date_fin" type="date" :min="minDateFin(conjointATerminer?.date_mariage)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
             </div>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t">
             <button type="button" @click="closeTerminerUnionModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
-            <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
+            <button type="submit" class="flex-1 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
           </div>
         </form>
       </div>
@@ -622,6 +653,7 @@ const fileDownload = useFileDownload()
 const permissions = usePermissions()
 const api = useApi()
 const referentiels = useReferentiels()
+const { minDateFin } = useDateHelpers()
 
 const dignitaire = ref(null)
 const historique = ref([])
@@ -642,6 +674,7 @@ const conjointForm = reactive({
   genre: '',
   date_naissance: '',
   lieu_naissance_id: '',
+  lieu_naissance_custom: '',
   nationalite_id: '',
   profession: '',
   employeur: '',
@@ -660,6 +693,19 @@ const terminerUnionForm = reactive({
   nouveau_statut: '',
   date_fin: new Date().toISOString().slice(0, 10)
 })
+
+const showCustomVilleConjoint = ref(false)
+
+const villesConjointFiltrees = computed(() => {
+  if (!conjointForm.nationalite_id) return []
+  return villes.value.filter((v: any) => v.pays_id == conjointForm.nationalite_id)
+})
+
+function onConjointNationaliteChange() {
+  conjointForm.lieu_naissance_id = ''
+  conjointForm.lieu_naissance_custom = ''
+  showCustomVilleConjoint.value = false
+}
 
 function conjointStatutClass(color?: string) {
   const classes: Record<string, string> = {
@@ -682,12 +728,14 @@ async function loadConjoints() {
 
 function openConjointModal(conjoint: any = null) {
   selectedConjoint.value = conjoint
+  showCustomVilleConjoint.value = false
   if (conjoint) {
     conjointForm.nom = conjoint.nom
     conjointForm.prenom = conjoint.prenom
     conjointForm.genre = conjoint.genre
     conjointForm.date_naissance = conjoint.date_naissance || ''
     conjointForm.lieu_naissance_id = conjoint.lieu_naissance_id || ''
+    conjointForm.lieu_naissance_custom = ''
     conjointForm.nationalite_id = conjoint.nationalite_id || ''
     conjointForm.profession = conjoint.profession || ''
     conjointForm.employeur = conjoint.employeur || ''
@@ -706,6 +754,7 @@ function openConjointModal(conjoint: any = null) {
     conjointForm.genre = ''
     conjointForm.date_naissance = ''
     conjointForm.lieu_naissance_id = ''
+    conjointForm.lieu_naissance_custom = ''
     conjointForm.nationalite_id = ''
     conjointForm.profession = ''
     conjointForm.employeur = ''

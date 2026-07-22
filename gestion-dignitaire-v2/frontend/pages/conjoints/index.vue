@@ -255,18 +255,22 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Lieu de naissance</label>
-                <select v-model="form.lieu_naissance_id" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
-                  <option value="">-- Sélectionner une ville --</option>
-                  <option v-for="ville in villes" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
-                </select>
-              </div>
-              <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Nationalité</label>
-                <select v-model="form.nationalite_id" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                <select v-model="form.nationalite_id" @change="onNationaliteChange" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
                   <option value="">-- Sélectionner un pays --</option>
                   <option v-for="pays in paysList" :key="pays.id" :value="pays.id">{{ pays.nom }}</option>
                 </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Lieu de naissance</label>
+                <select v-if="!showCustomVille" v-model="form.lieu_naissance_id" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                  <option value="">{{ villesFiltrees.length > 0 ? '-- Sélectionner une ville --' : 'Sélectionnez d\'abord une nationalité' }}</option>
+                  <option v-for="ville in villesFiltrees" :key="ville.id" :value="ville.id">{{ ville.nom }}</option>
+                </select>
+                <input v-else v-model="form.lieu_naissance_custom" type="text" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition" placeholder="Nom de la ville">
+                <button type="button" @click="showCustomVille = !showCustomVille" class="mt-2 text-sm text-gabon-green-600 hover:text-gabon-green-700 font-semibold">
+                  {{ showCustomVille ? '← Retour à la liste' : 'Ma ville n\'est pas dans la liste' }}
+                </button>
               </div>
             </div>
 
@@ -354,7 +358,7 @@
       @click.self="closeTerminerUnionModal"
     >
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
-        <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex items-center justify-between">
+        <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-6 py-4 flex items-center justify-between">
           <h4 class="text-xl font-bold text-white">Terminer l'union</h4>
           <button @click="closeTerminerUnionModal" class="text-white hover:text-gray-200 transition">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,7 +370,7 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Nouveau statut <span class="text-red-500">*</span></label>
-              <select v-model="terminerUnionForm.nouveau_statut" required class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+              <select v-model="terminerUnionForm.nouveau_statut" required class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
                 <option value="">-- Sélectionner --</option>
                 <option value="divorce">Divorce</option>
                 <option value="veuf">Veuf/Veuve</option>
@@ -375,12 +379,12 @@
             </div>
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Date de fin</label>
-              <input v-model="terminerUnionForm.date_fin" type="date" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+              <input v-model="terminerUnionForm.date_fin" type="date" :min="minDateFin(conjointATerminer?.date_mariage)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
             </div>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t">
             <button type="button" @click="closeTerminerUnionModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
-            <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
+            <button type="submit" class="flex-1 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition">Confirmer</button>
           </div>
         </form>
       </div>
@@ -469,6 +473,7 @@ const referentiels = useReferentiels()
 const api = useApi()
 const permissions = usePermissions()
 const { debounce } = useDebounce()
+const { minDateFin } = useDateHelpers()
 
 const conjoints = ref<any[]>([])
 const dignitaires = ref<any[]>([])
@@ -498,6 +503,7 @@ const form = reactive({
   genre: '',
   date_naissance: '',
   lieu_naissance_id: '',
+  lieu_naissance_custom: '',
   nationalite_id: '',
   profession: '',
   employeur: '',
@@ -516,6 +522,19 @@ const terminerUnionForm = reactive({
   nouveau_statut: '',
   date_fin: new Date().toISOString().slice(0, 10)
 })
+
+const showCustomVille = ref(false)
+
+const villesFiltrees = computed(() => {
+  if (!form.nationalite_id) return []
+  return villes.value.filter((v: any) => v.pays_id == form.nationalite_id)
+})
+
+function onNationaliteChange() {
+  form.lieu_naissance_id = ''
+  form.lieu_naissance_custom = ''
+  showCustomVille.value = false
+}
 
 // Pagination
 const totalPages = computed(() => Math.ceil(conjoints.value.length / itemsPerPage))
@@ -577,6 +596,7 @@ function resetForm() {
   form.genre = ''
   form.date_naissance = ''
   form.lieu_naissance_id = ''
+  form.lieu_naissance_custom = ''
   form.nationalite_id = ''
   form.profession = ''
   form.employeur = ''
@@ -593,6 +613,7 @@ function resetForm() {
 
 function openModal(conjoint: any = null) {
   selectedConjoint.value = conjoint
+  showCustomVille.value = false
   if (conjoint) {
     form.dignitaire_id = conjoint.dignitaire_id
     form.nom = conjoint.nom
@@ -600,6 +621,7 @@ function openModal(conjoint: any = null) {
     form.genre = conjoint.genre
     form.date_naissance = conjoint.date_naissance || ''
     form.lieu_naissance_id = conjoint.lieu_naissance_id || ''
+    form.lieu_naissance_custom = ''
     form.nationalite_id = conjoint.nationalite_id || ''
     form.profession = conjoint.profession || ''
     form.employeur = conjoint.employeur || ''

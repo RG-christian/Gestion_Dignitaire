@@ -82,7 +82,7 @@
                 <input v-model="pf.nom_document" type="text" placeholder="Nom du document" class="border rounded-lg px-3 py-2 text-sm">
                 <input v-model="pf.numero_document" type="text" placeholder="Numéro (optionnel)" class="border rounded-lg px-3 py-2 text-sm">
                 <input v-model="pf.date_emission" type="date" placeholder="Date d'émission" class="border rounded-lg px-3 py-2 text-sm">
-                <input v-model="pf.date_expiration" type="date" placeholder="Date d'expiration" class="border rounded-lg px-3 py-2 text-sm">
+                <input v-model="pf.date_expiration" type="date" :min="minDateFin(pf.date_emission)" placeholder="Date d'expiration" class="border rounded-lg px-3 py-2 text-sm">
                 <input v-model="pf.organisme_emetteur" type="text" placeholder="Organisme émetteur" class="border rounded-lg px-3 py-2 text-sm">
               </div>
             </div>
@@ -176,6 +176,7 @@ const api = useApi()
 const fileDownload = useFileDownload()
 const permissions = usePermissions()
 const { $swal } = useNuxtApp()
+const { minDateFin } = useDateHelpers()
 
 const dignitaire = ref<any>(null)
 const documents = ref<any[]>([])

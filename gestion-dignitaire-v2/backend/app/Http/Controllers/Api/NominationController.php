@@ -130,7 +130,7 @@ class NominationController extends Controller
             'poste_id' => 'nullable|exists:postes,id',
             'fonction' => 'nullable|string|max:255',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date',
+            'date_fin' => 'nullable|date|after:date_debut',
             'numero_decret' => 'nullable|string|max:100',
             'type_nomination' => 'nullable|in:' . implode(',', self::TYPES_NOMINATION),
             'autorite_nominatrice' => 'nullable|string|max:255',
@@ -179,9 +179,14 @@ class NominationController extends Controller
             return response()->json(['message' => 'Nomination non trouvée'], 404);
         }
 
+        $dateFinRule = 'nullable|date';
+        if (!empty($old['date_debut'])) {
+            $dateFinRule .= '|after:' . $old['date_debut'];
+        }
+
         $validated = $request->validate([
             'motif_fin' => 'required|in:fin_fonction,mise_a_disposition',
-            'date_fin' => 'nullable|date',
+            'date_fin' => $dateFinRule,
         ]);
 
         $update = [
@@ -205,7 +210,7 @@ class NominationController extends Controller
             'poste_id' => 'nullable|exists:postes,id',
             'fonction' => 'nullable|string|max:255',
             'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date',
+            'date_fin' => 'nullable|date|after:date_debut',
             'numero_decret' => 'nullable|string|max:100',
             'type_nomination' => 'nullable|in:' . implode(',', self::TYPES_NOMINATION),
             'autorite_nominatrice' => 'nullable|string|max:255',

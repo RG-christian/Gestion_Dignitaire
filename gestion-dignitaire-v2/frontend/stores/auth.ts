@@ -20,22 +20,44 @@ export const useAuthStore = defineStore('auth', {
     async login(credentials: { username: string; password: string }) {
       const api = useApi()
       try {
-        const response = await api.login(credentials)
+        const response: any = await api.login(credentials)
+
+        // OTP activé par le Super Admin : pas de token tant que le code
+        // n'est pas validé (cf. pages/verify-otp.vue)
+        if (response.otp_required) {
+          return { success: false, otpRequired: true, email: response.email }
+        }
+
         this.token = response.token
         this.user = response.user
         this.tokenExpiry = response.expires_at
-        
+
         // Sauvegarder dans localStorage
         if (process.client) {
           localStorage.setItem('auth_token', response.token)
           localStorage.setItem('user', JSON.stringify(response.user))
           localStorage.setItem('token_expiry', response.expires_at)
         }
-        
-        return true
+
+        return { success: true }
       } catch (error) {
         console.error('Erreur de connexion:', error)
-        return false
+        return { success: false }
+      }
+    },
+
+    /**
+     * Termine la connexion après validation du code OTP (cf. login() ci-dessus).
+     */
+    setSession(token: string, user: any, expiresAt: string) {
+      this.token = token
+      this.user = user
+      this.tokenExpiry = expiresAt
+
+      if (process.client) {
+        localStorage.setItem('auth_token', token)
+        localStorage.setItem('user', JSON.stringify(user))
+        localStorage.setItem('token_expiry', expiresAt)
       }
     },
 
