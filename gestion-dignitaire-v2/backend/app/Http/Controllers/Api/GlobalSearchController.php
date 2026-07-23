@@ -33,31 +33,34 @@ class GlobalSearchController extends Controller
         }
 
         $results = [];
+        $user = $request->user();
 
-        $dignitaires = Dignitaire::query()
-            ->where(function ($query) use ($q) {
-                $query->where('nom', 'like', "%{$q}%")
-                    ->orWhere('prenom', 'like', "%{$q}%")
-                    ->orWhere('matricule', 'like', "%{$q}%")
-                    ->orWhere('nip', 'like', "%{$q}%");
-            })
-            ->limit(self::LIMIT_PAR_TYPE)
-            ->get();
+        if (Permissions::peutLire($user, 'Dignitaire')) {
+            $dignitaires = Dignitaire::query()
+                ->where(function ($query) use ($q) {
+                    $query->where('nom', 'like', "%{$q}%")
+                        ->orWhere('prenom', 'like', "%{$q}%")
+                        ->orWhere('matricule', 'like', "%{$q}%")
+                        ->orWhere('nip', 'like', "%{$q}%");
+                })
+                ->limit(self::LIMIT_PAR_TYPE)
+                ->get();
 
-        foreach ($dignitaires as $d) {
-            $results[] = [
-                'type' => 'dignitaire',
-                'type_label' => 'Dignitaire',
-                'id' => $d->id,
-                'label' => trim("{$d->prenom} {$d->nom}"),
-                'sublabel' => $d->matricule,
-                'url' => "/dignitaires/{$d->id}",
-            ];
+            foreach ($dignitaires as $d) {
+                $results[] = [
+                    'type' => 'dignitaire',
+                    'type_label' => 'Dignitaire',
+                    'id' => $d->id,
+                    'label' => trim("{$d->prenom} {$d->nom}"),
+                    'sublabel' => $d->matricule,
+                    'url' => "/dignitaires/{$d->id}",
+                ];
+            }
         }
 
         // Données de candidature réservées aux profils avec accès complet
         // (mêmes droits que la page /admin/candidatures).
-        if (Permissions::aAccesComplet($request->user())) {
+        if (Permissions::aAccesComplet($user)) {
             $candidats = Candidat::query()
                 ->where(function ($query) use ($q) {
                     $query->where('nom', 'like', "%{$q}%")
@@ -80,72 +83,82 @@ class GlobalSearchController extends Controller
             }
         }
 
-        $nominations = Nomination::with('dignitaire')
-            ->where(function ($query) use ($q) {
-                $query->where('fonction', 'like', "%{$q}%")
-                    ->orWhere('numero_decret', 'like', "%{$q}%");
-            })
-            ->limit(self::LIMIT_PAR_TYPE)
-            ->get();
+        if (Permissions::peutLire($user, 'Nomination')) {
+            $nominations = Nomination::with('dignitaire')
+                ->where(function ($query) use ($q) {
+                    $query->where('fonction', 'like', "%{$q}%")
+                        ->orWhere('numero_decret', 'like', "%{$q}%");
+                })
+                ->limit(self::LIMIT_PAR_TYPE)
+                ->get();
 
-        foreach ($nominations as $n) {
-            $results[] = [
-                'type' => 'nomination',
-                'type_label' => 'Nomination',
-                'id' => $n->id,
-                'label' => $n->fonction ?: ('Nomination #' . $n->id),
-                'sublabel' => $n->dignitaire?->nom_complet,
-                'url' => '/nominations',
-            ];
+            foreach ($nominations as $n) {
+                $results[] = [
+                    'type' => 'nomination',
+                    'type_label' => 'Nomination',
+                    'id' => $n->id,
+                    'label' => $n->fonction ?: ('Nomination #' . $n->id),
+                    'sublabel' => $n->dignitaire?->nom_complet,
+                    'url' => '/nominations',
+                ];
+            }
         }
 
-        $postes = Poste::with('dignitaire')
-            ->where('intitule', 'like', "%{$q}%")
-            ->limit(self::LIMIT_PAR_TYPE)
-            ->get();
+        if (Permissions::peutLire($user, 'Poste')) {
+            $postes = Poste::with('dignitaire')
+                ->where('intitule', 'like', "%{$q}%")
+                ->limit(self::LIMIT_PAR_TYPE)
+                ->get();
 
-        foreach ($postes as $p) {
-            $results[] = [
-                'type' => 'poste',
-                'type_label' => 'Poste',
-                'id' => $p->id,
-                'label' => $p->intitule,
-                'sublabel' => $p->dignitaire?->nom_complet,
-                'url' => '/postes',
-            ];
+            foreach ($postes as $p) {
+                $results[] = [
+                    'type' => 'poste',
+                    'type_label' => 'Poste',
+                    'id' => $p->id,
+                    'label' => $p->intitule,
+                    'sublabel' => $p->dignitaire?->nom_complet,
+                    'url' => '/postes',
+                ];
+            }
         }
 
-        $diplomes = Diplome::with('dignitaire')
-            ->where('intitule', 'like', "%{$q}%")
-            ->limit(self::LIMIT_PAR_TYPE)
-            ->get();
+        if (Permissions::peutLire($user, 'Diplôme')) {
+            $diplomes = Diplome::with('dignitaire')
+                ->where('intitule', 'like', "%{$q}%")
+                ->limit(self::LIMIT_PAR_TYPE)
+                ->get();
 
-        foreach ($diplomes as $dp) {
-            $results[] = [
-                'type' => 'diplome',
-                'type_label' => 'Diplôme',
-                'id' => $dp->id,
-                'label' => $dp->intitule,
-                'sublabel' => $dp->dignitaire?->nom_complet,
-                'url' => '/diplomes',
-            ];
+            foreach ($diplomes as $dp) {
+                $results[] = [
+                    'type' => 'diplome',
+                    'type_label' => 'Diplôme',
+                    'id' => $dp->id,
+                    'label' => $dp->intitule,
+                    'sublabel' => $dp->dignitaire?->nom_complet,
+                    'url' => '/diplomes',
+                ];
+            }
         }
 
-        $decorations = Decoration::where('deco_nom', 'like', "%{$q}%")
-            ->limit(self::LIMIT_PAR_TYPE)
-            ->get();
+        if (Permissions::peutLire($user, 'Décoration')) {
+            $decorations = Decoration::where('deco_nom', 'like', "%{$q}%")
+                ->limit(self::LIMIT_PAR_TYPE)
+                ->get();
 
-        foreach ($decorations as $dec) {
-            $results[] = [
-                'type' => 'decoration',
-                'type_label' => 'Décoration',
-                'id' => $dec->deco_id,
-                'label' => $dec->deco_nom,
-                'sublabel' => $dec->deco_type,
-                'url' => '/decorations',
-            ];
+            foreach ($decorations as $dec) {
+                $results[] = [
+                    'type' => 'decoration',
+                    'type_label' => 'Décoration',
+                    'id' => $dec->deco_id,
+                    'label' => $dec->deco_nom,
+                    'sublabel' => $dec->deco_type,
+                    'url' => '/decorations',
+                ];
+            }
         }
 
+        // Entités : donnée de référence, recherche toujours accessible
+        // (même logique que /entites en lecture — cf. routes/api.php).
         $entites = Entite::where('nom', 'like', "%{$q}%")
             ->limit(self::LIMIT_PAR_TYPE)
             ->get();

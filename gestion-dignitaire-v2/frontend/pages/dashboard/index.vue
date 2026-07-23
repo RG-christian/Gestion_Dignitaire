@@ -154,8 +154,8 @@
               </svg>
               Répartition des Dignitaires
             </h3>
-            <select 
-              v-model="chartType" 
+            <select
+              v-model="chartType"
               @change="updateChart"
               class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
@@ -167,8 +167,22 @@
               <option value="candidatures_mois">Candidatures traitées par mois</option>
             </select>
           </div>
-          <div class="h-64">
+          <!-- Le canvas reste toujours dans le DOM (v-show, jamais v-if) :
+               Chart.js tient une référence directe dessus, qui serait perdue
+               si l'élément était démonté puis remonté au changement de vue. -->
+          <p v-show="isDistributionEmpty" class="h-64 flex items-center justify-center text-gray-400 text-sm">
+            Aucune donnée disponible pour cette répartition
+          </p>
+          <div v-show="!isDistributionEmpty" class="h-64 flex items-center justify-center">
             <canvas ref="genreChart"></canvas>
+          </div>
+          <div v-show="!isDistributionEmpty" class="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-4 pt-4 border-t border-gray-100">
+            <div v-for="item in currentLegend" :key="item.label" class="flex items-center gap-2 text-sm">
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: item.color }"></span>
+              <span class="text-gray-700">{{ item.label }}</span>
+              <span class="text-gray-400">·</span>
+              <span class="font-semibold text-gray-900">{{ item.value }}</span>
+            </div>
           </div>
         </div>
 
@@ -224,6 +238,43 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Activité Récente -->
+      <div v-if="permissions.aAccesComplet.value" class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Activité Récente
+          </h3>
+          <NuxtLink to="/admin/audit-logs" class="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center gap-1">
+            Voir tout
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </NuxtLink>
+        </div>
+        <div v-if="activiteRecente && activiteRecente.length > 0" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div v-for="log in activiteRecente" :key="log.id" class="flex items-start gap-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+            <div
+              class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+              :style="{ background: actionBadgeColor(log.action) }"
+            >
+              {{ (log.causer_label || '?').charAt(0).toUpperCase() }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm text-gray-900 truncate">
+                <span class="font-semibold">{{ log.causer_label || 'Système' }}</span>
+                <span class="text-gray-500"> a {{ actionLabel(log.action) }} </span>
+                <span class="font-medium">{{ log.auditable_label || log.auditable_type }}</span>
+              </p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ formatRelativeDate(log.created_at) }}</p>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-sm text-gray-400 text-center py-6">Aucune activité récente</p>
       </div>
 
       <!-- Derniers dignitaires -->
@@ -288,9 +339,36 @@
 
 <script setup lang="ts">
 import { Chart, registerables } from 'chart.js'
-import { ref, onMounted, nextTick, onUnmounted } from 'vue'
+import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
 
-Chart.register(...registerables)
+// Palette catégorielle fixe, validée (contraste + daltonisme) — cf. skill dataviz.
+// Toujours utilisée dans cet ordre, jamais recyclée au hasard.
+const PALETTE = ['#2563eb', '#16a34a', '#eda100', '#8b5cf6', '#ef4444']
+
+// Affiche le total au centre du donut (repris des tableaux de bord de
+// référence : le nombre total est le premier repère visuel).
+const centerTextPlugin = {
+  id: 'centerText',
+  afterDraw(chart: Chart) {
+    if (chart.config.type !== 'doughnut') return
+    const { ctx, chartArea } = chart
+    if (!chartArea) return
+    const { width, height, left, top } = chartArea
+    const total = (chart.data.datasets[0].data as number[]).reduce((a, b) => a + b, 0)
+    ctx.save()
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = 'bold 26px sans-serif'
+    ctx.fillStyle = '#111827'
+    ctx.fillText(String(total), left + width / 2, top + height / 2 - 10)
+    ctx.font = '13px sans-serif'
+    ctx.fillStyle = '#6b7280'
+    ctx.fillText('Total', left + width / 2, top + height / 2 + 14)
+    ctx.restore()
+  }
+}
+
+Chart.register(...registerables, centerTextPlugin)
 
 definePageMeta({
   middleware: 'auth'
@@ -298,9 +376,16 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const permissions = usePermissions()
 const genreChart = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
 const chartType = ref('genre')
+const isDistributionEmpty = ref(false)
+const currentLegend = ref<Array<{ label: string; value: number; color: string }>>([])
+
+// Ces deux vues sont des tendances mensuelles (une série dans le temps) :
+// elles ont besoin d'un axe temporel, pas d'un donut de répartition.
+const TYPES_TEMPORELS = ['nominations_mois', 'candidatures_mois']
 
 // Charger les statistiques
 const { data: stats } = await useAsyncData('dashboard-stats', async () => {
@@ -363,190 +448,164 @@ const { data: derniersDignitaires } = await useAsyncData('derniers-dignitaires',
   }
 })
 
-// Fonction pour obtenir les données selon le type de graphique
+// Charger l'activité récente (journal d'audit), réservé aux rôles ayant
+// accès à la page Journal des actions (cf. DashboardLayout.vue)
+const { data: activiteRecente } = await useAsyncData('activite-recente', async () => {
+  if (!permissions.aAccesComplet.value) return []
+  try {
+    const response: any = await $fetch(`${config.public.apiBase}/admin/audit-logs`, {
+      params: { per_page: 6 },
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    })
+    return response.logs?.data || []
+  } catch (error) {
+    console.error('Erreur chargement activité récente:', error)
+    return []
+  }
+})
+
+const ACTION_LABELS: Record<string, string> = {
+  created: 'créé',
+  updated: 'modifié',
+  deleted: 'supprimé',
+  cloturee: 'clôturé'
+}
+
+const ACTION_COLORS: Record<string, string> = {
+  created: PALETTE[1], // vert
+  updated: PALETTE[0], // bleu
+  deleted: PALETTE[4], // rouge
+  cloturee: PALETTE[2] // ambre
+}
+
+function actionLabel(action: string) {
+  return ACTION_LABELS[action] || action
+}
+
+function actionBadgeColor(action: string) {
+  return ACTION_COLORS[action] || '#6b7280'
+}
+
+function formatRelativeDate(dateStr: string) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const diffMs = Date.now() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return "à l'instant"
+  if (diffMin < 60) return `il y a ${diffMin} min`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `il y a ${diffH} h`
+  const diffJ = Math.floor(diffH / 24)
+  if (diffJ < 7) return `il y a ${diffJ} j`
+  return date.toLocaleDateString('fr-FR')
+}
+
+// Fonction pour obtenir les données selon le type de graphique — uniquement
+// des données réelles ; aucune valeur fabriquée en cas d'absence de données
+// (mieux vaut un état vide honnête qu'un chiffre inventé).
 function getChartData() {
-  const totalDignitaires = stats.value?.totalDignitaires || 15
-  
   if (chartType.value === 'genre') {
-    const hommes = chartData.value?.parGenre?.hommes || Math.floor(totalDignitaires * 0.8)
-    const femmes = chartData.value?.parGenre?.femmes || (totalDignitaires - hommes)
-    return {
-      labels: ['Hommes', 'Femmes'],
-      data: [hommes, femmes],
-      colors: [
-        'rgba(37, 99, 235, 0.8)',
-        'rgba(234, 179, 8, 0.8)'
-      ],
-      borderColors: [
-        'rgba(37, 99, 235, 1)',
-        'rgba(234, 179, 8, 1)'
-      ]
-    }
+    const hommes = chartData.value?.parGenre?.hommes ?? 0
+    const femmes = chartData.value?.parGenre?.femmes ?? 0
+    return { labels: ['Hommes', 'Femmes'], data: [hommes, femmes] }
   } else if (chartType.value === 'region') {
-    const regions = chartData.value?.parRegion || [
-      { nom: 'Estuaire', count: Math.floor(totalDignitaires * 0.3) },
-      { nom: 'Haut-Ogooué', count: Math.floor(totalDignitaires * 0.2) },
-      { nom: 'Moyen-Ogooué', count: Math.floor(totalDignitaires * 0.15) },
-      { nom: 'Ngounié', count: Math.floor(totalDignitaires * 0.15) },
-      { nom: 'Autres', count: Math.floor(totalDignitaires * 0.2) }
-    ]
-    return {
-      labels: regions.map((r: any) => r.nom),
-      data: regions.map((r: any) => r.count),
-      colors: [
-        'rgba(22, 163, 74, 0.8)',
-        'rgba(37, 99, 235, 0.8)',
-        'rgba(234, 179, 8, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(239, 68, 68, 0.8)'
-      ],
-      borderColors: [
-        'rgba(22, 163, 74, 1)',
-        'rgba(37, 99, 235, 1)',
-        'rgba(234, 179, 8, 1)',
-        'rgba(139, 92, 246, 1)',
-        'rgba(239, 68, 68, 1)'
-      ]
-    }
+    const regions = chartData.value?.parRegion || []
+    return { labels: regions.map((r: any) => r.nom), data: regions.map((r: any) => r.count) }
   } else if (chartType.value === 'poste') {
-    const postes = chartData.value?.parPoste || [
-      { nom: 'Ministre', count: Math.floor(totalDignitaires * 0.25) },
-      { nom: 'Directeur', count: Math.floor(totalDignitaires * 0.3) },
-      { nom: 'Conseiller', count: Math.floor(totalDignitaires * 0.2) },
-      { nom: 'Ambassadeur', count: Math.floor(totalDignitaires * 0.15) },
-      { nom: 'Autres', count: Math.floor(totalDignitaires * 0.1) }
-    ]
-    return {
-      labels: postes.map((p: any) => p.nom),
-      data: postes.map((p: any) => p.count),
-      colors: [
-        'rgba(37, 99, 235, 0.8)',
-        'rgba(22, 163, 74, 0.8)',
-        'rgba(234, 179, 8, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(239, 68, 68, 0.8)'
-      ],
-      borderColors: [
-        'rgba(37, 99, 235, 1)',
-        'rgba(22, 163, 74, 1)',
-        'rgba(234, 179, 8, 1)',
-        'rgba(139, 92, 246, 1)',
-        'rgba(239, 68, 68, 1)'
-      ]
-    }
+    const postes = chartData.value?.parPoste || []
+    return { labels: postes.map((p: any) => p.nom), data: postes.map((p: any) => p.count) }
   } else if (chartType.value === 'statut') {
     const parStatut = chartData.value?.parStatut || []
-    return {
-      labels: parStatut.map((s: any) => s.nom),
-      data: parStatut.map((s: any) => s.count),
-      colors: [
-        'rgba(22, 163, 74, 0.8)',
-        'rgba(107, 114, 128, 0.8)',
-        'rgba(249, 115, 22, 0.8)'
-      ],
-      borderColors: [
-        'rgba(22, 163, 74, 1)',
-        'rgba(107, 114, 128, 1)',
-        'rgba(249, 115, 22, 1)'
-      ]
-    }
+    return { labels: parStatut.map((s: any) => s.nom), data: parStatut.map((s: any) => s.count) }
   } else if (chartType.value === 'nominations_mois') {
     const rows = chartData.value?.nominationsParMois || []
-    return {
-      labels: rows.map((r: any) => r.mois),
-      data: rows.map((r: any) => r.count),
-      colors: rows.map(() => 'rgba(37, 99, 235, 0.8)'),
-      borderColors: rows.map(() => 'rgba(37, 99, 235, 1)')
-    }
+    return { labels: rows.map((r: any) => r.mois), data: rows.map((r: any) => r.count) }
   } else if (chartType.value === 'candidatures_mois') {
     const rows = chartData.value?.candidaturesParMois || []
-    return {
-      labels: rows.map((r: any) => r.mois),
-      data: rows.map((r: any) => r.count),
-      colors: rows.map(() => 'rgba(22, 163, 74, 0.8)'),
-      borderColors: rows.map(() => 'rgba(22, 163, 74, 1)')
-    }
+    return { labels: rows.map((r: any) => r.mois), data: rows.map((r: any) => r.count) }
   }
 
-  return { labels: [], data: [], colors: [], borderColors: [] }
+  return { labels: [], data: [] }
 }
 
-// Fonction pour mettre à jour le graphique
+function renderChart() {
+  if (!genreChart.value) return
+
+  const { labels, data } = getChartData()
+  const total = data.reduce((a, b) => a + b, 0)
+  isDistributionEmpty.value = total === 0
+  chartInstance?.destroy()
+  if (isDistributionEmpty.value) {
+    currentLegend.value = []
+    return
+  }
+
+  const estTemporel = TYPES_TEMPORELS.includes(chartType.value)
+
+  if (estTemporel) {
+    // Tendance mensuelle : une seule série dans le temps → barres + axes,
+    // pas de donut (qui n'a de sens que pour une répartition à un instant T).
+    currentLegend.value = []
+    chartInstance = new Chart(genreChart.value, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Nombre',
+          data,
+          backgroundColor: PALETTE[0],
+          borderRadius: 4,
+          maxBarThickness: 32
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    })
+    return
+  }
+
+  const colors = labels.map((_: string, i: number) => PALETTE[i % PALETTE.length])
+  currentLegend.value = labels.map((label: string, i: number) => ({ label, value: data[i], color: colors[i] }))
+
+  chartInstance = new Chart(genreChart.value, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors,
+        borderColor: '#ffffff',
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: { legend: { display: false } }
+    }
+  })
+}
+
 function updateChart() {
-  if (!chartInstance || !genreChart.value) return
-  
-  const data = getChartData()
-  chartInstance.data.labels = data.labels
-  chartInstance.data.datasets[0].data = data.data
-  chartInstance.data.datasets[0].backgroundColor = data.colors
-  chartInstance.data.datasets[0].borderColor = data.borderColors
-  chartInstance.update()
+  renderChart()
 }
 
-// Créer le graphique avec les vraies données
 onMounted(async () => {
   await nextTick()
-  
-  if (genreChart.value) {
-    const data = getChartData()
-    
-    try {
-      chartInstance = new Chart(genreChart.value, {
-        type: 'bar',
-        data: {
-          labels: data.labels,
-          datasets: [{
-            label: 'Nombre de dignitaires',
-            data: data.data,
-            backgroundColor: data.colors,
-            borderColor: data.borderColors,
-            borderWidth: 2,
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return context.parsed.y + ' dignitaires'
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              },
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
-              }
-            },
-            x: {
-              grid: {
-                display: false
-              }
-            }
-          }
-        }
-      })
-    } catch (error) {
-      console.error('Erreur création graphique:', error)
-    }
-  }
+  renderChart()
 })
 
 // Nettoyer le graphique lors de la destruction du composant
 onUnmounted(() => {
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
+  chartInstance?.destroy()
 })
 </script>

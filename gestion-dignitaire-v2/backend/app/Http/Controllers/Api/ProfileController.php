@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\Permissions;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -34,7 +35,7 @@ class ProfileController extends Controller
         $user->update($request->only(['nom_complet', 'email', 'telephone']));
 
         // Recharger les relations
-        $user->load(['fonctions', 'sousfonctions']);
+        Permissions::chargerFonctionsEtSousfonctions($user);
 
         return response()->json([
             'message' => 'Profil mis à jour avec succès',

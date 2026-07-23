@@ -79,18 +79,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
-    // Route de test pour vérifier les fonctions
-    Route::get('/test-fonctions', function (Request $request) {
-        $user = $request->user();
-        return response()->json([
-            'user_id' => $user->id,
-            'fonctions_count' => $user->fonctions()->count(),
-            'sousfonctions_count' => $user->sousfonctions()->count(),
-            'fonctions' => $user->fonctions,
-            'sousfonctions' => $user->sousfonctions,
-        ]);
-    });
-
     // Recherche globale transverse
     Route::get('/search', [\App\Http\Controllers\Api\GlobalSearchController::class, 'search']);
 
@@ -156,30 +144,36 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/postes-export', [PosteController::class, 'export']);
     });
 
-    // Affectations (séjours à l'étranger) — pas de sous-fonction dédiée,
-    // rattachées à Dignitaire comme les Conjoints (même précédent)
-    Route::middleware('permission:Dignitaire')->group(function () {
+    // Affectations (séjours à l'étranger)
+    Route::middleware('permission:Affectation')->group(function () {
         Route::apiResource('affectations', \App\Http\Controllers\Api\AffectationController::class);
         Route::post('/affectations/{id}/cloturer', [\App\Http\Controllers\Api\AffectationController::class, 'cloturer']);
     });
 
-    // Entités (CRUD complet) — pas de sous-fonction dédiée à ce jour, laissé ouvert à tout utilisateur authentifié
-    Route::apiResource('entites', \App\Http\Controllers\Api\EntiteController::class);
-    Route::get('/entites-export', [\App\Http\Controllers\Api\EntiteController::class, 'export']);
+    // Entités — l'index reste accessible à tout utilisateur authentifié
+    // (comme /structures) car c'est une donnée de référence utilisée par de
+    // nombreux formulaires (Poste, Nomination, Dignitaire...) ; seules les
+    // écritures sont réservées à qui a la sous-fonction Entité.
+    Route::get('/entites', [\App\Http\Controllers\Api\EntiteController::class, 'index']);
+    Route::middleware('permission:Entité')->group(function () {
+        Route::apiResource('entites', \App\Http\Controllers\Api\EntiteController::class)->except(['index']);
+        Route::get('/entites-export', [\App\Http\Controllers\Api\EntiteController::class, 'export']);
+    });
 
-    // Référentiels (lecture seule)
+    // Référentiels (lecture seule) — /entites est déclaré plus haut, avec sa
+    // propre garde de permission sur les écritures.
     Route::get('/pays', [ReferentielController::class, 'pays']);
     Route::get('/regions', [ReferentielController::class, 'regions']);
     Route::get('/villes', [ReferentielController::class, 'villes']);
-    // Pas de doublon pour /entites : EntiteController::index() (déclaré plus
-    // haut, sans garde de permission) sert déjà ce besoin en plus complet
-    // (recherche, entité de rattachement) — un second Route::get('/entites',
-    // ...) ici écraserait silencieusement l'apiResource (même URI GET exacte).
     Route::get('/langues', [\App\Http\Controllers\Api\LangueController::class, 'index']);
     Route::get('/domaines', [ReferentielController::class, 'domaines']);
     Route::get('/structures', [ReferentielController::class, 'structures']);
     Route::get('/etablissements', [ReferentielController::class, 'etablissements']);
-    Route::post('/etablissements', [EtablissementController::class, 'store']);
+    // Création d'établissement (depuis le champ "recherche ou ajout" des
+    // formulaires de diplôme) — réservée à qui peut écrire sur Diplôme.
+    Route::middleware('permission:Diplôme')->group(function () {
+        Route::post('/etablissements', [EtablissementController::class, 'store']);
+    });
 
     // Gestion Pays, Régions, Villes (CRUD complet)
     Route::middleware('permission:Pays')->group(function () {
@@ -236,7 +230,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Conjoints
-    Route::middleware('permission:Dignitaire')->group(function () {
+    Route::middleware('permission:Conjoint')->group(function () {
         Route::get('/conjoints', [ConjointController::class, 'indexAll']);
         Route::prefix('dignitaires/{dignitaireId}')->group(function () {
             Route::get('/conjoints', [ConjointController::class, 'index']);
@@ -264,11 +258,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Administration des utilisateurs (Super Administrateur uniquement)
     Route::prefix('admin')->group(function () {
-        Route::get('/audit-logs', [AuditLogController::class, 'index']);
-
-        // Rapports périodiques archivés
-        Route::get('/rapports', [\App\Http\Controllers\Api\RapportController::class, 'index']);
-        Route::get('/rapports/{id}/download', [\App\Http\Controllers\Api\RapportController::class, 'download']);
+        // Journal des actions et rapports périodiques : sous-fonctions
+        // normales de "Rapports & Traçabilité", attribuables à
+        // Assistant/Gestionnaire comme n'importe quel autre module.
+        Route::middleware('permission:Journal des actions')->group(function () {
+            Route::get('/audit-logs', [AuditLogController::class, 'index']);
+        });
+        Route::middleware('permission:Rapports & Exports')->group(function () {
+            Route::get('/rapports', [\App\Http\Controllers\Api\RapportController::class, 'index']);
+            Route::get('/rapports/{id}/download', [\App\Http\Controllers\Api\RapportController::class, 'download']);
+        });
 
         Route::middleware('super-admin')->group(function () {
             Route::get('/users', [AdminController::class, 'index']);
@@ -279,12 +278,23 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/roles', [AdminController::class, 'roles']);
             Route::get('/fonctions', [AdminController::class, 'fonctions']);
             Route::get('/sousfonctions', [AdminController::class, 'sousfonctions']);
+        });
+
+        // Paramètres (OTP) : sous-fonction créée pour la cohérence
+        // d'affichage dans /admin/create, mais le réglage reste un
+        // contrôle de sécurité global de l'app — verrouillé derrière
+        // super-admin en plus, jamais accessible à Assistant/Gestionnaire
+        // même si la sous-fonction leur est attribuée (décision validée).
+        Route::middleware(['super-admin', 'permission:Paramètres (OTP)'])->group(function () {
             Route::get('/parametres', [AdminController::class, 'getParametres']);
             Route::put('/parametres', [AdminController::class, 'updateParametres']);
         });
 
-        // Gestion des candidatures (Administrateur / Super Administrateur uniquement)
-        Route::middleware('admin-access')->group(function () {
+        // Gestion des candidatures : sous-fonction créée pour la cohérence
+        // d'affichage, mais reste verrouillée derrière admin-access en
+        // plus — données personnelles de candidats, jamais accessible à
+        // Assistant/Gestionnaire même si attribuée (décision validée).
+        Route::middleware(['admin-access', 'permission:Candidature'])->group(function () {
             Route::get('/candidats', [CandidatController::class, 'index']);
             Route::get('/candidats/stats', [CandidatController::class, 'stats']);
             Route::get('/candidats/{id}', [CandidatController::class, 'show']);

@@ -130,82 +130,6 @@
                 </NuxtLink>
               </li>
 
-              <!-- Groupe : Rapports & Traçabilité (Admin uniquement) -->
-              <li v-if="permissions.aAccesComplet.value" class="relative">
-                <button
-                  @click="toggleDropdown('rapports_tracabilite')"
-                  class="w-full flex items-center p-2.5 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition duration-200 group relative"
-                  :title="isSidebarCollapsed ? 'Rapports & Traçabilité' : ''"
-                >
-                  <i class="fas fa-chart-line w-5 text-base text-blue-500"></i>
-                  <span v-show="!isSidebarCollapsed" class="ml-3 text-sm font-medium flex-1 text-left">Rapports & Traçabilité</span>
-                  <i v-show="!isSidebarCollapsed" :class="openDropdown === 'rapports_tracabilite' ? 'fa-chevron-down' : 'fa-chevron-right'" class="fas ml-auto text-xs"></i>
-                </button>
-
-                <!-- Sous-menu en mode étendu -->
-                <ul 
-                  v-show="openDropdown === 'rapports_tracabilite' && !isSidebarCollapsed" 
-                  class="dropdown-content bg-gray-50 pl-3 mt-1 space-y-1 rounded overflow-hidden"
-                >
-                  <li>
-                    <NuxtLink
-                      to="/admin/rapports"
-                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    >
-                      Rapports & Exports
-                    </NuxtLink>
-                  </li>
-                  <li>
-                    <NuxtLink
-                      to="/admin/audit-logs"
-                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    >
-                      Journal des actions
-                    </NuxtLink>
-                  </li>
-                  <li v-if="permissions.estSuperAdmin.value">
-                    <NuxtLink
-                      to="/admin/parametres"
-                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    >
-                      Paramètres (OTP)
-                    </NuxtLink>
-                  </li>
-                </ul>
-
-                <!-- Menu flottant en mode réduit -->
-                <div 
-                  v-if="isSidebarCollapsed && openDropdown === 'rapports_tracabilite'"
-                  class="fixed left-16 bg-white shadow-xl rounded-lg py-2 px-1 min-w-[200px] z-50 border border-gray-200"
-                  style="top: 120px"
-                >
-                  <div class="px-3 py-1 text-xs font-semibold text-gray-500 border-b border-gray-200 mb-1">
-                    Rapports & Traçabilité
-                  </div>
-                  <NuxtLink
-                    to="/admin/rapports"
-                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    @click="openDropdown = null"
-                  >
-                    Rapports & Exports
-                  </NuxtLink>
-                  <NuxtLink
-                    to="/admin/audit-logs"
-                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    @click="openDropdown = null"
-                  >
-                    Journal des actions
-                  </NuxtLink>
-                  <NuxtLink
-                    v-if="permissions.estSuperAdmin.value"
-                    to="/admin/parametres"
-                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    @click="openDropdown = null"
-                  >
-                    Paramètres (OTP)
-                  </NuxtLink>
-                </div>
-              </li>
 
               <!-- Menus dynamiques basés sur les droits d'accès -->
               <li v-for="fonction in fonctionsAvecSousfonctions" :key="fonction.id" class="relative">
@@ -224,33 +148,6 @@
                   v-show="openDropdown === fonction.fonction_name && !isSidebarCollapsed" 
                   class="dropdown-content bg-gray-50 pl-3 mt-1 space-y-1 rounded overflow-hidden"
                 >
-                  <!-- Candidatures dans Gest. Pers. -->
-                  <li v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.aAccesComplet.value">
-                    <NuxtLink
-                      to="/admin/candidatures"
-                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    >
-                      Candidatures
-                    </NuxtLink>
-                  </li>
-                  <!-- Conjoints dans Gest. Pers. -->
-                  <li v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')">
-                    <NuxtLink
-                      to="/conjoints"
-                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    >
-                      Conjoints
-                    </NuxtLink>
-                  </li>
-                  <!-- Affectations dans Gest. Pers. -->
-                  <li v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')">
-                    <NuxtLink
-                      to="/affectations"
-                      class="block px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    >
-                      Affectations
-                    </NuxtLink>
-                  </li>
                   <!-- Sous-fonctions existantes -->
                   <li v-for="sf in getSousFonctions(fonction.id)" :key="sf.id">
                     <NuxtLink
@@ -271,33 +168,6 @@
                   <div class="px-3 py-1 text-[10px] font-semibold text-gray-500 border-b border-gray-200 mb-1">
                     {{ fonction.fonction_name }}
                   </div>
-                  <!-- Candidatures dans Gest. Pers. -->
-                  <NuxtLink
-                    v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.aAccesComplet.value"
-                    to="/admin/candidatures"
-                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    @click="openDropdown = null"
-                  >
-                    Candidatures
-                  </NuxtLink>
-                  <!-- Conjoints dans Gest. Pers. -->
-                  <NuxtLink
-                    v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')"
-                    to="/conjoints"
-                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    @click="openDropdown = null"
-                  >
-                    Conjoints
-                  </NuxtLink>
-                  <!-- Affectations dans Gest. Pers. -->
-                  <NuxtLink
-                    v-if="fonction.fonction_name === 'Gest. Pers.' && permissions.peutLire('Dignitaire')"
-                    to="/affectations"
-                    class="block px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700 text-xs rounded transition"
-                    @click="openDropdown = null"
-                  >
-                    Affectations
-                  </NuxtLink>
                   <!-- Sous-fonctions existantes -->
                   <NuxtLink
                     v-for="sf in getSousFonctions(fonction.id)"
@@ -420,19 +290,31 @@ function getIcon(fonctionName: string): string {
     'Parcours Pro.': 'fa-briefcase',
     'Langues': 'fa-language',
     'Géographie': 'fa-globe',
-    'Récomp. & Rec.': 'fa-medal'
+    'Récomp. & Rec.': 'fa-medal',
+    'Rapports & Traçabilité': 'fa-chart-line'
   }
   return icons[fonctionName] || 'fa-star'
 }
 
 function getSousFonctions(fonctionId: number) {
-  return sousfonctions.value.filter((sf: any) => sf.fonction_id === fonctionId)
+  return sousfonctions.value.filter((sf: any) => {
+    if (sf.fonction_id !== fonctionId) return false
+    // Verrouillées derrière une garde supplémentaire côté backend (cf.
+    // routes/api.php) même si la sous-fonction est attribuée — inutile de
+    // proposer un lien qui renverra systématiquement une 403.
+    if (sf.sousfonction_name === 'Paramètres (OTP)' && !permissions.estSuperAdmin.value) return false
+    if (sf.sousfonction_name === 'Candidature' && !permissions.aAccesComplet.value) return false
+    return true
+  })
 }
 
 function getRouteForSousfonction(name: string): string {
   const routes: Record<string, string> = {
     'Dignitaire': '/dignitaires',
     'Enfant': '/enfants',
+    'Conjoint': '/conjoints',
+    'Affectation': '/affectations',
+    'Candidature': '/admin/candidatures',
     'Poste': '/postes',
     'Entité': '/entites',
     'Entite': '/entites',
@@ -448,7 +330,10 @@ function getRouteForSousfonction(name: string): string {
     'Decoration': '/decorations',
     'Structure': '/structures',
     'Région': '/regions',
-    'Region': '/regions'
+    'Region': '/regions',
+    'Rapports & Exports': '/admin/rapports',
+    'Journal des actions': '/admin/audit-logs',
+    'Paramètres (OTP)': '/admin/parametres'
   }
   return routes[name] || `/${name.toLowerCase()}`
 }

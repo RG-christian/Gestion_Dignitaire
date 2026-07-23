@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\OtpService;
 use App\Support\Parametres;
 use App\Support\PasswordResetService;
+use App\Support\Permissions;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +31,7 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            $user->load(['fonctions', 'sousfonctions']);
+            Permissions::chargerFonctionsEtSousfonctions($user);
 
             // Double authentification à la connexion, si activée par le
             // Super Administrateur (désactivée par défaut, cf. BLOC 14).
@@ -83,7 +84,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Utilisateur introuvable.'], 404);
         }
 
-        $user->load(['fonctions', 'sousfonctions']);
+        Permissions::chargerFonctionsEtSousfonctions($user);
 
         return response()->json($this->emettreSession($user));
     }
@@ -151,7 +152,7 @@ class AuthController extends Controller
     public function user(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->load(['fonctions', 'sousfonctions']);
+        Permissions::chargerFonctionsEtSousfonctions($user);
         return response()->json($user);
     }
 

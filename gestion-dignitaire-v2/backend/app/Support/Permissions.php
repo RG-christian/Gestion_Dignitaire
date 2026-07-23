@@ -64,4 +64,34 @@ class Permissions
 
         return $match?->pivot?->niveau;
     }
+
+    /**
+     * Attache fonctions/sous-fonctions à l'utilisateur pour le menu latéral.
+     *
+     * Administrateur / Super Administrateur ont un accès complet qui ne
+     * dépend jamais de leurs lignes user_fonctions/user_sousfonctions —
+     * celles-ci ne servent qu'à des comptes historiques et sont donc
+     * souvent incomplètes (un module ajouté après coup, comme "Entité" le
+     * 2026-07-23, n'y figure pas automatiquement). On leur attache donc
+     * toujours la liste complète des fonctions et sous-fonctions
+     * existantes, pour que le menu reflète leur accès réel plutôt que des
+     * lignes de pivot possiblement obsolètes. Pour Assistant/Gestionnaire,
+     * on garde leurs propres assignations : c'est précisément ce qui
+     * détermine ce à quoi ils ont droit.
+     */
+    public static function chargerFonctionsEtSousfonctions(User $user): void
+    {
+        if (self::aAccesComplet($user)) {
+            $user->setRelation('fonctions', \App\Models\Fonction::orderBy('fonction_name')->get());
+            $user->setRelation(
+                'sousfonctions',
+                \App\Models\Sousfonction::orderBy('sousfonction_name')->get()->each(function ($sf) {
+                    $sf->setAttribute('pivot', (object) ['niveau' => 'ecriture']);
+                })
+            );
+            return;
+        }
+
+        $user->load(['fonctions', 'sousfonctions']);
+    }
 }
