@@ -36,9 +36,31 @@ export const useApi = () => {
       }
     },
 
-    onResponseError({ response }) {
+    async onResponseError({ response }) {
       if (response.status === 401) {
         console.warn('Session expirée, déconnexion...')
+        const evictedUserId = authStore.user?.id
+
+        if (evictedUserId && process.client) {
+          try {
+            const check: any = await $fetch(`${config.public.apiBase}/session/verifier-eviction`, {
+              params: { type: 'admin', id: evictedUserId }
+            })
+            if (check?.evicted) {
+              const { $swal } = useNuxtApp()
+              await $swal.fire({
+                icon: 'warning',
+                title: 'Session terminée',
+                text: 'Vous avez été déconnecté(e) car votre compte a été utilisé depuis un autre appareil ou navigateur.',
+                confirmButtonColor: '#16a34a'
+              })
+            }
+          } catch (e) {
+            // La vérification n'est qu'un confort d'affichage — ne doit
+            // jamais empêcher la déconnexion normale ci-dessous.
+          }
+        }
+
         authStore.logout()
       }
     }
@@ -229,7 +251,7 @@ export const useApi = () => {
     getDomaines: () => cachedFetch('/domaines'),
 
     // Auth
-    login: (credentials: { username: string; password: string }) => 
+    login: (credentials: { username: string; password: string; force?: boolean }) =>
       apiFetch('/login', { method: 'POST', body: credentials }),
     logout: () => apiFetch('/logout', { method: 'POST' }),
     getUser: () => apiFetch('/user'),

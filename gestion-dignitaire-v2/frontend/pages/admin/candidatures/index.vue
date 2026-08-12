@@ -1,7 +1,7 @@
 <template>
   <DashboardLayout>
     <div style="zoom: 0.8;">
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14,6 +14,9 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
+      <TipBanner id="candidatures-intro" title="Le saviez-vous ?" icon="fa-lightbulb">
+        Les candidatures arrivent directement de l'espace candidat. Ouvrez-en une pour la valider (création automatique d'un dignitaire), la refuser, ou envoyer une recommandation.
+      </TipBanner>
       <!-- Statistiques -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-lg border-l-4 border-gray-500 p-5">
@@ -35,7 +38,7 @@
       </div>
 
       <!-- Filtres -->
-      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <div data-tour="filters" class="bg-white rounded-xl shadow-lg p-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4">
           <div class="flex-1">
             <input
@@ -59,7 +62,7 @@
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
 
-      <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div v-else data-tour="table" class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div v-if="candidatures.length > 0" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-green-600 to-green-700 text-white">
@@ -118,6 +121,8 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { debounce } = useDebounce()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 const candidatures = ref([])
 const stats = ref({})
@@ -178,5 +183,7 @@ async function loadStats() {
 onMounted(() => {
   loadCandidatures()
   loadStats()
+  helpPanel.setContent(HELP_CONTENT.candidatures)
+  tour.start(HELP_CONTENT.candidatures.tourSteps, 'candidatures')
 })
 </script>

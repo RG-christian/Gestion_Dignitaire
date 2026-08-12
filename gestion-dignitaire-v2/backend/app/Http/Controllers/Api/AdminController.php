@@ -307,6 +307,7 @@ class AdminController extends Controller
         return response()->json([
             'otp_login_admin_enabled' => Parametres::getBool(Parametres::OTP_LOGIN_ADMIN),
             'otp_login_candidat_enabled' => Parametres::getBool(Parametres::OTP_LOGIN_CANDIDAT),
+            'notif_admin_candidature_enabled' => Parametres::getBool(Parametres::NOTIF_ADMIN_CANDIDATURE),
         ]);
     }
 
@@ -318,10 +319,12 @@ class AdminController extends Controller
         $validated = $request->validate([
             'otp_login_admin_enabled' => 'required|boolean',
             'otp_login_candidat_enabled' => 'required|boolean',
+            'notif_admin_candidature_enabled' => 'required|boolean',
         ]);
 
         Parametres::set(Parametres::OTP_LOGIN_ADMIN, $validated['otp_login_admin_enabled'] ? '1' : '0');
         Parametres::set(Parametres::OTP_LOGIN_CANDIDAT, $validated['otp_login_candidat_enabled'] ? '1' : '0');
+        Parametres::set(Parametres::NOTIF_ADMIN_CANDIDATURE, $validated['notif_admin_candidature_enabled'] ? '1' : '0');
 
         AuditLogger::log($request, 'updated', 'Parametres', null, 'Réglages OTP', null, $validated);
 
@@ -330,6 +333,7 @@ class AdminController extends Controller
             'message' => 'Réglages mis à jour avec succès',
             'otp_login_admin_enabled' => $validated['otp_login_admin_enabled'],
             'otp_login_candidat_enabled' => $validated['otp_login_candidat_enabled'],
+            'notif_admin_candidature_enabled' => $validated['notif_admin_candidature_enabled'],
         ]);
     }
 }

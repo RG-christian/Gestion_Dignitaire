@@ -15,6 +15,7 @@ class Parametres
 {
     public const OTP_LOGIN_ADMIN = 'otp_login_admin_enabled';
     public const OTP_LOGIN_CANDIDAT = 'otp_login_candidat_enabled';
+    public const NOTIF_ADMIN_CANDIDATURE = 'notif_admin_candidature_enabled';
 
     public static function get(string $cle, mixed $default = null): mixed
     {

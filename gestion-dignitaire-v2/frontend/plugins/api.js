@@ -7,13 +7,22 @@ export default defineNuxtPlugin(() => {
       const url = `${apiBase}${endpoint}`
       
       try {
+        // Ne pas définir Content-Type si le body est un FormData (le navigateur le fait automatiquement)
+        const isFormData = options.body instanceof FormData
+        
+        const headers = {
+          'Accept': 'application/json',
+          ...options.headers
+        }
+        
+        // Ajouter Content-Type uniquement si ce n'est pas un FormData
+        if (!isFormData && !options.headers?.['Content-Type']) {
+          headers['Content-Type'] = 'application/json'
+        }
+        
         const response = await $fetch(url, {
           ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            ...options.headers
-          }
+          headers
         })
         return response
       } catch (error) {

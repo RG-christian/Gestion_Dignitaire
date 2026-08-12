@@ -17,6 +17,16 @@
     </header>
 
     <div class="p-4 bg-gray-50 min-h-screen" style="zoom: 0.85;">
+      <TipBanner id="dashboard-bienvenue" title="Bienvenue !" icon="fa-hand-sparkles">
+        Bonjour {{ authStore.userName || 'et bienvenue' }} ! Ce tableau de bord centralise vos statistiques. Le bouton
+        <i class="fas fa-circle-question mx-0.5"></i> en haut à droite ouvre l'aide contextuelle de chaque page à tout moment.
+      </TipBanner>
+
+      <!-- Prise en main -->
+      <div v-if="checklistItems.length" class="mb-6">
+        <ProgressChecklist title="Prise en main" :items="checklistItems" />
+      </div>
+
       <!-- KPI Cards - Statistiques principales -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <!-- Dignitaires -->
@@ -377,6 +387,8 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const permissions = usePermissions()
+const onboarding = useOnboarding()
+const helpPanel = useHelpPanel()
 const genreChart = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
 const chartType = ref('genre')
@@ -468,14 +480,18 @@ const ACTION_LABELS: Record<string, string> = {
   created: 'créé',
   updated: 'modifié',
   deleted: 'supprimé',
-  cloturee: 'clôturé'
+  cloturee: 'clôturé',
+  connexion: 'connecté',
+  connexion_forcee: 'connecté (session précédente déconnectée)'
 }
 
 const ACTION_COLORS: Record<string, string> = {
   created: PALETTE[1], // vert
   updated: PALETTE[0], // bleu
   deleted: PALETTE[4], // rouge
-  cloturee: PALETTE[2] // ambre
+  cloturee: PALETTE[2], // ambre
+  connexion: PALETTE[0], // bleu
+  connexion_forcee: PALETTE[2] // ambre
 }
 
 function actionLabel(action: string) {
@@ -607,5 +623,27 @@ onMounted(async () => {
 // Nettoyer le graphique lors de la destruction du composant
 onUnmounted(() => {
   chartInstance?.destroy()
+})
+
+// ===== Aide contextuelle & prise en main =====
+helpPanel.setContent(HELP_CONTENT.dashboard)
+onboarding.markStepDone('visite-dashboard')
+
+const checklistItems = computed(() => {
+  const items = [
+    { id: 'visite-dashboard', label: 'Consulter le tableau de bord', done: onboarding.isStepDone('visite-dashboard') },
+    { id: 'premier-dignitaire', label: 'Ajouter votre premier dignitaire', done: onboarding.isStepDone('premier-dignitaire'), to: '/dignitaires' },
+    { id: 'visite-rapports', label: 'Explorer les rapports et exports', done: onboarding.isStepDone('visite-rapports'), to: '/admin/rapports' }
+  ]
+  if (permissions.aAccesComplet.value) {
+    items.push({ id: 'visite-audit-logs', label: 'Consulter le journal des actions', done: onboarding.isStepDone('visite-audit-logs'), to: '/admin/audit-logs' })
+  }
+  if (permissions.estSuperAdmin.value) {
+    items.push({ id: 'visite-parametres', label: 'Configurer les paramètres (OTP)', done: onboarding.isStepDone('visite-parametres'), to: '/admin/parametres' })
+  }
+  // Une fois cochés, tous les éléments restent affichés (barre à 100%) — pas
+  // de disparition brutale de la checklist qui donnerait l'impression d'un
+  // bug plutôt que d'une réussite.
+  return items
 })
 </script>

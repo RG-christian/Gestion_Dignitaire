@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\OtpCodeMail;
 use App\Mail\ResetPasswordMail;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\OtpService;
 use App\Support\Parametres;
 use App\Support\PasswordResetService;
@@ -32,6 +33,17 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
             Permissions::chargerFonctionsEtSousfonctions($user);
+
+            // Une session récente existe déjà pour ce compte : on demande
+            // confirmation avant de l'évincer, plutôt que de le faire en
+            // silence (cf. emettreSession ci-dessous pour le comportement
+            // par défaut historique).
+            if (!$request->boolean('force') && $this->hasActiveSession($user)) {
+                return response()->json([
+                    'already_connected' => true,
+                    'message' => 'Ce compte est déjà connecté depuis un autre appareil ou navigateur.',
+                ]);
+            }
 
             // Double authentification à la connexion, si activée par le
             // Super Administrateur (désactivée par défaut, cf. BLOC 14).
@@ -116,15 +128,45 @@ class AuthController extends Controller
     }
 
     /**
+     * Une session est considérée "active" seulement si son token a été créé
+     * ou utilisé dans les 15 dernières minutes — un token de 7 jours oublié
+     * (onglet fermé) ne doit pas déclencher une demande de confirmation à
+     * chaque reconnexion légitime du même utilisateur.
+     */
+    private function hasActiveSession(User $user): bool
+    {
+        return $user->tokens()
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->where(function ($q) {
+                $q->where('last_used_at', '>=', now()->subMinutes(15))
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('last_used_at')->where('created_at', '>=', now()->subMinutes(15));
+                    });
+            })
+            ->exists();
+    }
+
+    /**
      * Supprime les anciens tokens et en délivre un nouveau — factorisé car
      * appelé aussi bien par login() (OTP désactivé) que par verifyOtp()
      * (OTP activé, une fois le code validé).
      */
     private function emettreSession(User $user): array
     {
+        $meta = ['ip' => request()->ip(), 'user_agent' => request()->userAgent()];
+        $label = $user->nom_complet ?? $user->username;
+
+        if ($this->hasActiveSession($user)) {
+            AuditLogger::log(request(), 'connexion_forcee', 'Session', $user->id, $label, null, $meta, $user);
+        }
+
         $user->tokens()->delete();
 
         $token = $user->createToken('auth-token', ['*'], now()->addDays(7))->plainTextToken;
+
+        AuditLogger::log(request(), 'connexion', 'Session', $user->id, $label, null, $meta, $user);
 
         return [
             'token' => $token,

@@ -16,7 +16,7 @@ class CandidatDocumentController extends Controller
 {
     /**
      * Liste des documents d'un candidat
-     * 
+     *
      * GET /api/candidats/me/documents
      */
     public function index(Request $request): JsonResponse
@@ -32,7 +32,7 @@ class CandidatDocumentController extends Controller
 
     /**
      * Upload d'un document
-     * 
+     *
      * POST /api/candidats/me/documents
      */
     public function store(Request $request): JsonResponse
@@ -54,7 +54,7 @@ class CandidatDocumentController extends Controller
 
         try {
             $file = $request->file('fichier');
-            
+
             // Stocker le fichier
             $path = $file->store('candidats/documents', 'public');
 
@@ -66,6 +66,17 @@ class CandidatDocumentController extends Controller
                 'taille_fichier' => $file->getSize(),
                 'extension' => $file->getClientOriginalExtension(),
                 'description' => $request->description,
+            ]);
+
+            // Créer une notification pour l'admin
+            \DB::table('admin_notifications')->insert([
+                'candidat_id' => $candidat->id,
+                'type' => 'nouveau_document',
+                'titre' => 'Nouveau document ajouté',
+                'message' => "{$candidat->prenom} {$candidat->nom} a ajouté un document de type \"{$request->type_document}\".",
+                'lu' => false,
+                'created_at' => now(),
+                'updated_at' => now()
             ]);
 
             return response()->json([
@@ -85,7 +96,7 @@ class CandidatDocumentController extends Controller
 
     /**
      * Supprimer un document
-     * 
+     *
      * DELETE /api/candidats/me/documents/{id}
      */
     public function destroy(Request $request, int $id): JsonResponse
@@ -121,7 +132,7 @@ class CandidatDocumentController extends Controller
 
     /**
      * Télécharger un document (pour admin)
-     * 
+     *
      * GET /api/admin/candidats/{candidatId}/documents/{documentId}/download
      */
     public function download(int $candidatId, int $documentId): mixed

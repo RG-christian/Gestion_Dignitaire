@@ -1,7 +1,7 @@
 <template>
   <DashboardLayout>
     <div class="max-w-7xl mx-auto p-6">
-      <header class="mb-6">
+      <header data-tour="page-header" class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <i class="fas fa-file-export text-blue-500"></i>
           Rapports &amp; Exports
@@ -10,7 +10,7 @@
       </header>
 
       <!-- Générateur de rapport -->
-      <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div data-tour="filters" class="bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 class="text-lg font-bold text-gray-900 mb-4">Générateur de rapport</h2>
 
         <div class="grid md:grid-cols-4 gap-4 mb-4">
@@ -82,7 +82,7 @@
       </div>
 
       <!-- Rapports périodiques archivés -->
-      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div data-tour="table" class="bg-white rounded-lg shadow-md overflow-hidden">
         <div class="p-4 border-b flex items-center justify-between">
           <h2 class="text-lg font-bold text-gray-900">Rapports périodiques archivés</h2>
           <select v-model="typeFilter" @change="loadRapports(1)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
@@ -149,6 +149,9 @@ definePageMeta({
 const api = useApi()
 const fileDownload = useFileDownload()
 const referentiels = useReferentiels()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
+const onboarding = useOnboarding()
 
 const modules = [
   { key: 'dignitaires', label: 'Dignitaires', exportPath: '/dignitaires-export', filters: ['search', 'genre', 'statut', 'ville_id', 'entite_id'] },
@@ -271,6 +274,10 @@ onMounted(async () => {
   } catch (error) {
     console.error('Erreur chargement dignitaires:', error)
   }
+
+  helpPanel.setContent(HELP_CONTENT.rapports)
+  tour.start(HELP_CONTENT.rapports.tourSteps, 'rapports')
+  onboarding.markStepDone('visite-rapports')
 })
 
 useHead({ title: 'Rapports & Exports - Gestion Dignitaires' })

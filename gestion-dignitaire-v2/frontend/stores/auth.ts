@@ -17,10 +17,17 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    async login(credentials: { username: string; password: string }) {
+    async login(credentials: { username: string; password: string; force?: boolean }) {
       const api = useApi()
       try {
         const response: any = await api.login(credentials)
+
+        // Une session pour ce compte est probablement encore active
+        // ailleurs : on demande confirmation avant de la déconnecter (cf.
+        // pages/login.vue, qui relance login() avec force:true si confirmé).
+        if (response.already_connected) {
+          return { success: false, alreadyConnected: true }
+        }
 
         // OTP activé par le Super Admin : pas de token tant que le code
         // n'est pas validé (cf. pages/verify-otp.vue)

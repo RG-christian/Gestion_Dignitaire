@@ -2,7 +2,7 @@
   <DashboardLayout>
     <div style="zoom: 0.8;">
     <!-- Header moderne avec gradient gabonais -->
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,6 +15,9 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
+      <TipBanner id="dignitaires-intro" title="Le saviez-vous ?" icon="fa-id-card">
+        Le matricule est généré automatiquement à la création ; un dignitaire issu d'une candidature sans matricule reçoit un matricule provisoire. Les boutons "Exporter PDF/Excel" exportent la liste filtrée actuelle, pas uniquement la page affichée.
+      </TipBanner>
       <!-- Dashboard Statistiques modernisé -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <!-- Nombre de dignitaires -->
@@ -80,7 +83,7 @@
       </div>
 
       <!-- Barre de recherche et filtres -->
-      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div data-tour="filters" class="bg-white rounded-lg shadow-md p-4 mb-6">
         <!-- Recherche principale -->
         <div class="flex flex-col md:flex-row gap-4 mb-4">
           <div class="flex-1">
@@ -116,6 +119,7 @@
           </button>
           <button
             v-if="permissions.peutEcrire('Dignitaire')"
+            data-tour="add-button"
             @click="openModal()"
             class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg whitespace-nowrap"
           >
@@ -214,7 +218,7 @@
       <div v-if="loading" class="flex justify-center items-center py-20">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
-      <div v-else-if="viewMode === 'grille'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
+      <div v-else-if="viewMode === 'grille'" data-tour="table" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
         <div v-if="dignitaires.length === 0" class="col-span-full text-center py-12 text-gray-500">
           <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3h-1m-2.5-4a4 4 0 11-8 0 4 4 0 018 0zm-7.5 8h-5v-2a3 3 0 013-3h1"/>
@@ -271,7 +275,7 @@
             </div>
 
             <!-- Actions flottantes au hover -->
-            <div class="absolute top-0 right-0 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div data-tour="row-actions" class="absolute top-0 right-0 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <NuxtLink
                 :to="`/dignitaires/${d.id}`"
                 class="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-full shadow-lg"
@@ -824,6 +828,9 @@ const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 const permissions = usePermissions()
 const fileDownload = useFileDownload()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
+const onboarding = useOnboarding()
 const showModal = ref(false)
 const selectedDignitaire = ref(null)
 const viewMode = ref('grille')
@@ -960,6 +967,8 @@ async function loadDignitaires() {
 
 onMounted(() => {
   loadDignitaires()
+  helpPanel.setContent(HELP_CONTENT.dignitaires)
+  tour.start(HELP_CONTENT.dignitaires.tourSteps, 'dignitaires')
 })
 
 // Charger les villes et entités avec cache
@@ -1054,6 +1063,11 @@ async function saveDignitaire() {
         }
       })
       dignitaireId = created.id
+      // Étape de prise en main : uniquement quand CET utilisateur crée
+      // effectivement un dignitaire, pas quand il en existe déjà dans le
+      // système (créés par d'autres comptes) — cf. useOnboarding.ts, l'état
+      // est stocké par utilisateur.
+      onboarding.markStepDone('premier-dignitaire')
     }
 
     if (photoFile.value && dignitaireId) {

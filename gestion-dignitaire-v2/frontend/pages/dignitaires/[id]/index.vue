@@ -80,6 +80,11 @@
           </div>
         </div>
 
+        <!-- Complétude du dossier -->
+        <div class="bg-white rounded-2xl shadow-lg p-5 mb-8">
+          <CompletionBar :percent="completionPercent" label="Dossier complété" />
+        </div>
+
         <!-- Grille de sections -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Colonne gauche (2/3) -->
@@ -654,6 +659,7 @@ const permissions = usePermissions()
 const api = useApi()
 const referentiels = useReferentiels()
 const { minDateFin } = useDateHelpers()
+const helpPanel = useHelpPanel()
 
 const dignitaire = ref(null)
 const historique = ref([])
@@ -695,6 +701,21 @@ const terminerUnionForm = reactive({
 })
 
 const showCustomVilleConjoint = ref(false)
+
+// Complétude du dossier : photo, conjoints, enfants, diplômes et nominations
+// sont disponibles sur cette page. Les documents et expériences ne sont pas
+// chargés ici (documents = route séparée /dignitaires/[id]/documents), ils
+// sont donc omis plutôt que de déclencher un appel API supplémentaire.
+const completionPercent = computed(() => {
+  const checks = [
+    !!dignitaire.value?.photo,
+    (conjoints.value?.length || 0) > 0,
+    (dignitaire.value?.enfants?.length || 0) > 0,
+    (dignitaire.value?.diplomes?.length || 0) > 0,
+    (dignitaire.value?.nominations?.length || 0) > 0
+  ]
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
+})
 
 const villesConjointFiltrees = computed(() => {
   if (!conjointForm.nationalite_id) return []
@@ -916,6 +937,8 @@ onMounted(async () => {
   loadConjoints()
   villes.value = await referentiels.getVilles()
   paysList.value = await referentiels.getPays()
+
+  helpPanel.setContent(HELP_CONTENT['dignitaire-detail'])
 })
 
 function statutLabel(statut: string | null) {

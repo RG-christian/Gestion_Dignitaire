@@ -1,7 +1,7 @@
 <template>
   <DashboardLayout>
     <div style="zoom: 0.8;">
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14,7 +14,10 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
-      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <TipBanner id="entites-intro" title="Le saviez-vous ?" icon="fa-sitemap">
+        Les entités représentent les ministères, directions et organismes auxquels un poste peut être rattaché. Le logo et les coordonnées renseignés ici apparaissent sur les documents générés qui mentionnent l'entité.
+      </TipBanner>
+      <div data-tour="filters" class="bg-white rounded-xl shadow-lg p-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4 items-center">
           <div class="flex-1 w-full">
             <input
@@ -39,6 +42,7 @@
           </button>
           <button
             v-if="permissions.peutEcrire('Entité')"
+            data-tour="add-button"
             @click="openModal()"
             class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
           >
@@ -57,7 +61,7 @@
         </div>
       </div>
 
-      <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div v-else data-tour="table" class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div v-if="paginatedEntites.length > 0" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-green-600 to-green-700 text-white">
@@ -66,7 +70,7 @@
                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Type</th>
                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Entité parente</th>
                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Entité de rattachement</th>
-                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
+                <th data-tour="row-actions" class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -267,6 +271,8 @@ const authStore = useAuthStore()
 const permissions = usePermissions()
 const { debounce } = useDebounce()
 const fileDownload = useFileDownload()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 async function exportListe(format) {
   try {
@@ -473,5 +479,7 @@ async function deleteEntite(id) {
 
 onMounted(() => {
   loadEntites()
+  helpPanel.setContent(HELP_CONTENT.entites)
+  tour.start(HELP_CONTENT.entites.tourSteps, 'entites')
 })
 </script>

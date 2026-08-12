@@ -65,6 +65,17 @@ class CandidatDiplomeController extends Controller
             'justificatif_path' => $path,
         ]);
 
+        // Créer une notification pour l'admin
+        \DB::table('admin_notifications')->insert([
+            'candidat_id' => $candidat->id,
+            'type' => 'nouveau_diplome',
+            'titre' => 'Nouveau diplôme ajouté',
+            'message' => "{$candidat->prenom} {$candidat->nom} a ajouté le diplôme \"{$request->intitule}\".",
+            'lu' => false,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Diplôme ajouté avec succès',

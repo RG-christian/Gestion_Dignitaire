@@ -52,8 +52,12 @@ class Handler extends ExceptionHandler
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        return $request->expectsJson()
-            ? response()->json(['message' => 'Non authentifié.'], 401)
-            : redirect()->guest(route('login'));
+        // Pour les requêtes API, toujours retourner JSON
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json(['message' => 'Non authentifié.'], 401);
+        }
+
+        // Pour les requêtes web, rediriger vers login (si la route existe)
+        return redirect()->guest('/candidature/login');
     }
 }

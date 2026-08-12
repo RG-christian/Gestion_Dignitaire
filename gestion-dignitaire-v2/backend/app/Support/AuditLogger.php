@@ -20,15 +20,20 @@ class AuditLogger
         ?int $auditableId,
         ?string $auditableLabel = null,
         ?array $oldValues = null,
-        ?array $newValues = null
+        ?array $newValues = null,
+        mixed $causerOverride = null
     ): void {
         try {
-            $causer = $request->user();
+            $causer = $causerOverride ?? $request->user();
 
             AuditLog::create([
                 'causer_type' => $causer ? get_class($causer) : null,
                 'causer_id' => $causer?->id,
-                'causer_label' => $causer?->username ?? $causer?->nom_complet ?? $causer?->email ?? null,
+                'causer_label' => $causer?->username
+                    ?? $causer?->nom_complet
+                    ?? (isset($causer->prenom) ? trim($causer->prenom . ' ' . ($causer->nom ?? '')) : null)
+                    ?? $causer?->email
+                    ?? null,
                 'action' => $action,
                 'auditable_type' => $auditableType,
                 'auditable_id' => $auditableId,

@@ -2,7 +2,7 @@
   <DashboardLayout>
     <div style="zoom: 0.8;">
     <!-- Header moderne avec gradient gabonais -->
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,8 +15,11 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
+      <TipBanner id="pays-intro" title="Le saviez-vous ?" icon="fa-earth-africa">
+        Cette table de référence géographique est la base du filtrage en cascade Pays → Ville utilisé dans les formulaires de l'application.
+      </TipBanner>
       <!-- Barre de recherche et filtres -->
-      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div data-tour="filters" class="bg-white rounded-lg shadow-md p-4 mb-6">
         <!-- Recherche principale -->
         <div class="flex flex-col md:flex-row gap-4 mb-4">
           <div class="flex-1">
@@ -29,6 +32,7 @@
             >
           </div>
           <button
+            data-tour="add-button"
             @click="openModal()"
             class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg whitespace-nowrap"
           >
@@ -97,7 +101,7 @@
       </div>
 
       <!-- Tableau moderne enrichi -->
-      <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div v-else data-tour="table" class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div v-if="paginatedPays.length > 0" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-green-600 to-green-700 text-white">
@@ -108,7 +112,7 @@
                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Indicatif</th>
                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Continent</th>
                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Région</th>
-                <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
+                <th data-tour="row-actions" class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -511,6 +515,8 @@ import Pagination from '~/components/Pagination.vue'
 
 const authStore = useAuthStore()
 const { debounce } = useDebounce()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 const pays = ref([])
 const regions = ref([])
@@ -871,6 +877,8 @@ async function deletePays(id) {
 // Initialisation
 onMounted(async () => {
   await Promise.all([loadPays(), loadRegions()])
+  helpPanel.setContent(HELP_CONTENT.pays)
+  tour.start(HELP_CONTENT.pays.tourSteps, 'pays')
 })
 
 // Ouvrir le modal région

@@ -1,7 +1,7 @@
 <template>
   <DashboardLayout>
     <div class="max-w-7xl mx-auto p-6">
-      <header class="mb-6">
+      <header data-tour="page-header" class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <i class="fas fa-history text-blue-500"></i>
           Journal des actions
@@ -10,7 +10,7 @@
       </header>
 
       <!-- Filtres -->
-      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div data-tour="filters" class="bg-white rounded-lg shadow-md p-4 mb-6">
         <div class="grid md:grid-cols-4 gap-4">
           <div>
             <label class="text-xs font-semibold text-gray-600 block mb-1">Type d'entité</label>
@@ -41,7 +41,7 @@
       </div>
 
       <!-- Tableau -->
-      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div data-tour="table" class="bg-white rounded-lg shadow-md overflow-hidden">
         <div v-if="loading" class="flex justify-center items-center py-16">
           <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
         </div>
@@ -118,6 +118,9 @@ definePageMeta({
 })
 
 const api = useApi()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
+const onboarding = useOnboarding()
 
 const logs = ref<any[]>([])
 const loading = ref(true)
@@ -126,7 +129,7 @@ const lastPage = ref(1)
 const total = ref(0)
 const openDetail = ref<number | null>(null)
 
-const entityTypes = ['Dignitaire', 'Nomination', 'Poste', 'Decoration', 'Diplome', 'LangueParlee', 'Experience', 'Enfant', 'Conjoint', 'Entite', 'User', 'Candidat']
+const entityTypes = ['Dignitaire', 'Nomination', 'Poste', 'Decoration', 'Diplome', 'LangueParlee', 'Experience', 'Enfant', 'Conjoint', 'Entite', 'User', 'Candidat', 'Session']
 
 const filters = reactive({
   auditable_type: '',
@@ -140,7 +143,9 @@ const actionLabel = (action: string) => {
     updated: 'Modifié',
     deleted: 'Supprimé',
     validated: 'Validé',
-    refused: 'Refusé'
+    refused: 'Refusé',
+    connexion: 'Connexion',
+    connexion_forcee: 'Connexion (session précédente déconnectée)'
   }
   return labels[action] || action
 }
@@ -151,7 +156,9 @@ const actionBadgeClass = (action: string) => {
     updated: 'bg-blue-100 text-blue-700',
     deleted: 'bg-red-100 text-red-700',
     validated: 'bg-green-100 text-green-700',
-    refused: 'bg-yellow-100 text-yellow-700'
+    refused: 'bg-yellow-100 text-yellow-700',
+    connexion: 'bg-blue-100 text-blue-700',
+    connexion_forcee: 'bg-orange-100 text-orange-700'
   }
   return classes[action] || 'bg-gray-100 text-gray-700'
 }
@@ -206,7 +213,12 @@ const loadLogs = async (page: number) => {
   }
 }
 
-onMounted(() => loadLogs(1))
+onMounted(() => {
+  loadLogs(1)
+  helpPanel.setContent(HELP_CONTENT['audit-logs'])
+  tour.start(HELP_CONTENT['audit-logs'].tourSteps, 'audit-logs')
+  onboarding.markStepDone('visite-audit-logs')
+})
 
 useHead({ title: 'Journal des actions - Gestion Dignitaires' })
 </script>

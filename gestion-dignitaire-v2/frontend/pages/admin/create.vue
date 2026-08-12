@@ -2,7 +2,7 @@
   <DashboardLayout>
     <div class="max-w-7xl mx-auto p-6">
       <!-- En-tête de page -->
-      <div class="mb-8">
+      <div data-tour="page-header" class="mb-8">
         <div class="flex items-center gap-3 mb-2">
           <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 flex items-center justify-center">
             <Users class="w-6 h-6 text-white" />
@@ -30,7 +30,7 @@
 
       <template v-else>
         <!-- Liste des utilisateurs existants -->
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
+        <div data-tour="table" class="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
           <div class="bg-gradient-to-r from-gabon-green-50 to-gabon-blue-50 px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -43,6 +43,7 @@
                 </div>
               </div>
               <button
+                data-tour="add-button"
                 @click="toggleFormVisibility"
                 class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-gabon-green-600 to-gabon-blue-600 hover:from-gabon-green-700 hover:to-gabon-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
               >
@@ -61,7 +62,7 @@
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nom complet</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rôle</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    <th data-tour="row-actions" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -435,6 +436,8 @@ definePageMeta({
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { $swal } = useNuxtApp()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 const users = ref([])
 const roles = ref([])
@@ -716,6 +719,8 @@ async function deleteUser(user: any) {
 
 onMounted(() => {
   loadData()
+  helpPanel.setContent(HELP_CONTENT['admin-create'])
+  tour.start(HELP_CONTENT['admin-create'].tourSteps, 'admin-create')
 })
 </script>
 

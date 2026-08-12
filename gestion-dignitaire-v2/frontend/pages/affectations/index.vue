@@ -1,7 +1,7 @@
 <template>
   <DashboardLayout>
     <div style="zoom: 0.8;">
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,8 +15,12 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
+      <TipBanner id="affectations-auto-badge" title="Le saviez-vous ?" icon="fa-link">
+        Une affectation marquée <strong>Auto</strong> a été générée depuis le module Postes et se met à jour toute seule — inutile de la modifier manuellement dans ce cas.
+      </TipBanner>
+
       <!-- Barre de recherche et filtres -->
-      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <div data-tour="filters" class="bg-white rounded-xl shadow-lg p-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4 items-center">
           <div class="w-full md:w-64">
             <select
@@ -33,6 +37,7 @@
           <div class="flex-1"></div>
           <button
             v-if="permissions.peutEcrire('Dignitaire')"
+            data-tour="add-button"
             @click="openModal()"
             class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
           >
@@ -53,7 +58,7 @@
       </div>
 
       <!-- Table -->
-      <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div v-else data-tour="table" class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div v-if="paginatedAffectations.length > 0" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -63,7 +68,7 @@
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Ville</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Type</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Période</th>
-                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                <th data-tour="row-actions" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -253,6 +258,9 @@ const authStore = useAuthStore()
 const permissions = usePermissions()
 const referentiels = useReferentiels()
 const { minDateFin } = useDateHelpers()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
+const toast = useToast()
 
 const affectations = ref([])
 const dignitaires = ref([])
@@ -388,8 +396,7 @@ async function confirmCloture() {
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
 
-    const { $swal } = useNuxtApp()
-    $swal.fire({ icon: 'success', title: 'Affectation clôturée', timer: 2000, showConfirmButton: false })
+    toast.success('Affectation clôturée')
 
     closeClotureModal()
     loadAffectations()
@@ -416,14 +423,7 @@ async function saveAffectation() {
       })
     }
 
-    const { $swal } = useNuxtApp()
-    $swal.fire({
-      icon: 'success',
-      title: 'Succès',
-      text: selectedAffectation.value ? 'Affectation modifiée avec succès' : 'Affectation ajoutée avec succès',
-      timer: 2000,
-      showConfirmButton: false
-    })
+    toast.success(selectedAffectation.value ? 'Affectation modifiée avec succès' : 'Affectation ajoutée avec succès')
 
     closeModal()
     loadAffectations()
@@ -454,7 +454,7 @@ async function deleteAffectation(id) {
         headers: { Authorization: `Bearer ${authStore.token}` }
       })
 
-      $swal.fire({ icon: 'success', title: 'Supprimé', text: 'L\'affectation a été supprimée avec succès', timer: 2000, showConfirmButton: false })
+      toast.success('L\'affectation a été supprimée avec succès')
 
       loadAffectations()
     } catch (error) {
@@ -469,5 +469,7 @@ onMounted(async () => {
   pays.value = await referentiels.getPays()
   await loadDignitaires()
   await loadAffectations()
+  helpPanel.setContent(HELP_CONTENT.affectations)
+  tour.start(HELP_CONTENT.affectations.tourSteps, 'affectations')
 })
 </script>

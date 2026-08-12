@@ -35,7 +35,12 @@
         <div class="p-6 space-y-6">
           <div class="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
-              <p class="font-semibold text-gray-800">OTP à la connexion — comptes administrateurs</p>
+              <p class="font-semibold text-gray-800 flex items-center gap-1.5">
+                OTP à la connexion — comptes administrateurs
+                <HelpTooltip label="Aide OTP admin">
+                  Une fois activé, chaque connexion administrateur exige la saisie d'un code reçu par email, en plus du mot de passe.
+                </HelpTooltip>
+              </p>
               <p class="text-sm text-gray-500">Concerne Assistant, Gestionnaire, Administrateur et Super Administrateur.</p>
             </div>
             <button
@@ -50,7 +55,12 @@
 
           <div class="flex items-center justify-between py-3">
             <div>
-              <p class="font-semibold text-gray-800">OTP à la connexion — comptes candidats</p>
+              <p class="font-semibold text-gray-800 flex items-center gap-1.5">
+                OTP à la connexion — comptes candidats
+                <HelpTooltip label="Aide OTP candidat">
+                  Une fois activé, chaque candidat doit saisir un code reçu par email pour se connecter à son espace de suivi.
+                </HelpTooltip>
+              </p>
               <p class="text-sm text-gray-500">Concerne l'espace candidat (suivi de candidature).</p>
             </div>
             <button
@@ -66,6 +76,42 @@
           <p class="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
             La vérification d'email à l'inscription candidat (code envoyé après soumission du formulaire) reste toujours active, indépendamment de ces réglages.
           </p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden mt-6">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b">
+          <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <svg class="w-5 h-5 text-gabon-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            Notifications par email
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">
+            Désactivées par défaut. Une fois activées, tous les Administrateurs et Super Administrateurs reçoivent un email.
+          </p>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <div class="flex items-center justify-between py-3">
+            <div>
+              <p class="font-semibold text-gray-800 flex items-center gap-1.5">
+                Événements de candidature
+                <HelpTooltip label="Aide notifications candidature">
+                  Envoie un email à tous les Administrateurs et Super Administrateurs à la soumission d'une nouvelle candidature, ainsi qu'à sa validation ou son refus.
+                </HelpTooltip>
+              </p>
+              <p class="text-sm text-gray-500">Nouvelle candidature soumise, candidature validée (dignitaire créé), candidature refusée.</p>
+            </div>
+            <button
+              type="button"
+              @click="form.notif_admin_candidature_enabled = !form.notif_admin_candidature_enabled"
+              :class="form.notif_admin_candidature_enabled ? 'bg-gabon-green-600' : 'bg-gray-300'"
+              class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0"
+            >
+              <span :class="form.notif_admin_candidature_enabled ? 'translate-x-6' : 'translate-x-1'" class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"></span>
+            </button>
+          </div>
 
           <button
             @click="save"
@@ -90,13 +136,17 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const permissions = usePermissions()
 const router = useRouter()
+const onboarding = useOnboarding()
+const helpPanel = useHelpPanel()
+const toast = useToast()
 
 const loading = ref(true)
 const saving = ref(false)
 
 const form = reactive({
   otp_login_admin_enabled: false,
-  otp_login_candidat_enabled: false
+  otp_login_candidat_enabled: false,
+  notif_admin_candidature_enabled: false
 })
 
 async function loadParametres() {
@@ -107,6 +157,7 @@ async function loadParametres() {
     })
     form.otp_login_admin_enabled = response.otp_login_admin_enabled
     form.otp_login_candidat_enabled = response.otp_login_candidat_enabled
+    form.notif_admin_candidature_enabled = response.notif_admin_candidature_enabled
   } catch (error) {
     console.error('Erreur chargement paramètres:', error)
   } finally {
@@ -122,8 +173,7 @@ async function save() {
       body: form,
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
-    const { $swal } = useNuxtApp()
-    $swal.fire({ icon: 'success', title: 'Réglages enregistrés', timer: 2000, showConfirmButton: false })
+    toast.success('Réglages enregistrés')
   } catch (error) {
     console.error('Erreur enregistrement paramètres:', error)
     const { $swal } = useNuxtApp()
@@ -139,5 +189,7 @@ onMounted(() => {
     return
   }
   loadParametres()
+  helpPanel.setContent(HELP_CONTENT.parametres)
+  onboarding.markStepDone('visite-parametres')
 })
 </script>

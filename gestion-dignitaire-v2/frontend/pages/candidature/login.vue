@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gabon-green-50 flex items-center justify-center px-4 py-12">
+  <div class="h-screen overflow-y-auto md:overflow-hidden bg-gradient-to-br from-slate-50 via-white to-gabon-green-50 flex items-center justify-center px-4 py-3">
     <!-- Background decoratif -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute top-20 right-0 w-96 h-96 bg-gabon-green-500/10 rounded-full blur-3xl"></div>
@@ -8,28 +8,28 @@
 
     <div class="w-full max-w-md relative z-10">
       <!-- Logo et titre -->
-      <div class="text-center mb-8">
-        <NuxtLink to="/accueil" class="inline-flex items-center justify-center gap-3 mb-6 hover:opacity-80 transition-opacity">
-          <div class="bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 rounded-xl p-3 shadow-lg">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="text-center mb-4">
+        <NuxtLink to="/accueil" class="inline-flex items-center justify-center gap-3 mb-3 hover:opacity-80 transition-opacity">
+          <div class="bg-gradient-to-br from-gabon-green-600 to-gabon-blue-600 rounded-xl p-2.5 shadow-lg">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
           </div>
         </NuxtLink>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Connexion Candidat</h1>
-        <p class="text-gray-600">Accédez à votre espace personnel</p>
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">Connexion Candidat</h1>
+        <p class="text-sm text-gray-600">Accédez à votre espace personnel</p>
       </div>
 
       <!-- Card de connexion -->
       <div class="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-gray-200/50 overflow-hidden">
         <!-- Header coloré -->
-        <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-8 py-6">
-          <h2 class="text-xl font-bold text-white">Connectez-vous</h2>
-          <p class="text-gabon-green-100 text-sm mt-1">Suivez l'état de votre candidature</p>
+        <div class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 px-8 py-4">
+          <h2 class="text-lg font-bold text-white">Connectez-vous</h2>
+          <p class="text-gabon-green-100 text-sm mt-0.5">Suivez l'état de votre candidature</p>
         </div>
 
         <!-- Formulaire -->
-        <form @submit.prevent="login" class="p-8 space-y-6">
+        <form @submit.prevent="login" class="p-6 space-y-4">
           <!-- Email -->
           <div>
             <label class="block text-sm font-bold text-gray-700 mb-2">
@@ -44,7 +44,7 @@
               v-model="form.email" 
               type="email" 
               required 
-              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all" 
+              class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all"
               placeholder="votre.email@example.com"
             >
           </div>
@@ -63,7 +63,7 @@
               v-model="form.password" 
               type="password" 
               required 
-              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all" 
+              class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition-all"
               placeholder="Votre mot de passe"
             >
           </div>
@@ -84,7 +84,7 @@
             type="submit" 
             :disabled="loading"
             :class="{ 'opacity-50 cursor-not-allowed': loading }"
-            class="w-full px-6 py-4 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-bold rounded-xl shadow-lg shadow-gabon-green-600/30 hover:shadow-xl hover:shadow-gabon-green-600/40 transition-all duration-300 flex items-center justify-center gap-2"
+            class="w-full px-6 py-3 bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-bold rounded-xl shadow-lg shadow-gabon-green-600/30 hover:shadow-xl hover:shadow-gabon-green-600/40 transition-all duration-300 flex items-center justify-center gap-2"
           >
             <svg v-if="loading" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -94,7 +94,7 @@
           </button>
 
           <!-- Divider -->
-          <div class="relative my-6">
+          <div class="relative my-3">
             <div class="absolute inset-0 flex items-center">
               <div class="w-full border-t border-gray-300"></div>
             </div>
@@ -105,8 +105,8 @@
 
           <!-- Lien inscription -->
           <div class="text-center">
-            <p class="text-gray-600 mb-3">Vous n'avez pas encore de compte ?</p>
-            <NuxtLink to="/candidature" class="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-gabon-green-600 transition-all duration-300">
+            <p class="text-gray-600 mb-2 text-sm">Vous n'avez pas encore de compte ?</p>
+            <NuxtLink to="/candidature" class="inline-flex items-center gap-2 px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-gabon-green-600 transition-all duration-300">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
               </svg>
@@ -117,7 +117,7 @@
       </div>
 
       <!-- Retour accueil -->
-      <div class="text-center mt-6">
+      <div class="text-center mt-3">
         <NuxtLink to="/accueil" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -146,7 +146,27 @@ const login = async () => {
   loading.value = true
 
   try {
-    const response = await $api.post('/candidats/login', form.value)
+    let response = await $api.post('/candidats/login', form.value)
+
+    if (response.already_connected) {
+      const confirm = await $swal.fire({
+        icon: 'warning',
+        title: 'Compte déjà connecté',
+        text: 'Ce compte est déjà connecté depuis un autre appareil ou navigateur. Voulez-vous déconnecter l\'autre session et continuer ?',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Oui, déconnecter l\'autre session',
+        cancelButtonText: 'Annuler'
+      })
+
+      if (!confirm.isConfirmed) {
+        loading.value = false
+        return
+      }
+
+      response = await $api.post('/candidats/login', { ...form.value, force: true })
+    }
 
     if (response.otp_required) {
       router.push(`/candidature/verify-otp?email=${encodeURIComponent(response.email)}&purpose=connexion`)

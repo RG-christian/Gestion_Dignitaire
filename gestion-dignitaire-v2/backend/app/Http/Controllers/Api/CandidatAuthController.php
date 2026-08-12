@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\OtpCodeMail;
 use App\Mail\ResetPasswordMail;
+use App\Mail\NouvelleCandidatureAdmin;
 use App\Models\Candidat;
+use App\Support\AdminMailer;
+use App\Support\AuditLogger;
 use App\Support\OtpService;
 use App\Support\Parametres;
 use App\Support\PasswordResetService;
@@ -140,6 +143,17 @@ class CandidatAuthController extends Controller
             ], 403);
         }
 
+        // Une session récente existe déjà pour ce compte : on demande
+        // confirmation avant de l'évincer, plutôt que de le faire en
+        // silence (cf. emettreSessionCandidat ci-dessous).
+        if (!$request->boolean('force') && $this->hasActiveSession($candidat)) {
+            return response()->json([
+                'success' => true,
+                'already_connected' => true,
+                'message' => 'Ce compte est déjà connecté depuis un autre appareil ou navigateur.',
+            ]);
+        }
+
         // Double authentification à la connexion, si activée par le Super
         // Administrateur (désactivée par défaut, cf. BLOC 14 du planning).
         if (Parametres::getBool(Parametres::OTP_LOGIN_CANDIDAT)) {
@@ -189,6 +203,10 @@ class CandidatAuthController extends Controller
 
         if ($validated['purpose'] === 'inscription' && !$candidat->email_verifie_le) {
             $candidat->update(['email_verifie_le' => now()]);
+            // La candidature n'est "réelle" qu'une fois l'email vérifié — c'est
+            // ce point, pas la simple soumission du formulaire, qui doit
+            // déclencher la notification aux admins.
+            AdminMailer::notifierCandidature(new NouvelleCandidatureAdmin($candidat));
         }
 
         return response()->json($this->emettreSessionCandidat($candidat));
@@ -222,15 +240,45 @@ class CandidatAuthController extends Controller
     }
 
     /**
+     * Une session est considérée "active" seulement si son token a été créé
+     * ou utilisé dans les 15 dernières minutes — un token de 7 jours oublié
+     * (onglet fermé) ne doit pas déclencher une demande de confirmation à
+     * chaque reconnexion légitime du même candidat.
+     */
+    private function hasActiveSession(Candidat $candidat): bool
+    {
+        return $candidat->tokens()
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->where(function ($q) {
+                $q->where('last_used_at', '>=', now()->subMinutes(15))
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('last_used_at')->where('created_at', '>=', now()->subMinutes(15));
+                    });
+            })
+            ->exists();
+    }
+
+    /**
      * Supprime les anciens tokens et en délivre un nouveau — factorisé car
      * appelé aussi bien par login() (OTP désactivé) que par verifyOtp()
      * (OTP activé, une fois le code validé).
      */
     private function emettreSessionCandidat(Candidat $candidat): array
     {
+        $meta = ['ip' => request()->ip(), 'user_agent' => request()->userAgent()];
+        $label = trim($candidat->prenom . ' ' . $candidat->nom);
+
+        if ($this->hasActiveSession($candidat)) {
+            AuditLogger::log(request(), 'connexion_forcee', 'Session', $candidat->id, $label, null, $meta, $candidat);
+        }
+
         $candidat->tokens()->delete();
 
         $token = $candidat->createToken('candidat-token', ['*'], now()->addDays(7))->plainTextToken;
+
+        AuditLogger::log(request(), 'connexion', 'Session', $candidat->id, $label, null, $meta, $candidat);
 
         return [
             'success' => true,

@@ -2,7 +2,7 @@
   <DashboardLayout>
     <div style="zoom: 0.8;">
     <!-- Header moderne avec gradient gabonais -->
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,8 +15,11 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
+      <TipBanner id="nominations-intro" title="Le saviez-vous ?" icon="fa-file-signature">
+        Chaque nomination retrace l'affectation d'un dignitaire à un poste. Vous pouvez y joindre la preuve de nomination (décret, arrêté) et préciser son type ainsi que l'autorité signataire.
+      </TipBanner>
       <!-- Barre de recherche et filtres -->
-      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <div data-tour="filters" class="bg-white rounded-xl shadow-lg p-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4 items-center">
           <div class="flex-1 w-full">
             <SearchInput
@@ -63,6 +66,7 @@
           </button>
           <button
             v-if="permissions.peutEcrire('Nomination')"
+            data-tour="add-button"
             @click="openModal()"
             class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
           >
@@ -83,7 +87,7 @@
       </div>
 
       <!-- Table -->
-      <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div v-else data-tour="table" class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div v-if="paginatedNominations.length > 0" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -93,7 +97,7 @@
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fonction</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date début</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date fin</th>
-                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                <th data-tour="row-actions" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -396,6 +400,8 @@ const referentiels = useReferentiels()
 const { minDateFin } = useDateHelpers()
 const { debounce } = useDebounce()
 const api = useApi()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 const siteRoot = computed(() => (config.public.apiBase).replace(/\/api\/?$/, ''))
 
@@ -705,5 +711,7 @@ onMounted(async () => {
   await loadPostes()
   await loadDignitaires()
   await loadNominations()
+  helpPanel.setContent(HELP_CONTENT.nominations)
+  tour.start(HELP_CONTENT.nominations.tourSteps, 'nominations')
 })
 </script>

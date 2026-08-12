@@ -80,8 +80,18 @@
               </div>
             </div>
 
+            <!-- Aide -->
+            <button
+              @click="helpPanel.toggle()"
+              class="flex items-center justify-center w-10 h-10 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Aide sur cette page"
+            >
+              <i class="fas fa-circle-question text-lg"></i>
+            </button>
+
             <!-- Notifications -->
             <button
+              data-tour="candidat-notifications"
               @click="afficherNotifications"
               class="relative flex items-center justify-center w-10 h-10 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               title="Messages et recommandations"
@@ -106,7 +116,7 @@
     <aside class="hidden lg:block fixed left-0 top-16 bottom-0 w-72 bg-white border-r border-gray-200 overflow-y-auto">
       <div class="p-6">
         <!-- Menu de navigation -->
-        <nav class="space-y-2">
+        <nav data-tour="candidat-nav" class="space-y-2">
           <button
             v-for="item in navItems"
             :key="item.id"
@@ -190,9 +200,13 @@
 
         <!-- Contenu chargé -->
         <div v-else class="text-sm">
+          <TipBanner id="candidat-dashboard-intro" title="Bienvenue !" icon="fa-hand-sparkles">
+            Ce tableau de bord regroupe tout votre dossier. Le bouton <i class="fas fa-circle-question mx-0.5"></i> en haut à droite ouvre l'aide à tout moment.
+          </TipBanner>
+
           <!-- Header moderne avec illustration -->
           <div class="mb-8">
-            <div class="relative bg-gradient-to-br from-gabon-green-600 via-gabon-green-700 to-gabon-blue-700 rounded-3xl shadow-2xl overflow-hidden">
+            <div data-tour="candidat-header" class="relative bg-gradient-to-br from-gabon-green-600 via-gabon-green-700 to-gabon-blue-700 rounded-3xl shadow-2xl overflow-hidden">
               <!-- Motif de fond décoratif -->
               <div class="absolute inset-0 opacity-10">
                 <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -258,7 +272,7 @@
           </div>
 
           <!-- Progression du dossier améliorée -->
-          <div class="mb-8">
+          <div data-tour="candidat-progress" class="mb-8">
             <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
               <div class="flex items-center justify-between mb-6">
                 <div>
@@ -471,15 +485,50 @@
                 </div>
 
                 <div class="p-6">
+                  <!-- Formulaire d'ajout de document (si modifiable) -->
+                  <div v-if="estModifiable" class="mb-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 border-2 border-dashed border-gray-300">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <Upload class="w-4 h-4 text-gabon-blue-600" />
+                      Ajouter un document
+                    </h4>
+                    <form @submit.prevent="addDocument" class="space-y-3">
+                      <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Type de document *</label>
+                        <select v-model="newDocument.type_document" required class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gabon-blue-500 focus:border-transparent">
+                          <option value="">-- Sélectionner un type --</option>
+                          <option value="cv">CV</option>
+                          <option value="piece_identite">Pièce d'identité</option>
+                          <option value="casier_judiciaire">Casier judiciaire</option>
+                          <option value="certificat_medical">Certificat médical</option>
+                          <option value="attestation_residence">Attestation de résidence</option>
+                          <option value="certificat_nationalite">Certificat de nationalité</option>
+                          <option value="diplome_scan">Diplôme (scan)</option>
+                          <option value="autre">Autre</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Fichier (PDF, JPG, PNG - Max 10 Mo) *</label>
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" @change="e => newDocument.fichier = e.target.files[0]" required class="w-full text-sm border-2 border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gabon-blue-50 file:text-gabon-blue-700 file:font-semibold hover:file:bg-gabon-blue-100 cursor-pointer">
+                      </div>
+                      <button type="submit" class="w-full px-4 py-2.5 bg-gradient-to-r from-gabon-blue-600 to-gabon-blue-700 hover:from-gabon-blue-700 hover:to-gabon-blue-800 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        <Upload class="w-4 h-4" />
+                        Téléverser le document
+                      </button>
+                    </form>
+                  </div>
+
+                  <!-- Liste des documents -->
                   <div v-if="documents && documents.length > 0" class="space-y-3">
-                    <a
+                    <div
                       v-for="doc in documents"
                       :key="doc.id"
-                      :href="siteRoot + doc.url_complete"
-                      target="_blank"
                       class="group flex items-center justify-between bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border-2 border-gray-100 hover:border-gabon-blue-400 hover:shadow-lg transition-all duration-300"
                     >
-                      <div class="flex items-center gap-4 flex-1 min-w-0">
+                      <a
+                        :href="siteRoot + doc.url_complete"
+                        target="_blank"
+                        class="flex items-center gap-4 flex-1 min-w-0"
+                      >
                         <div class="w-12 h-12 bg-gradient-to-br from-gabon-blue-100 to-gabon-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                           <component :is="getDocumentIconComponent(doc.type_document)" class="w-6 h-6 text-gabon-blue-600" />
                         </div>
@@ -491,11 +540,26 @@
                             <span>{{ getDocumentTypeLabel(doc.type_document) }}</span>
                           </p>
                         </div>
-                      </div>
+                      </a>
                       <div class="flex items-center gap-2 flex-shrink-0 ml-3">
-                        <ExternalLink class="w-5 h-5 text-gray-400 group-hover:text-gabon-blue-600 group-hover:translate-x-1 transition-all duration-300" />
+                        <a
+                          :href="siteRoot + doc.url_complete"
+                          target="_blank"
+                          class="p-2 text-gabon-blue-600 hover:bg-gabon-blue-50 rounded-lg transition-colors"
+                          title="Ouvrir"
+                        >
+                          <ExternalLink class="w-5 h-5" />
+                        </a>
+                        <button
+                          v-if="estModifiable"
+                          @click="deleteDocument(doc.id)"
+                          class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 class="w-5 h-5" />
+                        </button>
                       </div>
-                    </a>
+                    </div>
                   </div>
 
                   <div v-else class="text-center py-16">
@@ -503,7 +567,7 @@
                       <File class="w-10 h-10 text-gray-300" />
                     </div>
                     <p class="text-gray-500 font-medium">Aucun document téléchargé</p>
-                    <p class="text-sm text-gray-400 mt-1">Vos documents apparaîtront ici</p>
+                    <p class="text-sm text-gray-400 mt-1">Utilisez le formulaire ci-dessus pour ajouter vos documents</p>
                   </div>
                 </div>
               </div>
@@ -903,6 +967,8 @@
       </div>
     </main>
 
+    <HelpPanel />
+    <GuidedTourOverlay />
   </div>
 </template>
 
@@ -912,12 +978,15 @@ import { useRouter } from 'vue-router'
 import {
   AlertCircle, Bell, Briefcase, Building2, Calendar, Check, CheckCircle2, ChevronDown,
   Circle, ClipboardCheck, Clock, CreditCard, ExternalLink, File, FileText, GraduationCap, Heart, Home, Inbox, Info,
-  Languages, Lock, LogOut, Mail, MapPin, Menu, MessageCircle, Paperclip, Phone, Printer, Shield, Trash2, User, X, XCircle
+  Languages, Lock, LogOut, Mail, MapPin, Menu, MessageCircle, Paperclip, Phone, Printer, Shield, Trash2, Upload, User, X, XCircle
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const { $api, $swal } = useNuxtApp()
 const config = useRuntimeConfig()
+const sessionWatcher = useSessionWatcher()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 const siteRoot = computed(() => config.public.apiBase.replace(/\/api\/?$/, ''))
 const { minDateFin } = useDateHelpers()
 
@@ -1137,17 +1206,66 @@ onMounted(() => {
     // Démarrer le système de rappel périodique toutes les 24h
     demarrerRappelPeriodique()
   })
+  sessionWatcher.start(20000, checkCandidatSession)
+  helpPanel.setContent(HELP_CONTENT['candidat-dashboard'])
+  tour.start(HELP_CONTENT['candidat-dashboard'].tourSteps, 'candidat-dashboard')
 })
 
 // Retirer l'écouteur lors du démontage
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutsideProfileMenu)
+  sessionWatcher.stop()
   // Nettoyer l'intervalle de rappel
   if (notificationInterval) {
     clearInterval(notificationInterval)
   }
 })
+
+// Vérifie si la déconnexion vient d'une connexion "forcée" ailleurs (cf.
+// SessionController::verifierEviction), pour afficher un message explicite
+// plutôt qu'un simple "session expirée" générique.
+const verifierEvictionCandidat = async (candidatId) => {
+  if (!candidatId) return false
+  try {
+    const check = await $fetch(`${config.public.apiBase}/session/verifier-eviction`, {
+      params: { type: 'candidat', id: candidatId }
+    })
+    return !!check?.evicted
+  } catch (e) {
+    return false
+  }
+}
+
+const handleCandidatUnauthorized = async () => {
+  const evicted = await verifierEvictionCandidat(candidat.value?.id)
+  localStorage.removeItem('candidat_token')
+
+  await $swal.fire({
+    icon: evicted ? 'warning' : 'error',
+    title: evicted ? 'Session terminée' : 'Session expirée',
+    text: evicted
+      ? 'Vous avez été déconnecté(e) car votre compte a été utilisé depuis un autre appareil ou navigateur.'
+      : 'Veuillez vous reconnecter',
+    confirmButtonColor: '#16a34a'
+  })
+
+  router.push('/candidature/login')
+}
+
+// Vérifie périodiquement que la session est toujours valide, pour détecter
+// une éviction même si le candidat reste inactif sur la page.
+const checkCandidatSession = async () => {
+  const token = localStorage.getItem('candidat_token')
+  if (!token) return
+  try {
+    await $api.get('/candidats/me', { headers: { Authorization: `Bearer ${token}` } })
+  } catch (error) {
+    if (error.response?.status === 401) {
+      await handleCandidatUnauthorized()
+    }
+  }
+}
 
 // Charger les données du candidat
 const loadCandidatData = async () => {
@@ -1175,15 +1293,7 @@ const loadCandidatData = async () => {
     console.error('Erreur de chargement:', error)
     
     if (error.response?.status === 401) {
-      $swal.fire({
-        icon: 'error',
-        title: 'Session expirée',
-        text: 'Veuillez vous reconnecter',
-        confirmButtonColor: '#16a34a'
-      }).then(() => {
-        localStorage.removeItem('candidat_token')
-        router.push('/candidature/login')
-      })
+      await handleCandidatUnauthorized()
     }
   } finally {
     loading.value = false
@@ -1293,21 +1403,112 @@ const deleteLangue = async (id) => {
 
 const addDiplome = async () => {
   try {
+    const token = localStorage.getItem('candidat_token')
+    console.log('=== DEBUG addDiplome ===')
+    console.log('Token:', token ? `${token.substring(0, 20)}...` : 'ABSENT')
+    console.log('Données newDiplome.value:', newDiplome.value)
+    
+    // Validation côté client
+    if (!newDiplome.value.intitule || newDiplome.value.intitule.trim() === '') {
+      $swal.fire({ icon: 'error', title: 'Erreur', text: 'L\'intitulé du diplôme est obligatoire' })
+      return
+    }
+    
     const formData = new FormData()
-    formData.append('intitule', newDiplome.value.intitule)
+    formData.append('intitule', newDiplome.value.intitule.trim())
     if (newDiplome.value.etablissement_id) formData.append('etablissement_id', newDiplome.value.etablissement_id)
     if (newDiplome.value.domaine_id) formData.append('domaine_id', newDiplome.value.domaine_id)
     if (newDiplome.value.annee) formData.append('annee', newDiplome.value.annee)
     if (newDiplome.value.type) formData.append('type', newDiplome.value.type)
     if (newDiplome.value.justificatif) formData.append('justificatif', newDiplome.value.justificatif)
 
-    await $api.post('/candidats/me/diplomes', formData, {
-      headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' }
+    // Debug : Afficher le contenu du FormData
+    console.log('FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value)
+    }
+
+    console.log('Envoi vers:', '/candidats/me/diplomes')
+    console.log('Headers:', { Authorization: `Bearer ${token ? token.substring(0, 20) + '...' : 'ABSENT'}` })
+    
+    // IMPORTANT : Ne PAS définir Content-Type pour FormData, le navigateur le fait automatiquement avec le boundary
+    const response = await $api.post('/candidats/me/diplomes', formData, {
+      headers: authHeaders()
     })
+    
+    console.log('Réponse:', response)
     newDiplome.value = { intitule: '', etablissement_id: '', domaine_id: '', annee: '', type: '', justificatif: null }
     await loadDiplomes()
+    $swal.fire({ icon: 'success', title: 'Succès', text: 'Diplôme ajouté avec succès' })
   } catch (error) {
+    console.error('=== ERREUR addDiplome ===', error)
+    console.error('Response:', error.response)
+    console.error('Data:', error.response?.data)
     $swal.fire({ icon: 'error', title: 'Erreur', text: error.response?.data?.message || 'Impossible d\'ajouter ce diplôme' })
+  }
+}
+
+// Gestion des documents
+const newDocument = ref({
+  type_document: '',
+  fichier: null
+})
+
+const addDocument = async () => {
+  try {
+    if (!newDocument.value.type_document) {
+      $swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner un type de document' })
+      return
+    }
+    if (!newDocument.value.fichier) {
+      $swal.fire({ icon: 'error', title: 'Erreur', text: 'Veuillez sélectionner un fichier' })
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('type_document', newDocument.value.type_document)
+    formData.append('fichier', newDocument.value.fichier)
+
+    const response = await $api.post('/candidats/me/documents', formData, {
+      headers: authHeaders()
+    })
+
+    newDocument.value = { type_document: '', fichier: null }
+    
+    // Recharger les documents depuis l'API
+    const documentsResponse = await $api.get('/candidats/me/documents', { headers: authHeaders() })
+    if (documentsResponse.documents) {
+      candidat.value.documents = documentsResponse.documents
+    }
+    
+    $swal.fire({ icon: 'success', title: 'Succès', text: 'Document ajouté avec succès' })
+  } catch (error) {
+    console.error('Erreur ajout document:', error)
+    $swal.fire({ icon: 'error', title: 'Erreur', text: error.response?.data?.message || 'Impossible d\'ajouter ce document' })
+  }
+}
+
+const deleteDocument = async (id) => {
+  try {
+    const result = await $swal.fire({
+      title: 'Supprimer ce document ?',
+      text: 'Cette action est irréversible',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    })
+
+    if (result.isConfirmed) {
+      await $api.delete(`/candidats/me/documents/${id}`, { headers: authHeaders() })
+      await loadCandidatInfo()
+      $swal.fire({ icon: 'success', title: 'Supprimé', text: 'Document supprimé avec succès' })
+    }
+  } catch (error) {
+    console.error('Erreur suppression document:', error)
+    $swal.fire({ icon: 'error', title: 'Erreur', text: error.response?.data?.message || 'Suppression impossible' })
   }
 }
 
@@ -1329,8 +1530,9 @@ const addExperience = async () => {
     if (newExperience.value.date_fin) formData.append('date_fin', newExperience.value.date_fin)
     if (newExperience.value.justificatif) formData.append('justificatif', newExperience.value.justificatif)
 
+    // IMPORTANT : Ne PAS définir Content-Type pour FormData, le navigateur le fait automatiquement avec le boundary
     await $api.post('/candidats/me/experiences', formData, {
-      headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' }
+      headers: authHeaders()
     })
     newExperience.value = { intitule: '', structure_id: '', date_debut: '', date_fin: '', justificatif: null }
     await loadExperiences()

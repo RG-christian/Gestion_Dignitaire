@@ -12,10 +12,19 @@
             <p class="text-xs text-gray-500">Espace Candidat</p>
           </div>
         </div>
-        <button @click="logout" class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-all duration-200">
-          <LogOut class="w-5 h-5" />
-          <span class="hidden sm:inline">Déconnexion</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            @click="helpPanel.toggle()"
+            class="flex items-center justify-center w-10 h-10 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Aide sur cette page"
+          >
+            <i class="fas fa-circle-question text-lg"></i>
+          </button>
+          <button @click="logout" class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-all duration-200">
+            <LogOut class="w-5 h-5" />
+            <span class="hidden sm:inline">Déconnexion</span>
+          </button>
+        </div>
       </div>
     </nav>
 
@@ -45,6 +54,10 @@
         </div>
 
         <template v-else>
+          <TipBanner id="candidat-profil-intro" title="Deux onglets" icon="fa-user-gear">
+            "Informations" pour vos données personnelles, "Mot de passe" pour la sécurité de votre compte — ce dernier reste modifiable même si votre dossier est verrouillé.
+          </TipBanner>
+
           <!-- En-tête de page -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-200 border-l-4 border-l-gabon-green-600 px-6 py-5 flex items-center gap-4">
             <div class="w-11 h-11 bg-gabon-green-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -81,7 +94,13 @@
               <!-- Statut candidature (mis en avant) -->
               <div class="mt-5 rounded-xl px-4 py-3 flex items-center justify-between" :class="statutHighlightClass">
                 <div>
-                  <p class="text-xs font-semibold uppercase tracking-wide opacity-80">Ma candidature</p>
+                  <p class="text-xs font-semibold uppercase tracking-wide opacity-80 flex items-center gap-1.5">
+                    Ma candidature
+                    <HelpTooltip label="Aide statut">
+                      <span v-if="estModifiable">Votre dossier est modifiable tant qu'il est "En attente". Une fois traité, il sera verrouillé.</span>
+                      <span v-else>Ce dossier a été traité : les informations personnelles ne sont plus modifiables. Vous pouvez toujours changer votre mot de passe.</span>
+                    </HelpTooltip>
+                  </p>
                   <p class="text-lg font-bold">{{ statutLabel }}</p>
                 </div>
                 <CheckCircle2 v-if="candidat?.statut === 'valide'" class="w-8 h-8 opacity-80" />
@@ -278,6 +297,9 @@
         </template>
       </div>
     </main>
+
+    <HelpPanel />
+    <GuidedTourOverlay />
   </div>
 </template>
 
@@ -296,6 +318,8 @@ const router = useRouter()
 const route = useRoute()
 const { $api, $swal } = useNuxtApp()
 const config = useRuntimeConfig()
+const sessionWatcher = useSessionWatcher()
+const helpPanel = useHelpPanel()
 
 const navItems = [
   { id: 'dashboard', label: 'Tableau de bord', to: '/candidat/dashboard', iconComponent: ClipboardCheck },
@@ -372,6 +396,51 @@ function handlePhotoChange(event) {
   reader.readAsDataURL(file)
 }
 
+// Vérifie si la déconnexion vient d'une connexion "forcée" ailleurs (cf.
+// SessionController::verifierEviction), pour afficher un message explicite
+// plutôt qu'un simple "session expirée" générique.
+async function verifierEvictionCandidat(candidatId) {
+  if (!candidatId) return false
+  try {
+    const check = await $fetch(`${config.public.apiBase}/session/verifier-eviction`, {
+      params: { type: 'candidat', id: candidatId }
+    })
+    return !!check?.evicted
+  } catch (e) {
+    return false
+  }
+}
+
+async function handleCandidatUnauthorized() {
+  const evicted = await verifierEvictionCandidat(candidat.value?.id)
+  localStorage.removeItem('candidat_token')
+
+  await $swal.fire({
+    icon: evicted ? 'warning' : 'error',
+    title: evicted ? 'Session terminée' : 'Session expirée',
+    text: evicted
+      ? 'Vous avez été déconnecté(e) car votre compte a été utilisé depuis un autre appareil ou navigateur.'
+      : 'Veuillez vous reconnecter',
+    confirmButtonColor: '#16a34a'
+  })
+
+  router.push('/candidature/login')
+}
+
+// Vérifie périodiquement que la session est toujours valide, pour détecter
+// une éviction même si le candidat reste inactif sur la page.
+async function checkCandidatSession() {
+  const token = localStorage.getItem('candidat_token')
+  if (!token) return
+  try {
+    await $api.get('/candidats/me', { headers: authHeaders() })
+  } catch (error) {
+    if (error.response?.status === 401) {
+      await handleCandidatUnauthorized()
+    }
+  }
+}
+
 async function loadCandidat() {
   loading.value = true
   const token = localStorage.getItem('candidat_token')
@@ -402,8 +471,7 @@ async function loadCandidat() {
   } catch (error) {
     console.error('Erreur chargement profil:', error)
     if (error.response?.status === 401) {
-      localStorage.removeItem('candidat_token')
-      router.push('/candidature/login')
+      await handleCandidatUnauthorized()
     }
   } finally {
     loading.value = false
@@ -470,6 +538,12 @@ async function logout() {
 onMounted(() => {
   loadCandidat()
   loadVilles()
+  sessionWatcher.start(20000, checkCandidatSession)
+  helpPanel.setContent(HELP_CONTENT['candidat-profil'])
+})
+
+onUnmounted(() => {
+  sessionWatcher.stop()
 })
 
 useHead({

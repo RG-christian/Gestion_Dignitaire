@@ -49,6 +49,10 @@
             </div>
           </div>
 
+          <TipBanner v-if="currentStep === 1" id="candidature-inscription-intro" title="Avant de commencer" icon="fa-circle-info">
+            Rien n'est enregistré tant que vous n'avez pas terminé les 4 étapes et validé le code de vérification envoyé par email à la fin.
+          </TipBanner>
+
           <!-- Conteneur avec animation de transition -->
           <Transition :name="transitionName" mode="out-in">
             <div :key="currentStep">

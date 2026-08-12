@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\CandidatureRefusee;
+use App\Mail\CandidatureRefuseeAdmin;
 use App\Mail\CandidatureValidee;
+use App\Mail\CandidatureValideeAdmin;
 use App\Models\Candidat;
 use App\Models\CandidatMessage;
 use App\Models\Dignitaire;
 use App\Models\Diplome;
 use App\Models\LangueParlee;
 use App\Models\Experience;
+use App\Support\AdminMailer;
 use App\Support\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -190,6 +193,8 @@ class CandidatController extends Controller
                 ]);
             }
 
+            AdminMailer::notifierCandidature(new CandidatureValideeAdmin($candidat));
+
             return response()->json([
                 'success' => true,
                 'message' => 'Candidature validée avec succès. Le dignitaire a été créé.',
@@ -249,6 +254,8 @@ class CandidatController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
+
+            AdminMailer::notifierCandidature(new CandidatureRefuseeAdmin($candidat, $request->motif));
 
             return response()->json([
                 'success' => true,

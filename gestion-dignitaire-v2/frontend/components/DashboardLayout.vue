@@ -56,12 +56,39 @@
         </div>
       </div>
 
-      <nav class="ml-auto flex items-center space-x-2">
-        <button @click="toggleTheme" class="text-gray-800 focus:outline-none transition duration-200 hover:bg-gray-100 p-2 rounded-lg">
-          <i :class="isDark ? 'fas fa-sun' : 'fas fa-adjust'" class="text-lg"></i>
+      <nav class="ml-auto flex items-center gap-3">
+        <NuxtLink
+          v-if="authStore.user?.role_name === 'Super Administrateur'"
+          to="/admin/create"
+          class="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm whitespace-nowrap"
+        >
+          <i class="fas fa-user-plus"></i> Ajouter un utilisateur
+        </NuxtLink>
+        
+        <!-- Composant de notifications (uniquement pour les admins) -->
+        <NotificationBell v-if="authStore.user?.role_name" />
+        
+        <button
+          @click="helpPanel.toggle()"
+          class="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-200"
+          title="Aide sur cette page"
+        >
+          <i class="fas fa-circle-question text-base"></i>
         </button>
+        <button
+          @click="toggleTheme"
+          class="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-200"
+          :title="isDark ? 'Passer en thème clair' : 'Passer en thème sombre'"
+        >
+          <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'" class="text-base"></i>
+        </button>
+        <div class="w-px h-6 bg-gray-200 mx-1.5"></div>
         <div class="relative">
-          <button @click="toggleProfileMenu" class="text-gray-800 focus:outline-none transition duration-200 hover:bg-gray-100 p-2 rounded-lg">
+          <button
+            @click="toggleProfileMenu"
+            class="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-200"
+            title="Mon compte"
+          >
             <i class="fas fa-user-circle text-lg"></i>
           </button>
           <ul v-if="showProfileMenu" class="absolute right-0 top-full mt-2 bg-white shadow-lg rounded py-1 min-w-[10rem] z-30">
@@ -76,13 +103,6 @@
               </button>
             </li>
           </ul>
-          <NuxtLink 
-            v-if="permissions.estSuperAdmin.value"
-            to="/admin/create"
-            class="ml-4 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm"
-          >
-            <i class="fas fa-user-plus"></i> Ajouter un utilisateur
-          </NuxtLink>
         </div>
       </nav>
     </header>
@@ -245,14 +265,19 @@
         </div>
       </main>
     </div>
+
+    <HelpPanel />
+    <GuidedTourOverlay />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const authStore = useAuthStore()
 const permissions = usePermissions()
+const helpPanel = useHelpPanel()
+const sessionWatcher = useSessionWatcher()
 const config = useRuntimeConfig()
 const { debounce } = useDebounce()
 const isSidebarCollapsed = ref(false)
@@ -427,6 +452,18 @@ onMounted(() => {
       globalSearchOpen.value = false
     }
   })
+
+  // Vérifie périodiquement que la session est toujours valide, pour détecter
+  // une éviction (connexion ailleurs) même si l'admin reste inactif — un
+  // 401 sur cet appel déclenche déjà l'avertissement + déconnexion via
+  // l'intercepteur onResponseError de useApi.ts.
+  sessionWatcher.start(20000, () => {
+    if (authStore.isAuthenticated) authStore.fetchUser()
+  })
+})
+
+onUnmounted(() => {
+  sessionWatcher.stop()
 })
 
 // ===== Recherche globale =====

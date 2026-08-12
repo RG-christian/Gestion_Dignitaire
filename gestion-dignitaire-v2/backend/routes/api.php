@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\CandidatExperienceController;
 use App\Http\Controllers\Api\ConjointController;
 use App\Http\Controllers\Api\DignitaireDocumentController;
 use App\Http\Controllers\Api\EtablissementController;
+use App\Http\Controllers\Api\SessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,10 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+
+// Route publique - savoir pourquoi une session vient d'être évincée
+// (cf. SessionController::verifierEviction)
+Route::get('/session/verifier-eviction', [SessionController::class, 'verifierEviction']);
 
 // Routes publiques - Candidats (inscription et connexion)
 Route::prefix('candidats')->group(function () {
@@ -195,7 +200,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Candidats - Routes protégées pour candidats connectés
-    Route::prefix('candidats')->group(function () {
+    Route::prefix('candidats')->middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [CandidatAuthController::class, 'logout']);
         Route::get('/me', [CandidatAuthController::class, 'me']);
         Route::put('/me', [CandidatAuthController::class, 'updateProfile']);
@@ -306,6 +311,20 @@ Route::middleware('auth:sanctum')->group(function () {
             // Recommandations laissées sur une candidature
             Route::get('/candidats/{id}/messages', [\App\Http\Controllers\Api\CandidatMessageController::class, 'index']);
             Route::post('/candidats/{id}/messages', [\App\Http\Controllers\Api\CandidatMessageController::class, 'store']);
+
+            // Validation/Rejet des documents, diplômes et expériences candidats
+            Route::post('/candidats/{candidatId}/documents/{documentId}/valider', [\App\Http\Controllers\Api\CandidatValidationController::class, 'validerDocument']);
+            Route::post('/candidats/{candidatId}/documents/{documentId}/rejeter', [\App\Http\Controllers\Api\CandidatValidationController::class, 'rejeterDocument']);
+            Route::post('/candidats/{candidatId}/diplomes/{diplomeId}/valider', [\App\Http\Controllers\Api\CandidatValidationController::class, 'validerDiplome']);
+            Route::post('/candidats/{candidatId}/diplomes/{diplomeId}/rejeter', [\App\Http\Controllers\Api\CandidatValidationController::class, 'rejeterDiplome']);
+            Route::post('/candidats/{candidatId}/experiences/{experienceId}/valider', [\App\Http\Controllers\Api\CandidatValidationController::class, 'validerExperience']);
+            Route::post('/candidats/{candidatId}/experiences/{experienceId}/rejeter', [\App\Http\Controllers\Api\CandidatValidationController::class, 'rejeterExperience']);
+
+            // Notifications admin
+            Route::get('/notifications', [\App\Http\Controllers\Api\CandidatValidationController::class, 'getNotifications']);
+            Route::get('/notifications/count', [\App\Http\Controllers\Api\CandidatValidationController::class, 'countNonLues']);
+            Route::post('/notifications/{id}/lue', [\App\Http\Controllers\Api\CandidatValidationController::class, 'marquerLue']);
+            Route::post('/notifications/toutes-lues', [\App\Http\Controllers\Api\CandidatValidationController::class, 'marquerToutesLues']);
         });
     });
 });

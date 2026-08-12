@@ -2,7 +2,7 @@
   <DashboardLayout>
     <div style="zoom: 0.8;">
     <!-- Header moderne avec gradient gabonais -->
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,8 +15,11 @@
     </header>
 
     <main class="max-w-full mx-auto px-2 pb-8">
+      <TipBanner id="conjoints-intro" title="Le saviez-vous ?" icon="fa-ring">
+        Cette page centralise la gestion des conjoints rattachés aux dignitaires, quel que soit le dignitaire concerné.
+      </TipBanner>
       <!-- Barre de recherche et filtres -->
-      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <div data-tour="filters" class="bg-white rounded-xl shadow-lg p-4 mb-6">
         <div class="flex flex-col md:flex-row gap-4 items-center">
           <div class="flex-1 w-full">
             <SearchInput
@@ -55,6 +58,7 @@
 
           <button
             v-if="permissions.peutEcrire('Dignitaire')"
+            data-tour="add-button"
             @click="openModal()"
             class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
           >
@@ -85,7 +89,7 @@
       </div>
 
       <!-- Table -->
-      <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div v-else data-tour="table" class="bg-white rounded-xl shadow-lg overflow-hidden">
         <div v-if="paginatedConjoints.length > 0" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -95,7 +99,7 @@
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Statut</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Profession</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Dignitaire</th>
-                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                <th data-tour="row-actions" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -474,6 +478,8 @@ const api = useApi()
 const permissions = usePermissions()
 const { debounce } = useDebounce()
 const { minDateFin } = useDateHelpers()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 const conjoints = ref<any[]>([])
 const dignitaires = ref<any[]>([])
@@ -764,6 +770,8 @@ onMounted(async () => {
   paysList.value = await referentiels.getPays()
   await loadDignitaires()
   await loadConjoints()
+  helpPanel.setContent(HELP_CONTENT.conjoints)
+  tour.start(HELP_CONTENT.conjoints.tourSteps, 'conjoints')
 })
 </script>
 

@@ -1,8 +1,11 @@
 <template>
   <DashboardLayout>
     <section class="max-w-7xl mx-auto mt-10 mb-12 px-4">
+      <TipBanner id="diplomes-intro" title="Le saviez-vous ?" icon="fa-graduation-cap">
+        Ce répertoire recense les diplômes des dignitaires, avec leur type et leur établissement d'obtention. Chaque diplôme peut avoir une copie PDF jointe, consultable depuis la fiche du dignitaire.
+      </TipBanner>
       <!-- En-tête avec titre et bouton -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div data-tour="page-header" class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
             <svg class="w-8 h-8 text-gabon-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,6 +30,7 @@
             Exporter Excel
           </button>
           <button
+            data-tour="add-button"
             @click="openModal()"
             class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
           >
@@ -39,7 +43,7 @@
       </div>
 
       <!-- Filtres améliorés -->
-      <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <div data-tour="filters" class="bg-white rounded-xl shadow-md p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <SearchInput
@@ -73,7 +77,7 @@
       </div>
 
       <!-- Grille de cards -->
-      <div v-else>
+      <div v-else data-tour="table">
         <div v-if="paginatedDiplomes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="dip in paginatedDiplomes"
@@ -122,7 +126,7 @@
             </div>
 
             <!-- Actions -->
-            <div class="px-4 pb-4 flex gap-2">
+            <div data-tour="row-actions" class="px-4 pb-4 flex gap-2">
               <button
                 @click="openDetailModal(dip)"
                 class="flex-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium py-2 px-3 rounded-lg transition-colors text-sm flex items-center justify-center gap-1"
@@ -460,6 +464,8 @@ const referentiels = useReferentiels()
 const { debounce } = useDebounce()
 const fileDownload = useFileDownload()
 const api = useApi()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 const TYPES_DIPLOME = ['BEPC', 'Baccalauréat', 'BTS/DUT', 'Licence', 'Master', 'Doctorat', "Diplôme d'ingénieur", 'Autre']
 const siteRoot = computed(() => (config.public.apiBase as string).replace(/\/api\/?$/, ''))
@@ -695,5 +701,7 @@ onMounted(async () => {
   domaines.value = await referentiels.getDomaines()
   await loadDignitaires()
   await loadDiplomes()
+  helpPanel.setContent(HELP_CONTENT.diplomes)
+  tour.start(HELP_CONTENT.diplomes.tourSteps, 'diplomes')
 })
 </script>

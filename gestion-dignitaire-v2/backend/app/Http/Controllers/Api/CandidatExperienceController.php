@@ -61,6 +61,17 @@ class CandidatExperienceController extends Controller
             'justificatif_path' => $path,
         ]);
 
+        // Créer une notification pour l'admin
+        \DB::table('admin_notifications')->insert([
+            'candidat_id' => $candidat->id,
+            'type' => 'nouvelle_experience',
+            'titre' => 'Nouvelle expérience ajoutée',
+            'message' => "{$candidat->prenom} {$candidat->nom} a ajouté l'expérience \"{$request->intitule}\".",
+            'lu' => false,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Expérience ajoutée avec succès',

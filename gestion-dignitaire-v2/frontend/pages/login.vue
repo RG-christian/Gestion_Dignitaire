@@ -1,29 +1,29 @@
 <template>
-  <div class="min-h-screen flex">
+  <div class="h-screen overflow-y-auto md:overflow-hidden flex">
     <!-- Partie gauche - Formulaire -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
       <div class="w-full max-w-md">
         <!-- Drapeau gabonais en haut -->
-        <div class="flex h-3 mb-8 rounded-lg overflow-hidden shadow-lg">
+        <div class="flex h-3 mb-4 rounded-lg overflow-hidden shadow-lg">
           <div class="flex-1" style="background-color: #16a34a;"></div>
           <div class="flex-1" style="background-color: #eab308;"></div>
           <div class="flex-1" style="background-color: #2563eb;"></div>
         </div>
 
         <!-- Logo et titre -->
-        <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 shadow-xl" style="background: linear-gradient(to bottom right, #16a34a, #2563eb);">
-            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="text-center mb-4">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-3 shadow-xl" style="background: linear-gradient(to bottom right, #16a34a, #2563eb);">
+            <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           </div>
-          <h1 class="text-3xl font-bold text-gray-800 mb-2">République Gabonaise</h1>
-          <h2 class="text-xl font-semibold mb-1" style="color: #15803d;">Gestion des Dignitaires</h2>
+          <h1 class="text-2xl font-bold text-gray-800 mb-1">République Gabonaise</h1>
+          <h2 class="text-lg font-semibold mb-1" style="color: #15803d;">Gestion des Dignitaires</h2>
           <p class="text-gray-600 text-sm">Espace d'administration sécurisé</p>
         </div>
 
         <!-- Formulaire -->
-        <form @submit.prevent="handleLogin" class="space-y-6">
+        <form @submit.prevent="handleLogin" class="space-y-4">
           <!-- Nom d'utilisateur -->
           <div>
             <label class="block text-sm font-bold text-gray-700 mb-2">
@@ -92,7 +92,7 @@
             type="submit"
             :disabled="loading"
             style="background: linear-gradient(to right, #16a34a, #15803d);"
-            class="w-full text-white py-4 rounded-lg font-bold text-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group relative overflow-hidden"
+            class="w-full text-white py-3 rounded-lg font-bold text-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group relative overflow-hidden"
           >
             <!-- Effet hover animé -->
             <span class="absolute inset-0 bg-gradient-to-r from-green-700 to-green-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
@@ -115,14 +115,14 @@
         </form>
 
         <!-- Footer -->
-        <div class="mt-8 pt-6 border-t border-gray-200">
+        <div class="mt-4 pt-3 border-t border-gray-200">
           <div class="flex items-center justify-center gap-2 text-sm text-gray-600">
             <svg class="w-4 h-4" style="color: #16a34a;" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
             </svg>
             <p class="font-medium">Connexion sécurisée SSL</p>
           </div>
-          <p class="text-center text-xs text-gray-500 mt-3">© 2025 République Gabonaise - Tous droits réservés</p>
+          <p class="text-center text-xs text-gray-500 mt-2">© 2025 République Gabonaise - Tous droits réservés</p>
         </div>
       </div>
     </div>
@@ -192,7 +192,27 @@ async function handleLogin() {
   loading.value = true
 
   try {
-    const result = await authStore.login(credentials)
+    let result = await authStore.login(credentials)
+
+    if (result.alreadyConnected) {
+      const confirm = await Swal.fire({
+        icon: 'warning',
+        title: 'Compte déjà connecté',
+        text: 'Ce compte est déjà connecté depuis un autre appareil ou navigateur. Voulez-vous déconnecter l\'autre session et continuer ?',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Oui, déconnecter l\'autre session',
+        cancelButtonText: 'Annuler'
+      })
+
+      if (!confirm.isConfirmed) {
+        loading.value = false
+        return
+      }
+
+      result = await authStore.login({ ...credentials, force: true })
+    }
 
     if (result.otpRequired) {
       const route = useRoute()

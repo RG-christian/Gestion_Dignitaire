@@ -2,7 +2,7 @@
   <DashboardLayout>
     <div style="zoom: 0.8;">
     <!-- Header moderne avec gradient gabonais -->
-    <header class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
+    <header data-tour="page-header" class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 shadow-lg p-6 mb-6">
       <div class="max-w-full mx-auto px-2">
         <div class="flex items-center gap-3 mb-2">
           <svg class="w-8 h-8 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,6 +15,9 @@
     </header>
 
     <section class="max-w-full mx-auto px-2 pb-8">
+      <TipBanner id="langues-intro" title="Le saviez-vous ?" icon="fa-language">
+        Cet écran combine deux onglets : le référentiel des langues et les langues parlées par les dignitaires. Ajoutez d'abord une langue au référentiel avant de pouvoir l'associer à un dignitaire.
+      </TipBanner>
       <!-- Onglets élargis -->
       <div class="bg-white rounded-xl shadow-lg mb-6 overflow-hidden">
         <div class="flex border-b border-gray-200">
@@ -44,7 +47,7 @@
       <!-- ONGLET 1: RÉFÉRENTIEL DES LANGUES -->
       <div v-if="activeTab === 'langues'">
         <!-- Barre de recherche et filtres -->
-        <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+        <div data-tour="filters" class="bg-white rounded-xl shadow-lg p-4 mb-6">
           <!-- Recherche principale -->
           <div class="flex flex-col md:flex-row gap-4 mb-4">
             <div class="flex-1">
@@ -57,6 +60,7 @@
               >
             </div>
             <button
+              data-tour="add-button"
               @click="openModal()"
               class="bg-gradient-to-r from-gabon-green-600 to-gabon-green-700 hover:from-gabon-green-700 hover:to-gabon-green-800 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
             >
@@ -110,7 +114,7 @@
         </div>
 
         <!-- Table enrichie -->
-        <div v-else class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div v-else data-tour="table" class="bg-white rounded-xl shadow-lg overflow-hidden">
           <div v-if="paginatedLangues.length > 0" class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gradient-to-r from-green-600 to-green-700 text-white">
@@ -119,7 +123,7 @@
                   <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Code ISO</th>
                   <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Famille linguistique</th>
                   <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Nombre de locuteurs</th>
-                  <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
+                  <th data-tour="row-actions" class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -544,6 +548,8 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const referentiels = useReferentiels()
 const { debounce } = useDebounce()
+const helpPanel = useHelpPanel()
+const tour = useGuidedTour()
 
 // Onglet actif
 const activeTab = ref('langues')
@@ -901,5 +907,7 @@ onMounted(async () => {
   await loadLangues()
   await loadDignitaires()
   await loadLanguesParlees()
+  helpPanel.setContent(HELP_CONTENT.langues)
+  tour.start(HELP_CONTENT.langues.tourSteps, 'langues')
 })
 </script>
