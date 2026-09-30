@@ -6,6 +6,49 @@ namespace Composer\Autoload;
 
 class ComposerStaticInitd751713988987e9331980363e24189ce
 {
+    public static $files = array (
+        'be3b956bfbda2d8de08dd38cc76cd33c' => __DIR__ . '/../..' . '/config/database.php',
+        '07dfa523e381244f51e75a10404407b3' => __DIR__ . '/../..' . '/config/security.php',
+        '4ce730544de70512bad5767abc451d74' => __DIR__ . '/../..' . '/config/validator.php',
+        'd19caa6da1d94538c71840ab10514293' => __DIR__ . '/../..' . '/config/logger.php',
+        'dea6237499941f2fe0468ee2da2cff5e' => __DIR__ . '/../..' . '/config/upload.php',
+    );
+
+    public static $prefixLengthsPsr4 = array (
+        'T' =>
+        array (
+            'Tests\\' => 6,
+        ),
+        'R' =>
+        array (
+            'Routers\\' => 8,
+        ),
+        'C' =>
+        array (
+            'Controllers\\' => 12,
+            'Classes\\' => 8,
+        ),
+    );
+
+    public static $prefixDirsPsr4 = array (
+        'Tests\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/tests',
+        ),
+        'Routers\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/routers',
+        ),
+        'Controllers\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/controllers',
+        ),
+        'Classes\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/classes',
+        ),
+    );
+
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
@@ -13,6 +56,8 @@ class ComposerStaticInitd751713988987e9331980363e24189ce
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
+            $loader->prefixLengthsPsr4 = ComposerStaticInitd751713988987e9331980363e24189ce::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitd751713988987e9331980363e24189ce::$prefixDirsPsr4;
             $loader->classMap = ComposerStaticInitd751713988987e9331980363e24189ce::$classMap;
 
         }, null, ClassLoader::class);
