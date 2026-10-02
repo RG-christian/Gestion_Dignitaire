@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('candidat_id')->constrained('candidats')->onDelete('cascade');
-            $table->integer('langue_id');
+            $table->foreignId('langue_id');
             $table->foreign('langue_id')->references('id')->on('langue')->cascadeOnDelete();
             $table->string('niveau', 30)->nullable();
 

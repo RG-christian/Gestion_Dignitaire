@@ -582,17 +582,6 @@ async function loadConjoints() {
   }
 }
 
-async function loadDignitaires() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    dignitaires.value = (response as any).data || []
-  } catch (error) {
-    console.error('Erreur chargement dignitaires:', error)
-  }
-}
-
 const debouncedLoadConjoints = debounce(loadConjoints, 500)
 
 function resetForm() {
@@ -766,10 +755,13 @@ function formatDate(date: string | null) {
 }
 
 onMounted(async () => {
-  villes.value = await referentiels.getVilles()
-  paysList.value = await referentiels.getPays()
-  await loadDignitaires()
-  await loadConjoints()
+  const [, refs] = await Promise.all([
+    loadConjoints(),
+    referentiels.getBundle(['villes', 'pays', 'dignitaires'])
+  ])
+  villes.value = refs.villes || []
+  paysList.value = refs.pays || []
+  dignitaires.value = refs.dignitaires || []
   helpPanel.setContent(HELP_CONTENT.conjoints)
   tour.start(HELP_CONTENT.conjoints.tourSteps, 'conjoints')
 })

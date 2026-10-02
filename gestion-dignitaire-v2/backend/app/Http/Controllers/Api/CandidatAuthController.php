@@ -7,6 +7,10 @@ use App\Mail\OtpCodeMail;
 use App\Mail\ResetPasswordMail;
 use App\Mail\NouvelleCandidatureAdmin;
 use App\Models\Candidat;
+use App\Models\Domaine;
+use App\Models\Etablissement;
+use App\Models\Langue;
+use App\Models\Structure;
 use App\Support\AdminMailer;
 use App\Support\AuditLogger;
 use App\Support\OtpService;
@@ -317,6 +321,48 @@ class CandidatAuthController extends Controller
         return response()->json([
             'success' => true,
             'candidat' => $candidat
+        ]);
+    }
+
+    /**
+     * Données nécessaires au premier affichage du dashboard candidat.
+     *
+     * Un endpoint agrégé évite de redémarrer Laravel pour chaque bloc de la
+     * page (profil, langues, diplômes, expériences, messages et référentiels).
+     * Les endpoints spécialisés restent utilisés après une modification pour
+     * ne recharger que le bloc concerné.
+     */
+    public function dashboard(Request $request): JsonResponse
+    {
+        $candidat = $request->user();
+        $candidat->load([
+            'lieuNaissance',
+            'villeResidence',
+            'documents',
+            'validePar',
+            'dignitaire',
+            'langues.langue',
+            'diplomes.etablissement',
+            'diplomes.ville',
+            'diplomes.domaine',
+            'experiences.structure',
+            'messages',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'candidat' => $candidat,
+            'langues' => $candidat->langues,
+            'diplomes' => $candidat->diplomes->sortByDesc('created_at')->values(),
+            'experiences' => $candidat->experiences->sortByDesc('date_debut')->values(),
+            'messages' => $candidat->messages,
+            'non_lus' => $candidat->messages->where('lu', false)->count(),
+            'references' => [
+                'langues' => Langue::orderBy('nom')->get(),
+                'etablissements' => Etablissement::with('ville')->orderBy('nom')->get(),
+                'domaines' => Domaine::orderBy('nom')->get(),
+                'structures' => Structure::with('ville')->orderBy('nom')->get(),
+            ],
         ]);
     }
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Entite;
+use App\Models\Ville;
 use App\Support\AuditLogger;
 use App\Support\Exports\GenericArrayExport;
 use App\Support\Exports\ListPdfExporter;
@@ -106,6 +108,31 @@ class PosteController extends Controller
         $postes = $this->baseQuery($request)->orderBy('p.date_debut', 'desc')->get();
 
         return response()->json($postes);
+    }
+
+    /**
+     * Données nécessaires au premier affichage de la page Postes/Entités.
+     * Cet endpoint évite quatre démarrages Laravel successifs côté navigateur.
+     */
+    public function initialData(Request $request): JsonResponse
+    {
+        return response()->json([
+            'postes' => $this->baseQuery($request)->orderBy('p.date_debut', 'desc')->get(),
+            // Query Builder évite les attributs calculés du modèle Dignitaire,
+            // qui déclencheraient une requête Poste supplémentaire par ligne.
+            'dignitaires' => DB::table('dignitaire')
+                ->select(['id', 'nom', 'prenom', 'matricule'])
+                ->orderBy('nom')
+                ->orderBy('prenom')
+                ->get(),
+            'villes' => Ville::query()
+                ->select(['id', 'nom', 'pays_id'])
+                ->orderBy('nom')
+                ->get(),
+            'entites' => Entite::with(['parent', 'enfants', 'rattachement'])
+                ->orderBy('nom')
+                ->get(),
+        ]);
     }
 
     private function filtresResume(Request $request): ?string

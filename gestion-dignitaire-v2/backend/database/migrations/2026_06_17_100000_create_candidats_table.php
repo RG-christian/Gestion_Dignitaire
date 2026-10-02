@@ -33,7 +33,7 @@ return new class extends Migration
             // Informations personnelles (optionnelles)
             $table->string('nip', 50)->nullable()->unique();
             $table->string('matricule', 50)->nullable()->unique();
-            $table->integer('lieu_naissance_id')->nullable();
+            $table->foreignId('lieu_naissance_id')->nullable();
             $table->foreign('lieu_naissance_id')->references('id')->on('ville')->nullOnDelete();
             $table->string('etat_civil', 50)->nullable();
             
@@ -46,7 +46,7 @@ return new class extends Migration
             $table->string('email', 150)->unique();
             $table->string('telephone', 20)->nullable();
             $table->string('adresse', 255)->nullable();
-            $table->integer('ville_residence_id')->nullable();
+            $table->foreignId('ville_residence_id')->nullable();
             $table->foreign('ville_residence_id')->references('id')->on('ville')->nullOnDelete();
             
             // Authentification candidat (pour se connecter et voir son statut)
@@ -55,10 +55,10 @@ return new class extends Migration
             
             // Traçabilité
             $table->timestamp('date_candidature')->useCurrent();
-            $table->integer('valide_par')->nullable()->comment('Admin qui a validé/refusé la candidature');
+            $table->foreignId('valide_par')->nullable()->comment('Admin qui a validé/refusé la candidature');
             $table->foreign('valide_par')->references('id')->on('users')->nullOnDelete();
             $table->timestamp('date_validation')->nullable();
-            $table->integer('dignitaire_id')->nullable()->comment('Lien vers le dignitaire créé après validation');
+            $table->foreignId('dignitaire_id')->nullable()->comment('Lien vers le dignitaire créé après validation');
             $table->foreign('dignitaire_id')->references('id')->on('dignitaire')->nullOnDelete();
             
             $table->timestamps();

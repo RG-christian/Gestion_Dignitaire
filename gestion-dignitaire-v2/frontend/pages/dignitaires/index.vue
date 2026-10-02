@@ -1086,6 +1086,7 @@ async function saveDignitaire() {
     })
 
     closeModal()
+    referentiels.invalidateDignitaires()
     loadDignitaires()
   } catch (error) {
     console.error('Erreur sauvegarde:', error)
@@ -1141,6 +1142,7 @@ async function runImport() {
     if (!response.ok) throw await response.json()
 
     importResult.value = await response.json()
+    referentiels.invalidateDignitaires()
     loadDignitaires()
   } catch (error: any) {
     console.error('Erreur import:', error)
@@ -1185,6 +1187,7 @@ async function deleteDignitaire(id: number) {
         showConfirmButton: false
       })
       
+      referentiels.invalidateDignitaires()
       loadDignitaires()
     } catch (error) {
       console.error('Erreur suppression:', error)

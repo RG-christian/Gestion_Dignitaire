@@ -17,11 +17,11 @@ return new class extends Migration
             $table->foreignId('candidat_id')->constrained('candidats')->onDelete('cascade');
 
             $table->string('intitule', 255)->nullable();
-            $table->integer('etablissement_id')->nullable();
+            $table->foreignId('etablissement_id')->nullable();
             $table->foreign('etablissement_id')->references('id')->on('etablissement')->nullOnDelete();
-            $table->integer('ville_id')->nullable();
+            $table->foreignId('ville_id')->nullable();
             $table->foreign('ville_id')->references('id')->on('ville')->nullOnDelete();
-            $table->integer('domaine_id')->nullable();
+            $table->foreignId('domaine_id')->nullable();
             $table->foreign('domaine_id')->references('id')->on('domaine')->nullOnDelete();
             $table->string('annee', 10)->nullable();
             $table->string('justificatif_path', 255)->nullable();

@@ -92,6 +92,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/dashboard/chart-data', [DashboardController::class, 'chartData']);
 
+    // Liste légère utilisée dans les sélecteurs des autres modules.
+    Route::get('/dignitaires/options', [DignitaireController::class, 'options']);
+
     // Dignitaires
     Route::middleware('permission:Dignitaire')->group(function () {
         Route::apiResource('dignitaires', DignitaireController::class);
@@ -133,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Langues (référentiel) et langues parlées par les dignitaires
     Route::middleware('permission:Langues')->group(function () {
+        Route::get('/langues/initial-data', [\App\Http\Controllers\Api\LangueController::class, 'initialData']);
         Route::apiResource('langues', \App\Http\Controllers\Api\LangueController::class)->except(['index']);
         Route::apiResource('langues-parlees', LangueParleeController::class);
     });
@@ -144,6 +148,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Postes
     Route::middleware('permission:Poste')->group(function () {
+        Route::get('/postes/initial-data', [PosteController::class, 'initialData']);
         Route::apiResource('postes', PosteController::class);
         Route::post('/postes/{id}/cloturer', [PosteController::class, 'cloturer']);
         Route::get('/postes-export', [PosteController::class, 'export']);
@@ -167,6 +172,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Référentiels (lecture seule) — /entites est déclaré plus haut, avec sa
     // propre garde de permission sur les écritures.
+    Route::get('/referentiels/bundle', [ReferentielController::class, 'bundle']);
     Route::get('/pays', [ReferentielController::class, 'pays']);
     Route::get('/regions', [ReferentielController::class, 'regions']);
     Route::get('/villes', [ReferentielController::class, 'villes']);
@@ -202,6 +208,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Candidats - Routes protégées pour candidats connectés
     Route::prefix('candidats')->middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [CandidatAuthController::class, 'logout']);
+        Route::get('/me/dashboard', [CandidatAuthController::class, 'dashboard']);
         Route::get('/me', [CandidatAuthController::class, 'me']);
         Route::put('/me', [CandidatAuthController::class, 'updateProfile']);
         Route::put('/me/password', [CandidatAuthController::class, 'updatePassword']);

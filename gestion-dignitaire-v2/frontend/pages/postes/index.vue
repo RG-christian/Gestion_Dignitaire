@@ -780,14 +780,32 @@ async function loadPostes() {
   }
 }
 
-async function loadDignitaires() {
+async function loadInitialData() {
+  loading.value = true
+  loadingEntites.value = true
+
   try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
+    const response = await $fetch(`${config.public.apiBase}/postes/initial-data`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
-    dignitaires.value = response.data || []
+
+    postes.value = response.postes || []
+    dignitaires.value = response.dignitaires || []
+    villes.value = response.villes || []
+    entitesData.value = response.entites || []
+    entites.value = entitesData.value
+    referentiels.primeVilles(villes.value)
+    referentiels.primeEntites(entitesData.value)
   } catch (error) {
-    console.error('Erreur:', error)
+    console.error('Erreur chargement initial postes:', error)
+    postes.value = []
+    dignitaires.value = []
+    villes.value = []
+    entitesData.value = []
+    entites.value = []
+  } finally {
+    loading.value = false
+    loadingEntites.value = false
   }
 }
 
@@ -1098,10 +1116,7 @@ async function deleteEntite(id) {
 }
 
 onMounted(async () => {
-  villes.value = await referentiels.getVilles()
-  await loadEntites()
-  await loadDignitaires()
-  await loadPostes()
+  await loadInitialData()
   helpPanel.setContent(HELP_CONTENT.postes)
   tour.start(HELP_CONTENT.postes.tourSteps, 'postes')
 })

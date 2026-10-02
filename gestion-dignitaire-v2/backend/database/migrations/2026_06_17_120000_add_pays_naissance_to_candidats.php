@@ -19,7 +19,7 @@ return new class extends Migration
     {
         Schema::table('candidats', function (Blueprint $table) {
             // Ajout du pays de naissance
-            $table->integer('pays_naissance_id')->nullable()->after('matricule');
+            $table->foreignId('pays_naissance_id')->nullable()->after('matricule');
             $table->foreign('pays_naissance_id')->references('id')->on('pays')->nullOnDelete();
             
             // Ajout de la ville custom si la ville n'existe pas dans la base

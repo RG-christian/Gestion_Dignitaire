@@ -7,6 +7,7 @@ use App\Models\Langue;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -16,6 +17,34 @@ use Illuminate\Support\Facades\Validator;
  */
 class LangueController extends Controller
 {
+    /**
+     * Données nécessaires au premier affichage de la page Langues.
+     * Les recherches suivantes continuent d'utiliser les endpoints dédiés.
+     */
+    public function initialData(): JsonResponse
+    {
+        $languesParlees = DB::table('langues as lp')
+            ->select([
+                'lp.*',
+                DB::raw("CONCAT(d.prenom, ' ', d.nom) as dignitaire_nom"),
+                'l.nom as langue_nom',
+            ])
+            ->leftJoin('dignitaire as d', 'lp.dignitaire_id', '=', 'd.id')
+            ->leftJoin('langue as l', 'lp.langue_id', '=', 'l.id')
+            ->orderBy('d.nom')
+            ->get();
+
+        return response()->json([
+            'langues' => Langue::orderBy('nom')->get(),
+            'dignitaires' => DB::table('dignitaire')
+                ->select(['id', 'nom', 'prenom', 'matricule'])
+                ->orderBy('nom')
+                ->orderBy('prenom')
+                ->get(),
+            'languesParlees' => $languesParlees,
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Langue::query();

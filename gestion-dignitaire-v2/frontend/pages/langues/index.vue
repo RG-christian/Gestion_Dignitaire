@@ -546,7 +546,6 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
-const referentiels = useReferentiels()
 const { debounce } = useDebounce()
 const helpPanel = useHelpPanel()
 const tour = useGuidedTour()
@@ -785,14 +784,26 @@ async function loadLanguesParlees() {
 
 const debouncedLoadLanguesParlees = debounce(loadLanguesParlees, 500)
 
-async function loadDignitaires() {
+async function loadInitialData() {
+  loading.value = true
+  loadingLP.value = true
+
   try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
+    const response = await $fetch(`${config.public.apiBase}/langues/initial-data`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
-    dignitaires.value = response.data || []
+
+    langues.value = response.langues || []
+    dignitaires.value = response.dignitaires || []
+    languesParlees.value = response.languesParlees || []
   } catch (error) {
-    console.error('Erreur:', error)
+    console.error('Erreur chargement initial langues:', error)
+    langues.value = []
+    dignitaires.value = []
+    languesParlees.value = []
+  } finally {
+    loading.value = false
+    loadingLP.value = false
   }
 }
 
@@ -904,9 +915,7 @@ async function deleteLangueParlee(id) {
 }
 
 onMounted(async () => {
-  await loadLangues()
-  await loadDignitaires()
-  await loadLanguesParlees()
+  await loadInitialData()
   helpPanel.setContent(HELP_CONTENT.langues)
   tour.start(HELP_CONTENT.langues.tourSteps, 'langues')
 })

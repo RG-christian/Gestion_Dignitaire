@@ -336,17 +336,6 @@ async function loadAffectations() {
   }
 }
 
-async function loadDignitaires() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    dignitaires.value = response.data || []
-  } catch (error) {
-    console.error('Erreur:', error)
-  }
-}
-
 function openModal(affectation = null) {
   selectedAffectation.value = affectation
   showCustomVille.value = false
@@ -465,10 +454,13 @@ async function deleteAffectation(id) {
 }
 
 onMounted(async () => {
-  villes.value = await referentiels.getVilles()
-  pays.value = await referentiels.getPays()
-  await loadDignitaires()
-  await loadAffectations()
+  const [, refs] = await Promise.all([
+    loadAffectations(),
+    referentiels.getBundle(['villes', 'pays', 'dignitaires'])
+  ])
+  villes.value = refs.villes || []
+  pays.value = refs.pays || []
+  dignitaires.value = refs.dignitaires || []
   helpPanel.setContent(HELP_CONTENT.affectations)
   tour.start(HELP_CONTENT.affectations.tourSteps, 'affectations')
 })

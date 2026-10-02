@@ -6,9 +6,55 @@ use App\Http\Controllers\Controller;
 use App\Models\{Pays, Region, Ville, Entite, Langue, Domaine, Structure, Etablissement};
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReferentielController extends Controller
 {
+    /**
+     * Regroupe plusieurs petites listes de référence dans une seule réponse.
+     * Seules les clés explicitement demandées et autorisées sont retournées.
+     */
+    public function bundle(Request $request): JsonResponse
+    {
+        $request->validate(['include' => 'required|string|max:200']);
+
+        $autorises = [
+            'villes', 'pays', 'regions', 'langues', 'domaines',
+            'structures', 'etablissements', 'entites', 'dignitaires',
+        ];
+        $demandes = array_values(array_unique(array_intersect(
+            array_filter(explode(',', $request->string('include')->toString())),
+            $autorises
+        )));
+
+        $data = [];
+        foreach ($demandes as $cle) {
+            $data[$cle] = match ($cle) {
+                'villes' => DB::table('ville')
+                    ->select(['id', 'nom', 'pays_id'])
+                    ->orderBy('nom')
+                    ->get(),
+                'pays' => DB::table('pays')
+                    ->select(['id', 'nom'])
+                    ->orderBy('nom')
+                    ->get(),
+                'regions' => Region::orderBy('nom')->get(),
+                'langues' => Langue::orderBy('nom')->get(),
+                'domaines' => Domaine::orderBy('nom')->get(),
+                'structures' => Structure::with('ville')->orderBy('nom')->get(),
+                'etablissements' => Etablissement::with('ville')->orderBy('nom')->get(),
+                'entites' => Entite::with(['parent', 'enfants', 'rattachement'])->orderBy('nom')->get(),
+                'dignitaires' => DB::table('dignitaire')
+                    ->select(['id', 'nom', 'prenom', 'matricule'])
+                    ->orderBy('nom')
+                    ->orderBy('prenom')
+                    ->get(),
+            };
+        }
+
+        return response()->json($data);
+    }
+
     /**
      * Liste des pays
      */

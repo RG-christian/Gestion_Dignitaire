@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('candidat_id')->constrained('candidats')->onDelete('cascade');
 
             $table->string('intitule', 150)->nullable();
-            $table->integer('structure_id')->nullable();
+            $table->foreignId('structure_id')->nullable();
             $table->foreign('structure_id')->references('id')->on('structure')->nullOnDelete();
             $table->date('date_debut')->nullable();
             $table->date('date_fin')->nullable();

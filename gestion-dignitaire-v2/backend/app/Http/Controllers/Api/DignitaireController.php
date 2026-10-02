@@ -17,6 +17,21 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DignitaireController extends Controller
 {
+    /**
+     * Liste légère destinée aux champs de sélection des autres modules.
+     * Query Builder évite les attributs calculés et les relations du modèle.
+     */
+    public function options(): JsonResponse
+    {
+        return response()->json(
+            DB::table('dignitaire')
+                ->select(['id', 'nom', 'prenom', 'matricule'])
+                ->orderBy('nom')
+                ->orderBy('prenom')
+                ->get()
+        );
+    }
+
     private function baseQuery(Request $request)
     {
         $query = Dignitaire::query()

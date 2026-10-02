@@ -320,17 +320,6 @@ async function loadExperiences() {
 // Version debouncée pour optimiser les requêtes AJAX
 const debouncedLoadExperiences = debounce(loadExperiences, 500)
 
-async function loadDignitaires() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    dignitaires.value = response.data || []
-  } catch (error) {
-    console.error('Erreur:', error)
-  }
-}
-
 function openModal(experience = null) {
   selectedExperience.value = experience
   if (experience) {
@@ -443,9 +432,12 @@ async function deleteExperience(id) {
 }
 
 onMounted(async () => {
-  structures.value = await referentiels.getStructures()
-  await loadDignitaires()
-  await loadExperiences()
+  const [, refs] = await Promise.all([
+    loadExperiences(),
+    referentiels.getBundle(['structures', 'dignitaires'])
+  ])
+  structures.value = refs.structures || []
+  dignitaires.value = refs.dignitaires || []
   helpPanel.setContent(HELP_CONTENT.experiences)
   tour.start(HELP_CONTENT.experiences.tourSteps, 'experiences')
 })

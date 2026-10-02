@@ -22,6 +22,15 @@
         <i class="fas fa-circle-question mx-0.5"></i> en haut à droite ouvre l'aide contextuelle de chaque page à tout moment.
       </TipBanner>
 
+      <div v-if="dashboardLoading" class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <i class="fas fa-circle-notch fa-spin mr-2"></i>
+        Chargement des données du tableau de bord…
+      </div>
+      <div v-else-if="dashboardError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <i class="fas fa-triangle-exclamation mr-2"></i>
+        {{ dashboardError }}
+      </div>
+
       <!-- Prise en main -->
       <div v-if="checklistItems.length" class="mb-6">
         <ProgressChecklist title="Prise en main" :items="checklistItems" />
@@ -399,82 +408,59 @@ const currentLegend = ref<Array<{ label: string; value: number; color: string }>
 // elles ont besoin d'un axe temporel, pas d'un donut de répartition.
 const TYPES_TEMPORELS = ['nominations_mois', 'candidatures_mois']
 
-// Charger les statistiques
-const { data: stats } = await useAsyncData('dashboard-stats', async () => {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dashboard/stats`, {
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
-    return response
-  } catch (error) {
-    console.error('Erreur chargement stats:', error)
-    return {
-      totalDignitaires: 0,
-      totalPostes: 0,
-      totalDecorations: 0,
-      totalVilles: 0,
-      totalPays: 0,
-      totalRegions: 0,
-      totalDiplomes: 0
-    }
-  }
-})
+const EMPTY_STATS = {
+  totalDignitaires: 0,
+  totalPostes: 0,
+  totalDecorations: 0,
+  totalVilles: 0,
+  totalPays: 0,
+  totalRegions: 0,
+  totalDiplomes: 0,
+  totalActifs: 0,
+  totalRetraites: 0,
+  totalNonLocalises: 0
+}
 
-// Charger les données détaillées pour les graphiques
-const { data: chartData } = await useAsyncData('chart-data', async () => {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dashboard/chart-data`, {
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
-    return response
-  } catch (error) {
-    console.error('Erreur chargement données graphique:', error)
-    return {
-      parGenre: { hommes: 0, femmes: 0 },
-      parRegion: [],
-      parPoste: [],
-      parStatut: [],
-      nominationsParMois: [],
-      candidaturesParMois: []
-    }
-  }
-})
+const EMPTY_CHART_DATA = {
+  parGenre: { hommes: 0, femmes: 0 },
+  parRegion: [],
+  parPoste: [],
+  parStatut: [],
+  nominationsParMois: [],
+  candidaturesParMois: []
+}
 
-// Charger les derniers dignitaires
-const { data: derniersDignitaires } = await useAsyncData('derniers-dignitaires', async () => {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires`, {
-      params: { per_page: 5 },
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
-    return response.data || []
-  } catch (error) {
-    console.error('Erreur chargement derniers dignitaires:', error)
-    return []
-  }
-})
+// Ces refs sont initialisées immédiatement : la structure du dashboard peut
+// s'afficher sans attendre Laravel. Une seule requête hydrate ensuite la page.
+const stats = ref({ ...EMPTY_STATS })
+const chartData = ref({ ...EMPTY_CHART_DATA })
+const derniersDignitaires = ref<any[]>([])
+const activiteRecente = ref<any[]>([])
+const dashboardLoading = ref(true)
+const dashboardError = ref('')
 
-// Charger l'activité récente (journal d'audit), réservé aux rôles ayant
-// accès à la page Journal des actions (cf. DashboardLayout.vue)
-const { data: activiteRecente } = await useAsyncData('activite-recente', async () => {
-  if (!permissions.aAccesComplet.value) return []
+async function loadDashboard() {
+  dashboardLoading.value = true
+  dashboardError.value = ''
+
   try {
-    const response: any = await $fetch(`${config.public.apiBase}/admin/audit-logs`, {
-      params: { per_page: 6 },
+    const response: any = await $fetch(`${config.public.apiBase}/dashboard`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     })
-    return response.logs?.data || []
+
+    stats.value = { ...EMPTY_STATS, ...(response.stats || {}) }
+    chartData.value = { ...EMPTY_CHART_DATA, ...(response.chartData || {}) }
+    derniersDignitaires.value = response.derniersDignitaires || []
+    activiteRecente.value = response.activiteRecente || []
   } catch (error) {
-    console.error('Erreur chargement activité récente:', error)
-    return []
+    console.error('Erreur chargement dashboard:', error)
+    dashboardError.value = 'Les données du tableau de bord n’ont pas pu être chargées.'
+  } finally {
+    dashboardLoading.value = false
+    await nextTick()
+    renderChart()
   }
-})
+}
 
 const ACTION_LABELS: Record<string, string> = {
   created: 'créé',
@@ -616,8 +602,7 @@ function updateChart() {
 }
 
 onMounted(async () => {
-  await nextTick()
-  renderChart()
+  await loadDashboard()
 })
 
 // Nettoyer le graphique lors de la destruction du composant

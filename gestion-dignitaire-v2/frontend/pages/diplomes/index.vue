@@ -548,17 +548,6 @@ async function loadDiplomes() {
   }
 }
 
-async function loadDignitaires() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    dignitaires.value = response.data || []
-  } catch (error) {
-    console.error('Erreur:', error)
-  }
-}
-
 // Version debouncée pour optimiser les requêtes AJAX
 const debouncedLoadDiplomes = debounce(loadDiplomes, 500)
 
@@ -697,10 +686,13 @@ async function deleteDiplome(id: number) {
 }
 
 onMounted(async () => {
-  villes.value = await referentiels.getVilles()
-  domaines.value = await referentiels.getDomaines()
-  await loadDignitaires()
-  await loadDiplomes()
+  const [, refs] = await Promise.all([
+    loadDiplomes(),
+    referentiels.getBundle(['villes', 'domaines', 'dignitaires'])
+  ])
+  villes.value = refs.villes || []
+  domaines.value = refs.domaines || []
+  dignitaires.value = refs.dignitaires || []
   helpPanel.setContent(HELP_CONTENT.diplomes)
   tour.start(HELP_CONTENT.diplomes.tourSteps, 'diplomes')
 })

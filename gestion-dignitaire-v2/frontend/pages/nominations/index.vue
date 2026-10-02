@@ -516,17 +516,6 @@ async function loadNominations() {
 // Version debouncée pour optimiser les requêtes AJAX
 const debouncedLoadNominations = debounce(loadNominations, 500)
 
-async function loadDignitaires() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    dignitaires.value = response.data || []
-  } catch (error) {
-    console.error('Erreur:', error)
-  }
-}
-
 async function loadPostes() {
   try {
     const response = await $fetch(`${config.public.apiBase}/postes`, {
@@ -707,10 +696,13 @@ async function deleteNomination(id) {
 }
 
 onMounted(async () => {
-  entites.value = await referentiels.getEntites()
-  await loadPostes()
-  await loadDignitaires()
-  await loadNominations()
+  const [, , refs] = await Promise.all([
+    loadNominations(),
+    loadPostes(),
+    referentiels.getBundle(['entites', 'dignitaires'])
+  ])
+  entites.value = refs.entites || []
+  dignitaires.value = refs.dignitaires || []
   helpPanel.setContent(HELP_CONTENT.nominations)
   tour.start(HELP_CONTENT.nominations.tourSteps, 'nominations')
 })

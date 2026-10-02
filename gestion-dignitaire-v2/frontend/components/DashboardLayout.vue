@@ -272,9 +272,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 const authStore = useAuthStore()
+const route = useRoute()
 const permissions = usePermissions()
 const helpPanel = useHelpPanel()
 const sessionWatcher = useSessionWatcher()
@@ -418,10 +419,36 @@ function toggleProfileMenu() {
 function toggleDropdown(name: string) {
   if (openDropdown.value === name) {
     openDropdown.value = null
+    localStorage.removeItem('admin_open_dropdown')
   } else {
     openDropdown.value = name
+    localStorage.setItem('admin_open_dropdown', name)
   }
 }
+
+function restoreOpenDropdown() {
+  if (!process.client) return
+
+  const activeFunction = fonctionsAvecSousfonctions.value.find((fonction: any) =>
+    getSousFonctions(fonction.id).some((sf: any) => {
+      const target = getRouteForSousfonction(sf.sousfonction_name)
+      return target !== '/dashboard' && (route.path === target || route.path.startsWith(`${target}/`))
+    })
+  )
+
+  if (activeFunction) {
+    openDropdown.value = activeFunction.fonction_name
+    localStorage.setItem('admin_open_dropdown', activeFunction.fonction_name)
+    return
+  }
+
+  const savedDropdown = localStorage.getItem('admin_open_dropdown')
+  if (savedDropdown && fonctionsAvecSousfonctions.value.some((fonction: any) => fonction.fonction_name === savedDropdown)) {
+    openDropdown.value = savedDropdown
+  }
+}
+
+watch([() => route.path, fonctionsAvecSousfonctions], restoreOpenDropdown, { flush: 'post' })
 
 async function logout() {
   const { $swal } = useNuxtApp()
@@ -443,6 +470,7 @@ async function logout() {
 
 // Fermer le menu profil quand on clique ailleurs
 onMounted(() => {
+  restoreOpenDropdown()
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement
     if (!target.closest('.relative')) {

@@ -462,19 +462,6 @@ async function loadEnfants() {
   }
 }
 
-async function loadDignitaires() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
-      }
-    })
-    dignitaires.value = response.data || []
-  } catch (error) {
-    console.error('Erreur chargement dignitaires:', error)
-  }
-}
-
 // Version debouncée pour optimiser les requêtes AJAX
 const debouncedLoadEnfants = debounce(loadEnfants, 500)
 
@@ -603,9 +590,12 @@ function formatDate(date: string | null) {
 }
 
 onMounted(async () => {
-  villes.value = await referentiels.getVilles()
-  await loadDignitaires()
-  await loadEnfants()
+  const [, refs] = await Promise.all([
+    loadEnfants(),
+    referentiels.getBundle(['villes', 'dignitaires'])
+  ])
+  villes.value = refs.villes || []
+  dignitaires.value = refs.dignitaires || []
   helpPanel.setContent(HELP_CONTENT.enfants)
   tour.start(HELP_CONTENT.enfants.tourSteps, 'enfants')
 })

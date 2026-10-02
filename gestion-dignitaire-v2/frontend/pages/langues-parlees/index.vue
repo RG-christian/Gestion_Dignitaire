@@ -301,17 +301,6 @@ async function loadLanguesParlees() {
 // Version debouncée pour optimiser les requêtes AJAX
 const debouncedLoadLanguesParlees = debounce(loadLanguesParlees, 500)
 
-async function loadDignitaires() {
-  try {
-    const response = await $fetch(`${config.public.apiBase}/dignitaires?per_page=1000`, {
-      headers: { Authorization: `Bearer ${authStore.token}` }
-    })
-    dignitaires.value = response.data || []
-  } catch (error) {
-    console.error('Erreur:', error)
-  }
-}
-
 function openModal(langueParlee = null) {
   selectedLangueParlee.value = langueParlee
   if (langueParlee) {
@@ -420,9 +409,12 @@ async function deleteLangueParlee(id) {
 }
 
 onMounted(async () => {
-  langues.value = await referentiels.getLangues()
-  await loadDignitaires()
-  await loadLanguesParlees()
+  const [, refs] = await Promise.all([
+    loadLanguesParlees(),
+    referentiels.getBundle(['langues', 'dignitaires'])
+  ])
+  langues.value = refs.langues || []
+  dignitaires.value = refs.dignitaires || []
   helpPanel.setContent(HELP_CONTENT['langues-parlees'])
   tour.start(HELP_CONTENT['langues-parlees'].tourSteps, 'langues-parlees')
 })

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->id();
             
             // Relation avec le dignitaire
-            $table->integer('dignitaire_id');
+            $table->foreignId('dignitaire_id');
             $table->foreign('dignitaire_id')->references('id')->on('dignitaire')->cascadeOnDelete();
             
             // Informations personnelles (obligatoires)
@@ -31,9 +31,9 @@ return new class extends Migration
             $table->enum('genre', ['M', 'F']);
             
             // Informations complémentaires
-            $table->integer('lieu_naissance_id')->nullable();
+            $table->foreignId('lieu_naissance_id')->nullable();
             $table->foreign('lieu_naissance_id')->references('id')->on('ville')->nullOnDelete();
-            $table->integer('nationalite_id')->nullable();
+            $table->foreignId('nationalite_id')->nullable();
             $table->foreign('nationalite_id')->references('id')->on('pays')->nullOnDelete();
             $table->string('profession', 255)->nullable();
             $table->string('employeur', 255)->nullable();

@@ -973,8 +973,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   AlertCircle, Bell, Briefcase, Building2, Calendar, Check, CheckCircle2, ChevronDown,
   Circle, ClipboardCheck, Clock, CreditCard, ExternalLink, File, FileText, GraduationCap, Heart, Home, Inbox, Info,
@@ -982,6 +982,7 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
+const route = useRoute()
 const { $api, $swal } = useNuxtApp()
 const config = useRuntimeConfig()
 const sessionWatcher = useSessionWatcher()
@@ -1037,8 +1038,16 @@ const progressItems = computed(() => [
   { label: 'Expériences', done: experiences.value.length > 0 },
 ])
 
-// Fonction pour scroller vers une section
-const scrollToSection = (sectionId) => {
+const updateSectionHash = (sectionId) => {
+  if (!process.client || window.location.hash === `#${sectionId}`) return
+
+  const url = new URL(window.location.href)
+  url.hash = sectionId
+  window.history.replaceState(window.history.state, '', url)
+}
+
+// Fonction pour scroller vers une section et conserver celle-ci dans l'URL.
+const scrollToSection = (sectionId, behavior = 'smooth', updateHash = true) => {
   const element = document.getElementById(sectionId)
   if (element) {
     const yOffset = -100 // Offset pour ne pas cacher sous la navbar
@@ -1046,11 +1055,21 @@ const scrollToSection = (sectionId) => {
     
     window.scrollTo({
       top: y,
-      behavior: 'smooth'
+      behavior
     })
     
     activeSection.value = sectionId
+    if (updateHash) updateSectionHash(sectionId)
   }
+}
+
+const restoreSectionFromHash = async () => {
+  const sectionId = (process.client ? window.location.hash : route.hash).replace(/^#/, '')
+  if (!navItems.some(item => item.id === sectionId)) return
+
+  activeSection.value = sectionId
+  await nextTick()
+  scrollToSection(sectionId, 'auto', false)
 }
 
 // Détection automatique de la section visible (Scroll-Spy)
@@ -1068,7 +1087,10 @@ const handleScroll = () => {
     }
   }
   
-  activeSection.value = currentSection
+  if (activeSection.value !== currentSection) {
+    activeSection.value = currentSection
+    updateSectionHash(currentSection)
+  }
 }
 
 // Fermer le menu profil quand on clique ailleurs
@@ -1199,8 +1221,10 @@ const demarrerRappelPeriodique = () => {
 // Ajouter l'écouteur de scroll
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  window.addEventListener('hashchange', restoreSectionFromHash)
   document.addEventListener('click', handleClickOutsideProfileMenu)
   loadCandidatData().then(() => {
+    restoreSectionFromHash()
     // Afficher les notifications après le chargement des données
     afficherNotificationsAuChargement()
     // Démarrer le système de rappel périodique toutes les 24h
@@ -1214,6 +1238,7 @@ onMounted(() => {
 // Retirer l'écouteur lors du démontage
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('hashchange', restoreSectionFromHash)
   document.removeEventListener('click', handleClickOutsideProfileMenu)
   sessionWatcher.stop()
   // Nettoyer l'intervalle de rappel
@@ -1277,7 +1302,7 @@ const loadCandidatData = async () => {
       return
     }
 
-    const response = await $api.get('/candidats/me', {
+    const response = await $api.get('/candidats/me/dashboard', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -1286,9 +1311,18 @@ const loadCandidatData = async () => {
     if (response.success) {
       candidat.value = response.candidat
       documents.value = response.candidat.documents || []
-    }
+      langues.value = response.langues || []
+      diplomes.value = response.diplomes || []
+      experiences.value = response.experiences || []
+      messages.value = response.messages || []
+      messagesNonLus.value = response.non_lus || 0
 
-    await Promise.all([loadLangues(), loadDiplomes(), loadExperiences(), loadReferenceLists(), loadMessages()])
+      const references = response.references || {}
+      referenceLangues.value = references.langues || []
+      referenceEtablissements.value = references.etablissements || []
+      referenceDomaines.value = references.domaines || []
+      referenceStructures.value = references.structures || []
+    }
   } catch (error) {
     console.error('Erreur de chargement:', error)
     
@@ -1640,11 +1674,6 @@ const getDocumentTypeLabel = (type) => {
   }
   return labels[type] || 'Document'
 }
-
-// Chargement au montage
-onMounted(() => {
-  loadCandidatData()
-})
 
 // SEO
 useHead({
