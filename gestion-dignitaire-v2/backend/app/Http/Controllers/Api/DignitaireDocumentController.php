@@ -35,7 +35,7 @@ class DignitaireDocumentController extends Controller
         $dignitaire = Dignitaire::findOrFail($dignitaireId);
 
         $validated = $request->validate([
-            'type_document' => 'required|in:diplome,passeport,casier,medical,attestation,autre',
+            'type_document' => 'required|in:diplome,cv,lettre,passeport,casier,medical,attestation,autre',
             'fichier' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
             'nom_document' => 'nullable|string|max:255',
             'numero_document' => 'nullable|string|max:100',

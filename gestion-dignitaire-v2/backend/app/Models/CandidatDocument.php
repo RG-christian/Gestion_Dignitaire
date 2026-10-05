@@ -87,6 +87,11 @@ class CandidatDocument extends Model
         return $this->belongsTo(Candidat::class);
     }
 
+    public function dignitaireDocument()
+    {
+        return $this->hasOne(DignitaireDocument::class, 'source_candidat_document_id');
+    }
+
     /**
      * Scopes
      */
@@ -133,8 +138,10 @@ class CandidatDocument extends Model
         parent::boot();
 
         static::deleting(function ($document) {
-            if (Storage::exists($document->chemin_fichier)) {
-                Storage::delete($document->chemin_fichier);
+            $usedByDignitaire = DignitaireDocument::where('chemin_fichier', $document->chemin_fichier)->exists();
+
+            if (!$usedByDignitaire && Storage::disk('public')->exists($document->chemin_fichier)) {
+                Storage::disk('public')->delete($document->chemin_fichier);
             }
         });
     }

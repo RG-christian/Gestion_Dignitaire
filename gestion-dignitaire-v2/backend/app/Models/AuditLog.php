@@ -14,6 +14,7 @@ class AuditLog extends Model
     const UPDATED_AT = null;
 
     protected $fillable = [
+        'request_id',
         'causer_type',
         'causer_id',
         'causer_label',
@@ -23,6 +24,11 @@ class AuditLog extends Model
         'auditable_label',
         'old_values',
         'new_values',
+        'http_method',
+        'request_path',
+        'response_status',
+        'ip_address',
+        'user_agent',
     ];
 
     protected $casts = [

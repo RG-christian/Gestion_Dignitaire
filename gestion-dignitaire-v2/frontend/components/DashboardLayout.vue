@@ -23,8 +23,11 @@
             @keydown.esc="closeGlobalSearch"
             type="text"
             placeholder="Rechercher un dignitaire, une nomination, un diplôme..."
-            class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            class="w-full pl-9 pr-10 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
           >
+          <NuxtLink to="/recherche" title="Recherche multicritère" class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-blue-600 hover:bg-blue-50">
+            <i class="fas fa-sliders"></i>
+          </NuxtLink>
         </div>
         <div
           v-if="globalSearchOpen"
@@ -352,6 +355,7 @@ function getRouteForSousfonction(name: string): string {
     'Pays': '/pays',
     'Ville': '/villes',
     'Nomination': '/nominations',
+    'Procès-verbal': '/pvs',
     'Décoration': '/decorations',
     'Decoration': '/decorations',
     'Structure': '/structures',

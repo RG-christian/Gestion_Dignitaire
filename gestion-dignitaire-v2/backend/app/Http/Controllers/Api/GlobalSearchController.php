@@ -13,6 +13,7 @@ use App\Models\Poste;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Recherche globale transverse demandée en réunion ("recherche globale
@@ -178,6 +179,93 @@ class GlobalSearchController extends Controller
             'query' => $q,
             'results' => $results,
             'total' => count($results),
+        ]);
+    }
+
+    public function advanced(Request $request): JsonResponse
+    {
+        abort_unless(Permissions::peutLire($request->user(), 'Dignitaire'), 403);
+
+        $filters = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'poste' => 'nullable|string|max:255',
+            'pays_affectation_id' => 'nullable|integer|exists:pays,id',
+            'langue_id' => 'nullable|integer|exists:langue,id',
+            'domaine_id' => 'nullable|integer|exists:domaine,id',
+            'niveau_academique' => 'nullable|string|max:100',
+            'structure_id' => 'nullable|integer|exists:structure,id',
+            'mandat_actif' => 'nullable|boolean',
+            'est_militaire' => 'nullable|boolean',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $query = Dignitaire::query()
+            ->with([
+                'lieuNaissance.pays',
+                'postes' => fn ($q) => $q->whereNull('deleted_at')->orderByDesc('date_debut'),
+            ]);
+
+        if (!empty($filters['q'])) {
+            $query->search(trim($filters['q']));
+        }
+        if (!empty($filters['poste'])) {
+            $query->whereHas('postes', fn ($q) => $q
+                ->whereNull('deleted_at')
+                ->where('intitule', $filters['poste']));
+        }
+        if (!empty($filters['pays_affectation_id'])) {
+            $query->whereHas('affectations', fn ($q) => $q
+                ->whereNull('deleted_at')
+                ->where('pays_id', $filters['pays_affectation_id']));
+        }
+        if (!empty($filters['langue_id'])) {
+            $query->whereHas('languesParlees', fn ($q) => $q->where('langue_id', $filters['langue_id']));
+        }
+        if (!empty($filters['domaine_id'])) {
+            $query->whereHas('diplomes', fn ($q) => $q->where('domaine_id', $filters['domaine_id']));
+        }
+        if (!empty($filters['niveau_academique'])) {
+            $query->whereHas('diplomes', fn ($q) => $q->where('type', $filters['niveau_academique']));
+        }
+        if (!empty($filters['structure_id'])) {
+            $query->whereHas('experiences', fn ($q) => $q->where('structure_id', $filters['structure_id']));
+        }
+        if ($request->has('mandat_actif')) {
+            $activeMandate = fn ($q) => $q->whereNull('deleted_at')
+                ->where('date_debut', '<=', today())
+                ->where(fn ($dates) => $dates->whereNull('date_fin')->orWhere('date_fin', '>=', today()));
+            $request->boolean('mandat_actif')
+                ? $query->whereHas('nominations', $activeMandate)
+                : $query->whereDoesntHave('nominations', $activeMandate);
+        }
+        if ($request->has('est_militaire')) {
+            $query->where('est_militaire', $request->boolean('est_militaire'));
+        }
+
+        $results = $query->orderBy('nom')->orderBy('prenom')
+            ->paginate((int) ($filters['per_page'] ?? 20))
+            ->withQueryString();
+
+        return response()->json([
+            'success' => true,
+            'filters' => $filters,
+            'results' => $results,
+        ]);
+    }
+
+    public function advancedOptions(Request $request): JsonResponse
+    {
+        abort_unless(Permissions::peutLire($request->user(), 'Dignitaire'), 403);
+
+        return response()->json([
+            'postes' => DB::table('postes')->whereNull('deleted_at')->whereNotNull('intitule')
+                ->distinct()->orderBy('intitule')->pluck('intitule'),
+            'pays' => DB::table('pays')->select('id', 'nom')->orderBy('nom')->get(),
+            'langues' => DB::table('langue')->select('id', 'nom')->orderBy('nom')->get(),
+            'domaines' => DB::table('domaine')->select('id', 'nom')->orderBy('nom')->get(),
+            'niveaux_academiques' => DB::table('diplome')->whereNotNull('type')->where('type', '<>', '')
+                ->distinct()->orderBy('type')->pluck('type'),
+            'structures' => DB::table('structure')->select('id', 'nom')->orderBy('nom')->get(),
         ]);
     }
 }

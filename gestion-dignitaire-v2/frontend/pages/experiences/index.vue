@@ -72,6 +72,7 @@
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Structure</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date début</th>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date fin</th>
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Justificatif</th>
                 <th data-tour="row-actions" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -86,6 +87,13 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span v-if="exp.date_fin" class="text-sm text-gray-700">{{ formatDate(exp.date_fin) }}</span>
                   <span v-else class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">À ce jour</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <button v-if="exp.justificatif_path" type="button" @click="downloadJustificatif(exp)" class="inline-flex items-center gap-2 text-sm font-semibold text-red-700 hover:text-red-900">
+                    <i class="fas fa-file-pdf"></i>
+                    PDF
+                  </button>
+                  <span v-else class="text-sm text-gray-400">Aucun</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                   <div class="flex items-center justify-center gap-2">
@@ -183,6 +191,14 @@
                 <input v-model="form.date_fin" type="date" :min="minDateFin(form.date_debut)" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
               </div>
             </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Justificatif (PDF)</label>
+              <input type="file" accept="application/pdf,.pdf" @change="handleJustificatifChange" class="w-full border rounded-lg px-4 py-3 file:mr-4 file:rounded-lg file:border-0 file:bg-red-50 file:px-4 file:py-2 file:font-semibold file:text-red-700 hover:file:bg-red-100">
+              <p class="mt-1 text-xs text-gray-500">PDF uniquement, 10 Mo maximum.</p>
+              <button v-if="selectedExperience?.justificatif_path" type="button" @click="downloadJustificatif(selectedExperience)" class="mt-2 text-sm font-semibold text-gabon-blue-700 hover:underline">
+                Télécharger le justificatif actuel
+              </button>
+            </div>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t">
             <button type="button" @click="closeModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
@@ -235,6 +251,14 @@
                 <p class="text-gray-900">{{ selectedDetail.date_fin ? formatDate(selectedDetail.date_fin) : 'À ce jour' }}</p>
               </div>
             </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm font-semibold text-gray-500 mb-2">Justificatif</p>
+              <button v-if="selectedDetail.justificatif_path" type="button" @click="downloadJustificatif(selectedDetail)" class="inline-flex items-center gap-2 font-semibold text-red-700 hover:text-red-900">
+                <i class="fas fa-file-pdf"></i>
+                Télécharger le PDF
+              </button>
+              <p v-else class="text-gray-500">Aucun justificatif joint</p>
+            </div>
           </div>
           <div class="mt-6 pt-4 border-t">
             <button @click="closeDetailModal" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Fermer</button>
@@ -257,6 +281,7 @@ const { debounce } = useDebounce()
 const { minDateFin } = useDateHelpers()
 const helpPanel = useHelpPanel()
 const tour = useGuidedTour()
+const fileDownload = useFileDownload()
 
 const experiences = ref([])
 const dignitaires = ref([])
@@ -266,6 +291,7 @@ const showModal = ref(false)
 const showDetailModal = ref(false)
 const selectedExperience = ref(null)
 const selectedDetail = ref(null)
+const justificatifFile = ref(null)
 const currentPage = ref(1)
 const itemsPerPage = 10
 
@@ -322,6 +348,7 @@ const debouncedLoadExperiences = debounce(loadExperiences, 500)
 
 function openModal(experience = null) {
   selectedExperience.value = experience
+  justificatifFile.value = null
   if (experience) {
     form.dignitaire_id = experience.dignitaire_id
     form.intitule = experience.intitule
@@ -341,6 +368,28 @@ function openModal(experience = null) {
 function closeModal() {
   showModal.value = false
   selectedExperience.value = null
+  justificatifFile.value = null
+}
+
+function handleJustificatifChange(event) {
+  const file = event.target.files?.[0] || null
+  if (file && (file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024)) {
+    event.target.value = ''
+    justificatifFile.value = null
+    const { $swal } = useNuxtApp()
+    $swal.fire({ icon: 'error', title: 'Fichier invalide', text: 'Sélectionnez un PDF de 10 Mo maximum.' })
+    return
+  }
+  justificatifFile.value = file
+}
+
+async function downloadJustificatif(experience) {
+  try {
+    await fileDownload.download(`/experiences/${experience.id}/justificatif`, {}, `justificatif-experience-${experience.id}.pdf`)
+  } catch (error) {
+    const { $swal } = useNuxtApp()
+    $swal.fire({ icon: 'error', title: 'Erreur', text: 'Impossible de télécharger le justificatif.' })
+  }
 }
 
 function openDetailModal(experience) {
@@ -355,16 +404,25 @@ function closeDetailModal() {
 
 async function saveExperience() {
   try {
+    const formData = new FormData()
+    formData.append('dignitaire_id', String(form.dignitaire_id))
+    formData.append('intitule', form.intitule)
+    if (form.structure_id) formData.append('structure_id', String(form.structure_id))
+    if (form.date_debut) formData.append('date_debut', form.date_debut)
+    if (form.date_fin) formData.append('date_fin', form.date_fin)
+    if (justificatifFile.value) formData.append('justificatif', justificatifFile.value)
+
     if (selectedExperience.value) {
+      formData.append('_method', 'PUT')
       await $fetch(`${config.public.apiBase}/experiences/${selectedExperience.value.id}`, {
-        method: 'PUT',
-        body: form,
+        method: 'POST',
+        body: formData,
         headers: { Authorization: `Bearer ${authStore.token}` }
       })
     } else {
       await $fetch(`${config.public.apiBase}/experiences`, {
         method: 'POST',
-        body: form,
+        body: formData,
         headers: { Authorization: `Bearer ${authStore.token}` }
       })
     }

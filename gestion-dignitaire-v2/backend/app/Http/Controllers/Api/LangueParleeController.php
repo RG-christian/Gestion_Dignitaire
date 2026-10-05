@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class LangueParleeController extends Controller
 {
+    private const NIVEAUX = ['Débutant', 'Moyen', 'Courant', 'Bilingue'];
+
     public function index(Request $request): JsonResponse
     {
         $query = DB::table('langues as lp')
@@ -64,7 +66,7 @@ class LangueParleeController extends Controller
         $validated = $request->validate([
             'dignitaire_id' => 'required|exists:dignitaire,id',
             'langue_id' => 'required|exists:langue,id',
-            'niveau' => 'nullable|string|max:50',
+            'niveau' => 'required|in:' . implode(',', self::NIVEAUX),
         ]);
 
         $id = DB::table('langues')->insertGetId($validated);
@@ -79,7 +81,7 @@ class LangueParleeController extends Controller
         $validated = $request->validate([
             'dignitaire_id' => 'required|exists:dignitaire,id',
             'langue_id' => 'required|exists:langue,id',
-            'niveau' => 'nullable|string|max:50',
+            'niveau' => 'required|in:' . implode(',', self::NIVEAUX),
         ]);
 
         $old = (array) DB::table('langues')->where('id', $id)->first();

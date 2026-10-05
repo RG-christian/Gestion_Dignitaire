@@ -136,11 +136,11 @@
                       </svg>
                       Modifier
                     </button>
-                    <button v-if="permissions.peutSupprimer()" @click="deleteNomination(nom.id)" class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Supprimer">
+                    <button v-if="permissions.peutSupprimer()" @click="deleteNomination(nom.id)" class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-semibold px-3 py-2 rounded-lg transition-colors" title="Archiver">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                       </svg>
-                      Supprimer
+                      Archiver
                     </button>
                   </div>
                 </td>
@@ -209,6 +209,15 @@
                 <option value="">-- Sélectionner un poste --</option>
                 <option v-for="poste in postes" :key="poste.id" :value="poste.id">
                   {{ poste.intitule }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Procès-verbal</label>
+              <select v-model="form.pv_id" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
+                <option value="">-- Aucun procès-verbal --</option>
+                <option v-for="pv in pvs" :key="pv.id" :value="pv.id">
+                  {{ pv.numero }} — {{ formatDate(pv.date) }}
                 </option>
               </select>
             </div>
@@ -316,6 +325,10 @@
               <p class="text-sm font-semibold text-gray-500 mb-1">Numéro de décret</p>
               <p class="text-gray-900">{{ selectedDetail.numero_decret || 'N/A' }}</p>
             </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm font-semibold text-gray-500 mb-1">Procès-verbal</p>
+              <p class="text-gray-900">{{ selectedDetail.pv_numero || 'Aucun PV associé' }}</p>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="bg-gray-50 rounded-lg p-4">
                 <p class="text-sm font-semibold text-gray-500 mb-1">Type de nomination</p>
@@ -409,6 +422,7 @@ const nominations = ref([])
 const dignitaires = ref([])
 const entites = ref([])
 const postes = ref([])
+const pvs = ref([])
 const loading = ref(true)
 const showModal = ref(false)
 const showDetailModal = ref(false)
@@ -429,6 +443,7 @@ const form = reactive({
   dignitaire_id: '',
   entite_id: '',
   poste_id: '',
+  pv_id: '',
   fonction: '',
   numero_decret: '',
   date_debut: '',
@@ -527,6 +542,18 @@ async function loadPostes() {
   }
 }
 
+async function loadPvs() {
+  try {
+    const response = await $fetch(`${config.public.apiBase}/pvs?statut=actif`, {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    })
+    pvs.value = Array.isArray(response) ? response : []
+  } catch (error) {
+    console.error('Erreur chargement procès-verbaux:', error)
+    pvs.value = []
+  }
+}
+
 function openModal(nomination = null) {
   selectedNomination.value = nomination
   documentFile.value = null
@@ -534,6 +561,7 @@ function openModal(nomination = null) {
     form.dignitaire_id = nomination.dignitaire_id
     form.entite_id = nomination.entite_id || ''
     form.poste_id = nomination.poste_id || ''
+    form.pv_id = nomination.pv_id || ''
     form.fonction = nomination.fonction || ''
     form.numero_decret = nomination.numero_decret || ''
     form.date_debut = nomination.date_debut || ''
@@ -545,6 +573,7 @@ function openModal(nomination = null) {
     form.dignitaire_id = ''
     form.entite_id = ''
     form.poste_id = ''
+    form.pv_id = ''
     form.fonction = ''
     form.numero_decret = ''
     form.date_debut = ''
@@ -619,6 +648,7 @@ async function saveNomination() {
     formData.append('dignitaire_id', form.dignitaire_id)
     if (form.entite_id) formData.append('entite_id', form.entite_id)
     if (form.poste_id) formData.append('poste_id', form.poste_id)
+    if (form.pv_id) formData.append('pv_id', form.pv_id)
     if (form.fonction) formData.append('fonction', form.fonction)
     if (form.numero_decret) formData.append('numero_decret', form.numero_decret)
     if (form.date_debut) formData.append('date_debut', form.date_debut)
@@ -659,7 +689,7 @@ async function deleteNomination(id) {
   const { $swal } = useNuxtApp()
   const result = await $swal.fire({
     title: 'Êtes-vous sûr ?',
-    text: 'Cette action est irréversible',
+    text: 'La nomination sera masquée mais pourra être restaurée',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#16a34a',
@@ -678,7 +708,7 @@ async function deleteNomination(id) {
       $swal.fire({
         icon: 'success',
         title: 'Supprimé',
-        text: 'La nomination a été supprimée avec succès',
+        text: 'La nomination a été archivée avec succès',
         timer: 2000,
         showConfirmButton: false
       })
@@ -696,9 +726,10 @@ async function deleteNomination(id) {
 }
 
 onMounted(async () => {
-  const [, , refs] = await Promise.all([
+  const [, , , refs] = await Promise.all([
     loadNominations(),
     loadPostes(),
+    loadPvs(),
     referentiels.getBundle(['entites', 'dignitaires'])
   ])
   entites.value = refs.entites || []

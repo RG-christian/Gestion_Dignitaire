@@ -28,6 +28,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Migration historique de consolidation. Les migrations datées de
+        // 2024 créent déjà le socle avant celle-ci dans la chaîne Laravel.
+        // Sur une base importée depuis le dump, ces tables existent aussi.
+        // Ne jamais tenter de recréer ce second schéma parallèle.
+        if (Schema::hasTable('roles') || Schema::hasTable('dignitaire')) {
+            return;
+        }
+
         // ============================================
         // TABLES LARAVEL (Authentification & Système)
         // ============================================
@@ -438,6 +446,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // up() est volontairement sans effet dans la chaîne actuelle.
+        // Un rollback ne doit donc surtout pas supprimer les tables créées
+        // par les migrations antérieures ou restaurées depuis le dump.
+        return;
+
         // Supprimer dans l'ordre inverse pour respecter les foreign keys
 
         // Tables pivot

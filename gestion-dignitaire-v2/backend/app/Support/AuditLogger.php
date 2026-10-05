@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Point d'entrée unique pour journaliser une action (création/modification/
@@ -23,10 +22,10 @@ class AuditLogger
         ?array $newValues = null,
         mixed $causerOverride = null
     ): void {
-        try {
-            $causer = $causerOverride ?? $request->user();
+        $causer = $causerOverride ?? $request->user();
 
-            AuditLog::create([
+        AuditLog::create([
+                'request_id' => $request->attributes->get('audit_request_id'),
                 'causer_type' => $causer ? get_class($causer) : null,
                 'causer_id' => $causer?->id,
                 'causer_label' => $causer?->username
@@ -40,15 +39,10 @@ class AuditLogger
                 'auditable_label' => $auditableLabel,
                 'old_values' => $oldValues,
                 'new_values' => $newValues,
+                'http_method' => $request->method(),
+                'request_path' => '/' . ltrim($request->path(), '/'),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
             ]);
-        } catch (\Exception $e) {
-            // Un échec de journalisation ne doit jamais faire échouer l'action métier
-            Log::warning('AuditLogger: échec de journalisation', [
-                'action' => $action,
-                'auditable_type' => $auditableType,
-                'auditable_id' => $auditableId,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 }

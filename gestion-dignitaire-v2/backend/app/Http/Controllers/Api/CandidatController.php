@@ -10,6 +10,7 @@ use App\Mail\CandidatureValideeAdmin;
 use App\Models\Candidat;
 use App\Models\CandidatMessage;
 use App\Models\Dignitaire;
+use App\Models\DignitaireDocument;
 use App\Models\Diplome;
 use App\Models\LangueParlee;
 use App\Models\Experience;
@@ -169,6 +170,24 @@ class CandidatController extends Controller
                 ]);
             }
 
+            // Lier au dignitaire uniquement les pièces explicitement validées.
+            // Le chemin physique reste identique : aucune duplication du fichier.
+            foreach ($candidat->documents()->where('statut_validation', 'valide')->get() as $document) {
+                DignitaireDocument::firstOrCreate(
+                    ['source_candidat_document_id' => $document->id],
+                    [
+                        'dignitaire_id' => $dignitaire->id,
+                        'type_document' => $document->type_document,
+                        'nom_document' => $document->description ?: $document->nom_fichier,
+                        'description' => $document->description,
+                        'nom_fichier' => $document->nom_fichier,
+                        'chemin_fichier' => $document->chemin_fichier,
+                        'taille_fichier' => $document->taille_fichier,
+                        'extension' => $document->extension,
+                    ]
+                );
+            }
+
             // Marquer le candidat comme validé
             $candidat->valider((int) $request->user()->id, $dignitaire->id);
 
@@ -197,7 +216,7 @@ class CandidatController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Candidature validée avec succès. Le dignitaire a été créé.',
+                'message' => 'Candidature validée avec succès. Le dignitaire et ses documents validés ont été créés.',
                 'candidat' => $candidat->fresh()->load('dignitaire'),
                 'dignitaire' => $dignitaire
             ]);
@@ -283,7 +302,7 @@ class CandidatController extends Controller
 
         try {
             // Supprimer la photo si elle existe
-            if ($candidat->photo) {
+            if ($candidat->photo && !Dignitaire::where('photo', $candidat->photo)->exists()) {
                 \Storage::disk('public')->delete($candidat->photo);
             }
 

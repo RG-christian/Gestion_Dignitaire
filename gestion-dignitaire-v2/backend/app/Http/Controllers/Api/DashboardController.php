@@ -18,6 +18,8 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         try {
+            $fullAccess = Permissions::aAccesComplet($request->user());
+
             return response()->json([
                 'stats' => $this->buildStats(),
                 'chartData' => $this->buildChartData(),
@@ -25,9 +27,21 @@ class DashboardController extends Controller
                     ->orderBy('id', 'desc')
                     ->limit(5)
                     ->get(),
-                'activiteRecente' => Permissions::aAccesComplet($request->user())
+                'activiteRecente' => $fullAccess
                     ? AuditLog::orderByDesc('created_at')->limit(6)->get()
                     : [],
+                'derniersUtilisateurs' => $fullAccess ? DB::table('users')
+                    ->select('id', 'username', 'nom_complet', 'email', 'created_at')
+                    ->orderByDesc('id')->limit(5)->get() : [],
+                'dernieresNominations' => DB::table('nominations as n')
+                    ->join('dignitaire as d', 'd.id', '=', 'n.dignitaire_id')
+                    ->select('n.id', 'n.fonction', 'n.date_debut', 'd.nom', 'd.prenom')
+                    ->whereNull('n.deleted_at')->orderByDesc('n.id')->limit(5)->get(),
+                'dernieresDecorations' => DB::table('decoration_dignitaire as dd')
+                    ->join('decoration as de', 'de.deco_id', '=', 'dd.decoration_id')
+                    ->join('dignitaire as d', 'd.id', '=', 'dd.dignitaire_id')
+                    ->select('dd.id', 'dd.date_attribution', 'de.deco_nom as decoration', 'd.nom', 'd.prenom')
+                    ->whereNull('dd.deleted_at')->orderByDesc('dd.id')->limit(5)->get(),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -98,30 +112,33 @@ class DashboardController extends Controller
     private function buildStats(): array
     {
         return [
-            'totalDignitaires' => DB::table('dignitaire')->count(),
-            'totalPostes' => DB::table('postes')->count(),
+            'totalDignitaires' => DB::table('dignitaire')->whereNull('deleted_at')->count(),
+            'totalPostes' => DB::table('postes')->whereNull('deleted_at')->count(),
             'totalDecorations' => DB::table('decoration')->count(),
             'totalVilles' => DB::table('ville')->count(),
             'totalPays' => DB::table('pays')->count(),
             'totalRegions' => DB::table('region')->count(),
             'totalDiplomes' => DB::table('diplome')->count(),
-            'totalActifs' => DB::table('dignitaire')->where('statut', 'actif')->count(),
-            'totalRetraites' => DB::table('dignitaire')->where('statut', 'retraite')->count(),
-            'totalNonLocalises' => DB::table('dignitaire')->where('statut', 'non_localise')->count(),
+            'totalNominations' => DB::table('nominations')->whereNull('deleted_at')->count(),
+            'totalMilitaires' => DB::table('dignitaire')->whereNull('deleted_at')->where('est_militaire', true)->count(),
+            'totalActifs' => DB::table('dignitaire')->whereNull('deleted_at')->where('statut', 'actif')->count(),
+            'totalRetraites' => DB::table('dignitaire')->whereNull('deleted_at')->where('statut', 'retraite')->count(),
+            'totalNonLocalises' => DB::table('dignitaire')->whereNull('deleted_at')->where('statut', 'non_localise')->count(),
         ];
     }
 
     private function buildChartData(): array
     {
         $parGenre = [
-            'hommes' => DB::table('dignitaire')->where('genre', 'Homme')->count(),
-            'femmes' => DB::table('dignitaire')->where('genre', 'Femme')->count(),
+            'hommes' => DB::table('dignitaire')->whereNull('deleted_at')->where('genre', 'Homme')->count(),
+            'femmes' => DB::table('dignitaire')->whereNull('deleted_at')->where('genre', 'Femme')->count(),
         ];
 
         $parRegion = DB::table('dignitaire')
             ->join('ville', 'dignitaire.lieu_naissance', '=', 'ville.id')
             ->join('region', 'ville.region_id', '=', 'region.id')
             ->select('region.nom as nom', DB::raw('COUNT(*) as count'))
+            ->whereNull('dignitaire.deleted_at')
             ->whereNotNull('ville.region_id')
             ->groupBy('region.id', 'region.nom')
             ->orderBy('count', 'desc')
@@ -130,6 +147,7 @@ class DashboardController extends Controller
 
         $parPoste = DB::table('postes')
             ->select('postes.intitule as nom', DB::raw('COUNT(*) as count'))
+            ->whereNull('postes.deleted_at')
             ->groupBy('postes.intitule')
             ->orderBy('count', 'desc')
             ->limit(5)
@@ -137,6 +155,7 @@ class DashboardController extends Controller
 
         $parStatut = DB::table('dignitaire')
             ->select('statut as nom', DB::raw('COUNT(*) as count'))
+            ->whereNull('deleted_at')
             ->groupBy('statut')
             ->get()
             ->map(function ($row) {
@@ -147,6 +166,7 @@ class DashboardController extends Controller
         $nominationsParMois = DB::table('nominations')
             ->selectRaw("DATE_FORMAT(date_debut, '%Y-%m') as mois, COUNT(*) as count")
             ->where('date_debut', '>=', now()->subMonths(11)->startOfMonth())
+            ->whereNull('deleted_at')
             ->groupBy('mois')
             ->orderBy('mois')
             ->get();
@@ -159,6 +179,26 @@ class DashboardController extends Controller
             ->orderBy('mois')
             ->get();
 
+        $parPaysAffectation = DB::table('affectations as a')
+            ->join('pays as p', 'p.id', '=', 'a.pays_id')
+            ->select('p.nom', DB::raw('COUNT(*) as count'))
+            ->whereNull('a.deleted_at')
+            ->groupBy('p.id', 'p.nom')->orderByDesc('count')->limit(10)->get();
+
+        $parDomaine = DB::table('diplome as d')
+            ->join('domaine as dom', 'dom.id', '=', 'd.domaine_id')
+            ->select('dom.nom', DB::raw('COUNT(*) as count'))
+            ->groupBy('dom.id', 'dom.nom')->orderByDesc('count')->limit(10)->get();
+
+        $parLangue = DB::table('langues as lp')
+            ->join('langue as l', 'l.id', '=', 'lp.langue_id')
+            ->select('l.nom', DB::raw('COUNT(*) as count'))
+            ->groupBy('l.id', 'l.nom')->orderByDesc('count')->limit(10)->get();
+
+        $parNiveauAcademique = DB::table('diplome')
+            ->selectRaw("COALESCE(NULLIF(type, ''), 'Non renseigné') as nom, COUNT(*) as count")
+            ->groupBy('nom')->orderByDesc('count')->limit(10)->get();
+
         return [
             'parGenre' => $parGenre,
             'parRegion' => $parRegion,
@@ -166,6 +206,10 @@ class DashboardController extends Controller
             'parStatut' => $parStatut,
             'nominationsParMois' => $nominationsParMois,
             'candidaturesParMois' => $candidaturesParMois,
+            'parPaysAffectation' => $parPaysAffectation,
+            'parDomaine' => $parDomaine,
+            'parLangue' => $parLangue,
+            'parNiveauAcademique' => $parNiveauAcademique,
         ];
     }
 }

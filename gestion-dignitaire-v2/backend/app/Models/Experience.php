@@ -19,6 +19,7 @@ class Experience extends Model
         'date_debut',
         'date_fin',
         'structure_id',
+        'justificatif_path',
     ];
 
     protected $casts = [

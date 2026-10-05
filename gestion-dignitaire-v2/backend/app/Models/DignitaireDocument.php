@@ -15,6 +15,7 @@ class DignitaireDocument extends Model
 
     protected $fillable = [
         'dignitaire_id',
+        'source_candidat_document_id',
         'type_document',
         'nom_document',
         'numero_document',
@@ -100,6 +101,11 @@ class DignitaireDocument extends Model
         return $this->belongsTo(Dignitaire::class);
     }
 
+    public function sourceCandidatDocument(): BelongsTo
+    {
+        return $this->belongsTo(CandidatDocument::class, 'source_candidat_document_id');
+    }
+
     public function scopeByType($query, string $type)
     {
         return $query->where('type_document', $type);
@@ -110,7 +116,9 @@ class DignitaireDocument extends Model
         parent::boot();
 
         static::deleting(function (DignitaireDocument $document) {
-            if (Storage::disk('public')->exists($document->chemin_fichier)) {
+            $usedByCandidate = CandidatDocument::where('chemin_fichier', $document->chemin_fichier)->exists();
+
+            if (!$usedByCandidate && Storage::disk('public')->exists($document->chemin_fichier)) {
                 Storage::disk('public')->delete($document->chemin_fichier);
             }
         });

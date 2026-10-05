@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Construit les données du rapport de synthèse périodique (mensuel,
- * trimestriel, annuel) : totaux globaux + répartitions + compteurs
+ * trimestriel, semestriel, annuel) : totaux globaux + répartitions + compteurs
  * sur la période concernée.
  */
 class SynthesisReportBuilder
@@ -48,7 +48,12 @@ class SynthesisReportBuilder
                 'nominationsCreees' => DB::table('nominations')->whereBetween('date_debut', [$debut, $fin])->count(),
                 'postesCrees' => DB::table('postes')->whereBetween('date_debut', [$debut, $fin])->count(),
                 'decorationsAttribuees' => DB::table('decoration_dignitaire')->whereBetween('date_attribution', [$debut, $fin])->count(),
-                'diplomesObtenus' => DB::table('diplome')->whereBetween(DB::raw('CAST(annee AS UNSIGNED)'), [$debut->year, $fin->year])->count(),
+                // Le diplôme ne stocke qu'une année. Une attribution mensuelle,
+                // trimestrielle ou semestrielle serait donc artificielle.
+                'diplomesObtenus' => $debut->month === 1 && $debut->day === 1
+                    && $fin->month === 12 && $fin->day === 31
+                    ? DB::table('diplome')->whereBetween(DB::raw('CAST(annee AS UNSIGNED)'), [$debut->year, $fin->year])->count()
+                    : null,
                 'candidaturesValidees' => Candidat::where('statut', 'valide')->whereBetween('date_validation', [$debut, $fin])->count(),
                 'candidaturesRefusees' => Candidat::where('statut', 'refuse')->whereBetween('date_validation', [$debut, $fin])->count(),
             ],

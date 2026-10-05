@@ -25,6 +25,15 @@
         <div class="bg-gradient-to-r from-gabon-green-600 via-gabon-yellow-500 to-gabon-blue-600 rounded-2xl shadow-2xl p-8 mb-8 text-white relative">
           <div class="absolute top-6 right-6 flex gap-3">
             <NuxtLink
+              :to="`/dignitaires/${route.params.id}/chronologie`"
+              class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Chronologie
+            </NuxtLink>
+            <NuxtLink
               :to="`/dignitaires/${route.params.id}/documents`"
               class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition"
             >

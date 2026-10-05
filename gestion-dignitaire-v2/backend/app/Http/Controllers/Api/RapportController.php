@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Archive des rapports périodiques générés automatiquement
- * (mensuel/trimestriel/annuel) par la commande `rapports:generer`.
+ * (mensuel/trimestriel/semestriel/annuel) par la commande `rapports:generer`.
  */
 class RapportController extends Controller
 {

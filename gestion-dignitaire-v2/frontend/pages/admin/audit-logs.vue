@@ -1,12 +1,15 @@
 <template>
   <DashboardLayout>
     <div class="max-w-7xl mx-auto p-6">
-      <header data-tour="page-header" class="mb-6">
+      <header data-tour="page-header" class="mb-6 flex items-start justify-between gap-4">
+        <div>
         <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <i class="fas fa-history text-blue-500"></i>
           Journal des actions
         </h1>
         <p class="text-gray-600 text-sm mt-1">Historique de toutes les créations, modifications et suppressions effectuées sur la plateforme</p>
+        </div>
+        <NuxtLink to="/admin/archives" class="rounded-lg bg-gray-800 px-4 py-2 font-semibold text-white hover:bg-gray-900">Voir les archives</NuxtLink>
       </header>
 
       <!-- Filtres -->
@@ -26,6 +29,8 @@
               <option value="created">Créé</option>
               <option value="updated">Modifié</option>
               <option value="deleted">Supprimé</option>
+              <option value="archived">Archivé</option>
+              <option value="restored">Restauré</option>
               <option value="validated">Validé</option>
               <option value="refused">Refusé</option>
             </select>
@@ -88,6 +93,13 @@
                       <pre class="bg-white border border-gray-200 rounded p-3 overflow-x-auto">{{ formatValues(log.new_values) }}</pre>
                     </div>
                   </div>
+                  <div class="mt-3 rounded border border-gray-200 bg-white p-3 text-xs text-gray-600">
+                    <span class="font-bold">Contexte :</span>
+                    {{ log.http_method || '—' }} {{ log.request_path || '—' }}
+                    <span v-if="log.response_status"> · HTTP {{ log.response_status }}</span>
+                    <span v-if="log.ip_address"> · IP {{ log.ip_address }}</span>
+                    <span v-if="log.request_id" class="break-all"> · Requête {{ log.request_id }}</span>
+                  </div>
                 </td>
               </tr>
             </template>
@@ -129,7 +141,7 @@ const lastPage = ref(1)
 const total = ref(0)
 const openDetail = ref<number | null>(null)
 
-const entityTypes = ['Dignitaire', 'Nomination', 'Poste', 'Decoration', 'Diplome', 'LangueParlee', 'Experience', 'Enfant', 'Conjoint', 'Entite', 'User', 'Candidat', 'Session']
+const entityTypes = ref<string[]>([])
 
 const filters = reactive({
   auditable_type: '',
@@ -142,10 +154,14 @@ const actionLabel = (action: string) => {
     created: 'Créé',
     updated: 'Modifié',
     deleted: 'Supprimé',
+    archived: 'Archivé',
+    restored: 'Restauré',
+    cloturee: 'Clôturé',
     validated: 'Validé',
     refused: 'Refusé',
     connexion: 'Connexion',
-    connexion_forcee: 'Connexion (session précédente déconnectée)'
+    connexion_forcee: 'Connexion (session précédente déconnectée)',
+    deconnexion: 'Déconnexion'
   }
   return labels[action] || action
 }
@@ -155,10 +171,14 @@ const actionBadgeClass = (action: string) => {
     created: 'bg-green-100 text-green-700',
     updated: 'bg-blue-100 text-blue-700',
     deleted: 'bg-red-100 text-red-700',
+    archived: 'bg-orange-100 text-orange-700',
+    restored: 'bg-emerald-100 text-emerald-700',
+    cloturee: 'bg-purple-100 text-purple-700',
     validated: 'bg-green-100 text-green-700',
     refused: 'bg-yellow-100 text-yellow-700',
     connexion: 'bg-blue-100 text-blue-700',
-    connexion_forcee: 'bg-orange-100 text-orange-700'
+    connexion_forcee: 'bg-orange-100 text-orange-700',
+    deconnexion: 'bg-gray-200 text-gray-700'
   }
   return classes[action] || 'bg-gray-100 text-gray-700'
 }
@@ -203,6 +223,7 @@ const loadLogs = async (page: number) => {
     })
 
     logs.value = response.logs.data
+    entityTypes.value = response.entity_types || []
     currentPage.value = response.logs.current_page
     lastPage.value = response.logs.last_page
     total.value = response.logs.total

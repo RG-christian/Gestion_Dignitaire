@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Séjour d'un dignitaire dans un pays (ambassade, mission, consulat...),
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Affectation extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'dignitaire_id',
         'poste_id',

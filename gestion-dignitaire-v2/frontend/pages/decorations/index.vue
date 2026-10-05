@@ -28,6 +28,9 @@
               @update:modelValue="debouncedLoadDecorations"
             />
           </div>
+          <NuxtLink to="/decorations/attributions" class="bg-gabon-blue-600 hover:bg-gabon-blue-700 text-white font-semibold px-4 py-3 rounded-lg whitespace-nowrap">
+            Gérer les attributions
+          </NuxtLink>
           <button
             @click="exportListe('pdf')"
             class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"
@@ -189,10 +192,7 @@
               <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
               <textarea v-model="form.description" rows="2" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition" placeholder="Description de la décoration..."></textarea>
             </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Fichier attestation</label>
-              <input v-model="form.fichier_attestation" type="text" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition" placeholder="Chemin du fichier">
-            </div>
+            <p class="rounded-lg bg-blue-50 p-3 text-sm text-blue-800">Les attestations PDF sont gérées dans les attributions, car elles appartiennent au dignitaire décoré et non au référentiel.</p>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t">
             <button type="button" @click="closeModal" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-lg transition">Annuler</button>
@@ -260,8 +260,8 @@
               <p class="text-gray-900">{{ selectedDetail.description || 'N/A' }}</p>
             </div>
             <div class="bg-gray-50 rounded-lg p-4">
-              <p class="text-sm font-semibold text-gray-500 mb-1">Fichier attestation</p>
-              <p class="text-gray-900">{{ selectedDetail.fichier_attestation || 'N/A' }}</p>
+              <p class="text-sm font-semibold text-gray-500 mb-1">Ancienne référence d'attestation</p>
+              <p class="text-gray-900">{{ selectedDetail.fichier_attestation || 'Aucune' }}</p>
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
@@ -317,8 +317,7 @@ const form = reactive({
   date_obtention: '',
   autorite: '',
   motif: '',
-  description: '',
-  fichier_attestation: ''
+  description: ''
 })
 
 // Pagination
@@ -369,7 +368,6 @@ function openModal(decoration = null) {
     form.autorite = decoration.autorite || ''
     form.motif = decoration.motif || ''
     form.description = decoration.description || ''
-    form.fichier_attestation = decoration.fichier_attestation || ''
   } else {
     form.nom = ''
     form.type = ''
@@ -379,7 +377,6 @@ function openModal(decoration = null) {
     form.autorite = ''
     form.motif = ''
     form.description = ''
-    form.fichier_attestation = ''
   }
   showModal.value = true
 }

@@ -17,6 +17,8 @@
           <p class="text-gray-600 mt-1">{{ diplomes.length }} diplôme(s) enregistré(s)</p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <NuxtLink to="/domaines" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap">Domaines</NuxtLink>
+          <NuxtLink to="/etablissements" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap">Établissements</NuxtLink>
           <button
             @click="exportListe('pdf')"
             class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-3 rounded-lg whitespace-nowrap"

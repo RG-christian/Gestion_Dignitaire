@@ -300,7 +300,7 @@
                 v-if="permissions.peutSupprimer()"
                 @click="deleteDignitaire(d.id)"
                 class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg"
-                title="Supprimer"
+                title="Archiver"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -454,7 +454,7 @@
                       v-if="permissions.peutSupprimer()"
                       @click="deleteDignitaire(d.id)"
                       class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow transition-all"
-                      title="Supprimer"
+                      title="Archiver"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -704,6 +704,21 @@
               </select>
             </div>
 
+            <div>
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <input v-model="form.est_militaire" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-green-600">
+                Dignitaire militaire
+              </label>
+              <input
+                v-if="form.est_militaire"
+                v-model="form.grade_militaire"
+                required
+                maxlength="100"
+                placeholder="Grade militaire"
+                class="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-transparent focus:ring-2 focus:ring-green-500"
+              >
+            </div>
+
             <!-- Photo -->
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -859,7 +874,9 @@ const form = reactive({
   genre: '',
   etat_civil: '',
   nationalite_id: '',
-  statut: 'actif'
+  statut: 'actif',
+  est_militaire: false,
+  grade_militaire: ''
 })
 
 async function exportListe(format: 'pdf' | 'excel') {
@@ -1005,6 +1022,8 @@ function openModal(dignitaire: any = null) {
     form.etat_civil = dignitaire.etat_civil
     form.nationalite_id = dignitaire.nationalite_id || ''
     form.statut = dignitaire.statut || 'actif'
+    form.est_militaire = Boolean(dignitaire.est_militaire)
+    form.grade_militaire = dignitaire.grade_militaire || ''
   } else {
     // Reset form
     form.nip = ''
@@ -1018,6 +1037,8 @@ function openModal(dignitaire: any = null) {
     form.etat_civil = ''
     form.nationalite_id = ''
     form.statut = 'actif'
+    form.est_militaire = false
+    form.grade_militaire = ''
   }
   showModal.value = true
 }
@@ -1161,12 +1182,12 @@ async function deleteDignitaire(id: number) {
   const { $swal } = useNuxtApp()
   const result = await $swal.fire({
     title: 'Êtes-vous sûr ?',
-    text: 'Cette action supprimera définitivement ce dignitaire',
+    text: 'Ce dignitaire sera archivé et pourra être restauré depuis l\'espace d\'administration',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#16a34a',
     cancelButtonColor: '#dc2626',
-    confirmButtonText: 'Oui, supprimer',
+    confirmButtonText: 'Oui, archiver',
     cancelButtonText: 'Annuler'
   })
   
@@ -1181,8 +1202,8 @@ async function deleteDignitaire(id: number) {
       
       $swal.fire({
         icon: 'success',
-        title: 'Supprimé',
-        text: 'Le dignitaire a été supprimé avec succès',
+        title: 'Archivé',
+        text: 'Le dignitaire a été archivé avec succès',
         timer: 2000,
         showConfirmButton: false
       })

@@ -10,6 +10,7 @@ use App\Support\Exports\ListPdfExporter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
 
 class DecorationController extends Controller
 {
@@ -86,7 +87,6 @@ class DecorationController extends Controller
             'autorite' => 'nullable|string|max:50',
             'motif' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:255',
-            'fichier_attestation' => 'nullable|string|max:100',
         ]);
 
         // Mapper les noms de colonnes avec préfixe
@@ -99,7 +99,7 @@ class DecorationController extends Controller
             'deco_autorite' => $validated['autorite'] ?? null,
             'deco_motif' => $validated['motif'] ?? null,
             'deco_description' => $validated['description'] ?? null,
-            'deco_fichierAttestation' => $validated['fichier_attestation'] ?? null,
+            'deco_fichierAttestation' => null,
         ];
 
         $decoration = Decoration::create($data);
@@ -122,7 +122,6 @@ class DecorationController extends Controller
             'autorite' => 'nullable|string|max:50',
             'motif' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:255',
-            'fichier_attestation' => 'nullable|string|max:100',
         ]);
 
         // Mapper les noms de colonnes avec préfixe
@@ -135,7 +134,9 @@ class DecorationController extends Controller
             'deco_autorite' => $validated['autorite'] ?? null,
             'deco_motif' => $validated['motif'] ?? null,
             'deco_description' => $validated['description'] ?? null,
-            'deco_fichierAttestation' => $validated['fichier_attestation'] ?? null,
+            // La référence historique reste intacte. Les nouveaux fichiers
+            // appartiennent désormais à decoration_dignitaire.
+            'deco_fichierAttestation' => $decoration->deco_fichierAttestation,
         ];
 
         $old = $decoration->getOriginal();
@@ -149,6 +150,11 @@ class DecorationController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $decoration = Decoration::findOrFail($id);
+        if (DB::table('decoration_dignitaire')->where('decoration_id', $id)->exists()) {
+            return response()->json([
+                'message' => 'Cette décoration possède des attributions. Supprimez ou archivez d\'abord les attributions.',
+            ], 409);
+        }
         $old = $decoration->getOriginal();
         $label = $decoration->deco_nom;
         $decoration->delete();

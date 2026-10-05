@@ -73,6 +73,8 @@
                 <select v-model="pf.type_document" class="border rounded-lg px-3 py-2 text-sm">
                   <option value="">-- Type --</option>
                   <option value="diplome">Diplôme</option>
+                  <option value="cv">Curriculum vitae</option>
+                  <option value="lettre">Lettre de motivation</option>
                   <option value="passeport">Passeport</option>
                   <option value="casier">Casier judiciaire</option>
                   <option value="medical">Certificat médical</option>

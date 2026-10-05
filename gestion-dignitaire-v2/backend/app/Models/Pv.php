@@ -10,16 +10,22 @@ class Pv extends Model
 {
     use HasFactory;
 
-    protected $table = 'pvs';
+    protected $table = 'pv';
+
+    public $timestamps = false;
 
     protected $fillable = [
         'numero',
         'date',
         'description',
+        'fichier_path',
+        'statut',
+        'archive_le',
     ];
 
     protected $casts = [
         'date' => 'date',
+        'archive_le' => 'datetime',
     ];
 
     public function nominations(): HasMany

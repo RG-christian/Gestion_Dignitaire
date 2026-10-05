@@ -479,11 +479,9 @@
               <select v-model="formLP.niveau" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-gabon-green-500 focus:border-transparent transition">
                 <option value="">-- Sélectionner un niveau --</option>
                 <option value="Débutant">Débutant</option>
-                <option value="Intermédiaire">Intermédiaire</option>
-                <option value="Avancé">Avancé</option>
+                <option value="Moyen">Moyen</option>
                 <option value="Courant">Courant</option>
                 <option value="Bilingue">Bilingue</option>
-                <option value="Langue maternelle">Langue maternelle</option>
               </select>
             </div>
           </div>

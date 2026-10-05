@@ -58,7 +58,7 @@
                 <tr><td>Nominations créées</td><td>{{ $data['periode']['nominationsCreees'] }}</td></tr>
                 <tr><td>Postes créés</td><td>{{ $data['periode']['postesCrees'] }}</td></tr>
                 <tr><td>Décorations attribuées</td><td>{{ $data['periode']['decorationsAttribuees'] }}</td></tr>
-                <tr><td>Diplômes obtenus</td><td>{{ $data['periode']['diplomesObtenus'] }}</td></tr>
+                <tr><td>Diplômes obtenus</td><td>{{ $data['periode']['diplomesObtenus'] ?? 'Non mesurable (année seule)' }}</td></tr>
                 <tr><td>Candidatures validées</td><td>{{ $data['periode']['candidaturesValidees'] }}</td></tr>
                 <tr><td>Candidatures refusées</td><td>{{ $data['periode']['candidaturesRefusees'] }}</td></tr>
             </tbody>

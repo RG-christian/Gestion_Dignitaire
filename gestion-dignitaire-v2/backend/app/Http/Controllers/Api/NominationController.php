@@ -28,11 +28,14 @@ class NominationController extends Controller
                 'n.*',
                 DB::raw("CONCAT(d.prenom, ' ', d.nom) as dignitaire_nom"),
                 'e.nom as entite_nom',
-                'p.intitule as poste_nom'
+                'p.intitule as poste_nom',
+                'pv.numero as pv_numero'
             ])
             ->leftJoin('dignitaire as d', 'n.dignitaire_id', '=', 'd.id')
             ->leftJoin('entite as e', 'n.entite_id', '=', 'e.id')
-            ->leftJoin('postes as p', 'n.poste_id', '=', 'p.id');
+            ->leftJoin('postes as p', 'n.poste_id', '=', 'p.id')
+            ->leftJoin('pv', 'n.pv_id', '=', 'pv.id');
+        $query->whereNull('n.deleted_at');
 
         if ($request->has('dignitaire_id') && $request->dignitaire_id) {
             $query->where('n.dignitaire_id', $request->dignitaire_id);
@@ -48,6 +51,7 @@ class NominationController extends Controller
                 $q->where('n.fonction', 'like', "%{$search}%")
                   ->orWhere('e.nom', 'like', "%{$search}%")
                   ->orWhere('p.intitule', 'like', "%{$search}%")
+                  ->orWhere('pv.numero', 'like', "%{$search}%")
                   ->orWhere(DB::raw("CONCAT(d.prenom, ' ', d.nom)"), 'like', "%{$search}%");
             });
         }
@@ -107,11 +111,14 @@ class NominationController extends Controller
                 'n.*',
                 DB::raw("CONCAT(d.prenom, ' ', d.nom) as dignitaire_nom"),
                 'e.nom as entite_nom',
-                'p.intitule as poste_nom'
+                'p.intitule as poste_nom',
+                'pv.numero as pv_numero'
             ])
             ->leftJoin('dignitaire as d', 'n.dignitaire_id', '=', 'd.id')
             ->leftJoin('entite as e', 'n.entite_id', '=', 'e.id')
             ->leftJoin('postes as p', 'n.poste_id', '=', 'p.id')
+            ->leftJoin('pv', 'n.pv_id', '=', 'pv.id')
+            ->whereNull('n.deleted_at')
             ->where('n.id', $id)
             ->first();
 
@@ -128,6 +135,7 @@ class NominationController extends Controller
             'dignitaire_id' => 'required|exists:dignitaire,id',
             'entite_id' => 'nullable|exists:entite,id',
             'poste_id' => 'nullable|exists:postes,id',
+            'pv_id' => 'nullable|exists:pv,id',
             'fonction' => 'nullable|string|max:255',
             'date_debut' => 'nullable|date',
             'date_fin' => 'nullable|date|after:date_debut',
@@ -208,6 +216,7 @@ class NominationController extends Controller
             'dignitaire_id' => 'required|exists:dignitaire,id',
             'entite_id' => 'nullable|exists:entite,id',
             'poste_id' => 'nullable|exists:postes,id',
+            'pv_id' => 'nullable|exists:pv,id',
             'fonction' => 'nullable|string|max:255',
             'date_debut' => 'nullable|date',
             'date_fin' => 'nullable|date|after:date_debut',
@@ -238,14 +247,19 @@ class NominationController extends Controller
     {
         $old = (array) DB::table('nominations')->where('id', $id)->first();
 
-        if (!empty($old['document_nomination_path']) && Storage::disk('public')->exists($old['document_nomination_path'])) {
-            Storage::disk('public')->delete($old['document_nomination_path']);
-        }
+        DB::table('nominations')->where('id', $id)->update(['deleted_at' => now()]);
 
-        DB::table('nominations')->where('id', $id)->delete();
+        AuditLogger::log($request, 'archived', 'Nomination', $id, $old['fonction'] ?? null, $old, ['deleted_at' => now()]);
 
-        AuditLogger::log($request, 'deleted', 'Nomination', $id, $old['fonction'] ?? null, $old, null);
+        return response()->json(['message' => 'Nomination archivée avec succès']);
+    }
 
-        return response()->json(['message' => 'Nomination supprimée avec succès']);
+    public function restaurer(Request $request, int $id): JsonResponse
+    {
+        $old = (array) DB::table('nominations')->where('id', $id)->first();
+        if (!$old) return response()->json(['message' => 'Nomination non trouvée'], 404);
+        DB::table('nominations')->where('id', $id)->update(['deleted_at' => null]);
+        AuditLogger::log($request, 'restored', 'Nomination', $id, $old['fonction'] ?? null, $old, ['deleted_at' => null]);
+        return response()->json(['message' => 'Nomination restaurée avec succès']);
     }
 }

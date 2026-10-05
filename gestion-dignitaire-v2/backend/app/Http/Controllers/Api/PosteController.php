@@ -46,7 +46,7 @@ class PosteController extends Controller
             'updated_at' => now(),
         ];
 
-        $existante = DB::table('affectations')->where('poste_id', $posteId)->first();
+        $existante = DB::table('affectations')->where('poste_id', $posteId)->whereNull('deleted_at')->first();
 
         if ($existante) {
             DB::table('affectations')->where('id', $existante->id)->update($donnees);
@@ -70,7 +70,7 @@ class PosteController extends Controller
 
     private function supprimerAffectationLiee(int $posteId): void
     {
-        DB::table('affectations')->where('poste_id', $posteId)->delete();
+        DB::table('affectations')->where('poste_id', $posteId)->update(['deleted_at' => now()]);
     }
 
     private function baseQuery(Request $request)
@@ -85,6 +85,7 @@ class PosteController extends Controller
             ->leftJoin('dignitaire as d', 'p.dignitaire_id', '=', 'd.id')
             ->leftJoin('entite as e', 'p.entite_id', '=', 'e.id')
             ->leftJoin('ville as v', 'p.ville_id', '=', 'v.id');
+        $query->whereNull('p.deleted_at');
 
         if ($request->has('dignitaire_id') && $request->dignitaire_id) {
             $query->where('p.dignitaire_id', $request->dignitaire_id);
@@ -279,12 +280,22 @@ class PosteController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $old = (array) DB::table('postes')->where('id', $id)->first();
-        DB::table('postes')->where('id', $id)->delete();
+        DB::table('postes')->where('id', $id)->update(['deleted_at' => now()]);
 
         $this->supprimerAffectationLiee($id);
 
-        AuditLogger::log($request, 'deleted', 'Poste', $id, $old['intitule'] ?? null, $old, null);
+        AuditLogger::log($request, 'archived', 'Poste', $id, $old['intitule'] ?? null, $old, ['deleted_at' => now()]);
 
-        return response()->json(['message' => 'Poste supprimé avec succès']);
+        return response()->json(['message' => 'Poste archivé avec succès']);
+    }
+
+    public function restaurer(Request $request, int $id): JsonResponse
+    {
+        $old = (array) DB::table('postes')->where('id', $id)->first();
+        if (!$old) return response()->json(['message' => 'Poste non trouvé'], 404);
+        DB::table('postes')->where('id', $id)->update(['deleted_at' => null]);
+        DB::table('affectations')->where('poste_id', $id)->update(['deleted_at' => null]);
+        AuditLogger::log($request, 'restored', 'Poste', $id, $old['intitule'] ?? null, $old, ['deleted_at' => null]);
+        return response()->json(['message' => 'Poste restauré avec succès']);
     }
 }

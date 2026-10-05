@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('rapports:generer --periode=mensuel')->monthlyOn(1, '02:00');
         $schedule->command('rapports:generer --periode=trimestriel')->quarterlyOn(1, '02:15');
+        $schedule->command('rapports:generer --periode=semestriel')->cron('20 2 1 1,7 *');
         $schedule->command('rapports:generer --periode=annuel')->yearlyOn(1, 1, '02:30');
     }
 

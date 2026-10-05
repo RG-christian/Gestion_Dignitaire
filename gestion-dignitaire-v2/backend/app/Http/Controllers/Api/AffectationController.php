@@ -28,6 +28,7 @@ class AffectationController extends Controller
             ->leftJoin('dignitaire as d', 'a.dignitaire_id', '=', 'd.id')
             ->leftJoin('pays as p', 'a.pays_id', '=', 'p.id')
             ->leftJoin('ville as v', 'a.ville_id', '=', 'v.id');
+        $query->whereNull('a.deleted_at');
 
         if ($request->filled('dignitaire_id')) {
             $query->where('a.dignitaire_id', $request->dignitaire_id);
@@ -55,6 +56,7 @@ class AffectationController extends Controller
             ->leftJoin('dignitaire as d', 'a.dignitaire_id', '=', 'd.id')
             ->leftJoin('pays as p', 'a.pays_id', '=', 'p.id')
             ->leftJoin('ville as v', 'a.ville_id', '=', 'v.id')
+            ->whereNull('a.deleted_at')
             ->where('a.id', $id)
             ->first();
 
@@ -156,10 +158,19 @@ class AffectationController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $old = (array) DB::table('affectations')->where('id', $id)->first();
-        DB::table('affectations')->where('id', $id)->delete();
+        DB::table('affectations')->where('id', $id)->update(['deleted_at' => now(), 'updated_at' => now()]);
 
-        AuditLogger::log($request, 'deleted', 'Affectation', $id, null, $old, null);
+        AuditLogger::log($request, 'archived', 'Affectation', $id, null, $old, ['deleted_at' => now()]);
 
-        return response()->json(['message' => 'Affectation supprimée avec succès']);
+        return response()->json(['message' => 'Affectation archivée avec succès']);
+    }
+
+    public function restaurer(Request $request, int $id): JsonResponse
+    {
+        $old = (array) DB::table('affectations')->where('id', $id)->first();
+        if (!$old) return response()->json(['message' => 'Affectation non trouvée'], 404);
+        DB::table('affectations')->where('id', $id)->update(['deleted_at' => null, 'updated_at' => now()]);
+        AuditLogger::log($request, 'restored', 'Affectation', $id, null, $old, ['deleted_at' => null]);
+        return response()->json(['message' => 'Affectation restaurée avec succès']);
     }
 }

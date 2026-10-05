@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class DignitaireController extends Controller
@@ -226,6 +227,97 @@ class DignitaireController extends Controller
     }
 
     /**
+     * Chronologies familiale, académique et professionnelle d'un dignitaire.
+     */
+    public function chronologie(int $id): JsonResponse
+    {
+        $dignitaire = Dignitaire::findOrFail($id);
+
+        $conjoints = $dignitaire->conjoints()
+            ->with(['lieuNaissance:id,nom', 'nationalite:id,nom'])
+            ->orderByDesc('date_mariage')
+            ->get();
+        $enfants = $dignitaire->enfants()
+            ->with('lieuNaissance:id,nom')
+            ->orderByDesc('date_naissance')
+            ->get();
+
+        $familiale = collect();
+        foreach ($conjoints as $conjoint) {
+            if ($conjoint->date_mariage) {
+                $familiale->push([
+                    'id' => "union-{$conjoint->id}",
+                    'type' => 'union',
+                    'date' => $conjoint->date_mariage->toDateString(),
+                    'titre' => "Union avec {$conjoint->nom_complet}",
+                    'description' => $conjoint->lieu_mariage,
+                    'statut' => $conjoint->statut,
+                ]);
+            }
+            if ($conjoint->date_fin_union) {
+                $familiale->push([
+                    'id' => "fin-union-{$conjoint->id}",
+                    'type' => 'fin_union',
+                    'date' => $conjoint->date_fin_union->toDateString(),
+                    'titre' => "Fin de l'union avec {$conjoint->nom_complet}",
+                    'description' => $conjoint->status_badge['text'],
+                    'statut' => $conjoint->statut,
+                ]);
+            }
+        }
+        foreach ($enfants as $enfant) {
+            $familiale->push([
+                'id' => "naissance-{$enfant->id}",
+                'type' => 'naissance',
+                'date' => optional($enfant->date_naissance)->toDateString(),
+                'titre' => "Naissance de {$enfant->nom_complet}",
+                'description' => optional($enfant->lieuNaissance)->nom,
+                'statut' => null,
+            ]);
+        }
+
+        $diplomes = $dignitaire->diplomes()
+            ->with(['etablissement:id,nom', 'domaine:id,nom'])
+            ->orderByRaw('annee IS NULL, annee DESC')
+            ->get()
+            ->map(fn ($diplome) => [
+                'id' => $diplome->id,
+                'annee' => $diplome->annee,
+                'intitule' => $diplome->intitule,
+                'niveau' => $diplome->type ?: 'Non renseigné',
+                'etablissement' => optional($diplome->etablissement)->nom,
+                'domaine' => optional($diplome->domaine)->nom,
+            ]);
+
+        $experiences = $dignitaire->experiences()
+            ->with('structure:id,nom')
+            ->orderByRaw('date_debut IS NULL, date_debut DESC')
+            ->get()
+            ->map(fn ($experience) => [
+                'id' => $experience->id,
+                'date_debut' => optional($experience->date_debut)->toDateString(),
+                'date_fin' => optional($experience->date_fin)->toDateString(),
+                'en_cours' => $experience->date_fin === null,
+                'intitule' => $experience->intitule,
+                'structure' => optional($experience->structure)->nom,
+            ]);
+
+        return response()->json([
+            'dignitaire' => [
+                'id' => $dignitaire->id,
+                'nom_complet' => trim("{$dignitaire->prenom} {$dignitaire->nom}"),
+                'matricule' => $dignitaire->matricule,
+            ],
+            'familiale' => $familiale->sortByDesc('date')->values(),
+            'academique' => [
+                'elements' => $diplomes,
+                'groupes' => $diplomes->groupBy('niveau')->map->values(),
+            ],
+            'professionnelle' => $experiences,
+        ]);
+    }
+
+    /**
      * Créer un dignitaire
      */
     public function store(Request $request): JsonResponse
@@ -246,6 +338,8 @@ class DignitaireController extends Controller
             'adresse' => 'nullable|string|max:255',
             'telephone' => 'nullable|string|max:20',
             'statut' => 'nullable|in:actif,retraite,non_localise',
+            'est_militaire' => 'nullable|boolean',
+            'grade_militaire' => ['nullable', 'string', 'max:100', Rule::requiredIf($request->boolean('est_militaire'))],
         ]);
 
         $dignitaire = Dignitaire::create($validated);
@@ -278,6 +372,8 @@ class DignitaireController extends Controller
             'adresse' => 'nullable|string|max:255',
             'telephone' => 'nullable|string|max:20',
             'statut' => 'nullable|in:actif,retraite,non_localise',
+            'est_militaire' => 'nullable|boolean',
+            'grade_militaire' => ['nullable', 'string', 'max:100', Rule::requiredIf($request->boolean('est_militaire'))],
         ]);
 
         $old = $dignitaire->getOriginal();
@@ -329,9 +425,18 @@ class DignitaireController extends Controller
         $label = "{$dignitaire->prenom} {$dignitaire->nom}";
         $dignitaire->delete();
 
-        AuditLogger::log($request, 'deleted', 'Dignitaire', $id, $label, $old, null);
+        AuditLogger::log($request, 'archived', 'Dignitaire', $id, $label, $old, ['deleted_at' => $dignitaire->deleted_at]);
 
-        return response()->json(['message' => 'Dignitaire supprimé avec succès']);
+        return response()->json(['message' => 'Dignitaire archivé avec succès']);
+    }
+
+    public function restaurer(Request $request, int $id): JsonResponse
+    {
+        $dignitaire = Dignitaire::onlyTrashed()->findOrFail($id);
+        $old = $dignitaire->getOriginal();
+        $dignitaire->restore();
+        AuditLogger::log($request, 'restored', 'Dignitaire', $id, "{$dignitaire->prenom} {$dignitaire->nom}", $old, ['deleted_at' => null]);
+        return response()->json(['message' => 'Dignitaire restauré avec succès']);
     }
 
     /**

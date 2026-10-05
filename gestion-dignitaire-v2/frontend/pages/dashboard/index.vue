@@ -57,7 +57,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                 </svg>
-                +12% ce mois
+                Données enregistrées
               </span>
               <NuxtLink to="/dignitaires" class="text-blue-600 hover:text-blue-700 text-sm font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                 Voir
@@ -89,7 +89,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                 </svg>
-                +8% ce mois
+                Données enregistrées
               </span>
               <NuxtLink to="/postes" class="text-green-600 hover:text-green-700 text-sm font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                 Voir
@@ -121,7 +121,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                 </svg>
-                +5% ce mois
+                Données enregistrées
               </span>
               <NuxtLink to="/decorations" class="text-yellow-600 hover:text-yellow-700 text-sm font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                 Voir
@@ -182,6 +182,10 @@
               <option value="region">Par Région</option>
               <option value="poste">Par Poste</option>
               <option value="statut">Par Statut</option>
+              <option value="pays_affectation">Par pays d'affectation</option>
+              <option value="domaine">Par domaine</option>
+              <option value="langue">Par langue</option>
+              <option value="niveau_academique">Par niveau académique</option>
               <option value="nominations_mois">Nominations par mois</option>
               <option value="candidatures_mois">Candidatures traitées par mois</option>
             </select>
@@ -255,6 +259,36 @@
                 </div>
               </div>
             </div>
+            <div class="flex items-center justify-between rounded-lg bg-purple-50 p-4">
+              <div><p class="text-sm text-gray-600">Nominations</p><p class="text-2xl font-bold text-purple-600">{{ stats?.totalNominations || 0 }}</p></div>
+            </div>
+            <div class="flex items-center justify-between rounded-lg bg-red-50 p-4">
+              <div><p class="text-sm text-gray-600">Dignitaires militaires</p><p class="text-2xl font-bold text-red-600">{{ stats?.totalMilitaires || 0 }}</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div v-if="permissions.aAccesComplet.value" class="rounded-xl bg-white p-5 shadow-lg">
+          <h3 class="mb-3 font-bold text-gray-800">Derniers utilisateurs</h3>
+          <p v-if="!derniersUtilisateurs.length" class="text-sm text-gray-400">Aucune donnée</p>
+          <div v-for="item in derniersUtilisateurs" :key="item.id" class="border-b py-2 last:border-0">
+            <p class="text-sm font-semibold">{{ item.nom_complet || item.username }}</p><p class="text-xs text-gray-500">{{ item.email }}</p>
+          </div>
+        </div>
+        <div class="rounded-xl bg-white p-5 shadow-lg">
+          <h3 class="mb-3 font-bold text-gray-800">Dernières nominations</h3>
+          <p v-if="!dernieresNominations.length" class="text-sm text-gray-400">Aucune donnée</p>
+          <div v-for="item in dernieresNominations" :key="item.id" class="border-b py-2 last:border-0">
+            <p class="text-sm font-semibold">{{ item.fonction }}</p><p class="text-xs text-gray-500">{{ item.prenom }} {{ item.nom }} · {{ item.date_debut || 'Date non renseignée' }}</p>
+          </div>
+        </div>
+        <div class="rounded-xl bg-white p-5 shadow-lg">
+          <h3 class="mb-3 font-bold text-gray-800">Dernières décorations</h3>
+          <p v-if="!dernieresDecorations.length" class="text-sm text-gray-400">Aucune donnée</p>
+          <div v-for="item in dernieresDecorations" :key="item.id" class="border-b py-2 last:border-0">
+            <p class="text-sm font-semibold">{{ item.decoration }}</p><p class="text-xs text-gray-500">{{ item.prenom }} {{ item.nom }} · {{ item.date_attribution }}</p>
           </div>
         </div>
       </div>
@@ -416,6 +450,8 @@ const EMPTY_STATS = {
   totalPays: 0,
   totalRegions: 0,
   totalDiplomes: 0,
+  totalNominations: 0,
+  totalMilitaires: 0,
   totalActifs: 0,
   totalRetraites: 0,
   totalNonLocalises: 0
@@ -427,7 +463,11 @@ const EMPTY_CHART_DATA = {
   parPoste: [],
   parStatut: [],
   nominationsParMois: [],
-  candidaturesParMois: []
+  candidaturesParMois: [],
+  parPaysAffectation: [],
+  parDomaine: [],
+  parLangue: [],
+  parNiveauAcademique: []
 }
 
 // Ces refs sont initialisées immédiatement : la structure du dashboard peut
@@ -436,6 +476,9 @@ const stats = ref({ ...EMPTY_STATS })
 const chartData = ref({ ...EMPTY_CHART_DATA })
 const derniersDignitaires = ref<any[]>([])
 const activiteRecente = ref<any[]>([])
+const derniersUtilisateurs = ref<any[]>([])
+const dernieresNominations = ref<any[]>([])
+const dernieresDecorations = ref<any[]>([])
 const dashboardLoading = ref(true)
 const dashboardError = ref('')
 
@@ -452,6 +495,9 @@ async function loadDashboard() {
     chartData.value = { ...EMPTY_CHART_DATA, ...(response.chartData || {}) }
     derniersDignitaires.value = response.derniersDignitaires || []
     activiteRecente.value = response.activiteRecente || []
+    derniersUtilisateurs.value = response.derniersUtilisateurs || []
+    dernieresNominations.value = response.dernieresNominations || []
+    dernieresDecorations.value = response.dernieresDecorations || []
   } catch (error) {
     console.error('Erreur chargement dashboard:', error)
     dashboardError.value = 'Les données du tableau de bord n’ont pas pu être chargées.'
@@ -519,6 +565,18 @@ function getChartData() {
   } else if (chartType.value === 'statut') {
     const parStatut = chartData.value?.parStatut || []
     return { labels: parStatut.map((s: any) => s.nom), data: parStatut.map((s: any) => s.count) }
+  } else if (chartType.value === 'pays_affectation') {
+    const rows = chartData.value?.parPaysAffectation || []
+    return { labels: rows.map((r: any) => r.nom), data: rows.map((r: any) => r.count) }
+  } else if (chartType.value === 'domaine') {
+    const rows = chartData.value?.parDomaine || []
+    return { labels: rows.map((r: any) => r.nom), data: rows.map((r: any) => r.count) }
+  } else if (chartType.value === 'langue') {
+    const rows = chartData.value?.parLangue || []
+    return { labels: rows.map((r: any) => r.nom), data: rows.map((r: any) => r.count) }
+  } else if (chartType.value === 'niveau_academique') {
+    const rows = chartData.value?.parNiveauAcademique || []
+    return { labels: rows.map((r: any) => r.nom), data: rows.map((r: any) => r.count) }
   } else if (chartType.value === 'nominations_mois') {
     const rows = chartData.value?.nominationsParMois || []
     return { labels: rows.map((r: any) => r.mois), data: rows.map((r: any) => r.count) }

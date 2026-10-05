@@ -1,0 +1,2 @@
+<template><DashboardLayout><AcademicReferenceManager kind="etablissements" /></DashboardLayout></template>
+<script setup lang="ts">definePageMeta({ middleware: 'auth' })</script>

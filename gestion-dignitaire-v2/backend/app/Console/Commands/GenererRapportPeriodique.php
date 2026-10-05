@@ -6,6 +6,7 @@ use App\Mail\RapportPeriodiqueGenere;
 use App\Models\Rapport;
 use App\Models\User;
 use App\Support\Reports\SynthesisReportBuilder;
+use App\Support\Reports\ReportPeriodResolver;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -14,24 +15,20 @@ use Illuminate\Support\Facades\Storage;
 
 class GenererRapportPeriodique extends Command
 {
-    protected $signature = 'rapports:generer {--periode=mensuel : mensuel|trimestriel|annuel}';
+    protected $signature = 'rapports:generer {--periode=mensuel : mensuel|trimestriel|semestriel|annuel}';
 
     protected $description = "Génère le rapport de synthèse périodique (PDF), l'archive et l'envoie par email aux administrateurs";
 
-    public function handle(SynthesisReportBuilder $builder): int
+    public function handle(SynthesisReportBuilder $builder, ReportPeriodResolver $periodResolver): int
     {
         $type = $this->option('periode');
 
-        if (!in_array($type, ['mensuel', 'trimestriel', 'annuel'], true)) {
-            $this->error("Période invalide : {$type}. Attendu : mensuel, trimestriel ou annuel.");
+        if (!in_array($type, ['mensuel', 'trimestriel', 'semestriel', 'annuel'], true)) {
+            $this->error("Période invalide : {$type}. Attendu : mensuel, trimestriel, semestriel ou annuel.");
             return self::FAILURE;
         }
 
-        [$debut, $fin] = match ($type) {
-            'mensuel' => [now()->subMonthNoOverflow()->startOfMonth(), now()->subMonthNoOverflow()->endOfMonth()],
-            'trimestriel' => [now()->subQuarter()->firstOfQuarter(), now()->subQuarter()->lastOfQuarter()],
-            'annuel' => [now()->subYear()->startOfYear(), now()->subYear()->endOfYear()],
-        };
+        [$debut, $fin] = $periodResolver->previous($type);
 
         $data = $builder->buildData($debut, $fin);
 

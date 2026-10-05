@@ -89,6 +89,7 @@
             <option value="">Tous les types</option>
             <option value="mensuel">Mensuel</option>
             <option value="trimestriel">Trimestriel</option>
+            <option value="semestriel">Semestriel</option>
             <option value="annuel">Annuel</option>
           </select>
         </div>

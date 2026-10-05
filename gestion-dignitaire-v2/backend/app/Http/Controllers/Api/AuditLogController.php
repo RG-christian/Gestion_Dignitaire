@@ -56,6 +56,11 @@ class AuditLogController extends Controller
         return response()->json([
             'success' => true,
             'logs' => $logs,
+            'entity_types' => AuditLog::query()
+                ->select('auditable_type')
+                ->distinct()
+                ->orderBy('auditable_type')
+                ->pluck('auditable_type'),
         ]);
     }
 }

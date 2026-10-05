@@ -244,11 +244,11 @@ class ConjointController extends Controller
             $label = "{$conjoint->prenom} {$conjoint->nom}";
             $conjoint->delete();
 
-            AuditLogger::log($request, 'deleted', 'Conjoint', $id, $label, $old, null);
+            AuditLogger::log($request, 'archived', 'Conjoint', $id, $label, $old, ['deleted_at' => $conjoint->deleted_at]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Conjoint supprimé avec succès'
+                'message' => 'Conjoint archivé avec succès'
             ]);
 
         } catch (\Exception $e) {
@@ -258,6 +258,15 @@ class ConjointController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function restaurer(Request $request, int $id): JsonResponse
+    {
+        $conjoint = Conjoint::onlyTrashed()->findOrFail($id);
+        $old = $conjoint->getOriginal();
+        $conjoint->restore();
+        AuditLogger::log($request, 'restored', 'Conjoint', $id, "{$conjoint->prenom} {$conjoint->nom}", $old, ['deleted_at' => null]);
+        return response()->json(['success' => true, 'message' => 'Conjoint restauré avec succès']);
     }
 
     /**

@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DignitaireController;
 use App\Http\Controllers\Api\NominationController;
 use App\Http\Controllers\Api\DecorationController;
+use App\Http\Controllers\Api\DecorationAttributionController;
+use App\Http\Controllers\Api\HistoricalArchiveController;
 use App\Http\Controllers\Api\ReferentielController;
 use App\Http\Controllers\Api\PosteController;
 use App\Http\Controllers\Api\LangueParleeController;
@@ -28,6 +30,7 @@ use App\Http\Controllers\Api\ConjointController;
 use App\Http\Controllers\Api\DignitaireDocumentController;
 use App\Http\Controllers\Api\EtablissementController;
 use App\Http\Controllers\Api\SessionController;
+use App\Http\Controllers\Api\PvController;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,6 +89,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Recherche globale transverse
     Route::get('/search', [\App\Http\Controllers\Api\GlobalSearchController::class, 'search']);
+    Route::get('/search/advanced', [\App\Http\Controllers\Api\GlobalSearchController::class, 'advanced']);
+    Route::get('/search/advanced/options', [\App\Http\Controllers\Api\GlobalSearchController::class, 'advancedOptions']);
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']); // Endpoint optimisé
@@ -97,6 +102,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dignitaires
     Route::middleware('permission:Dignitaire')->group(function () {
+        Route::post('/dignitaires/{id}/restaurer', [DignitaireController::class, 'restaurer']);
+        Route::get('/dignitaires/{id}/chronologie', [DignitaireController::class, 'chronologie']);
         Route::apiResource('dignitaires', DignitaireController::class);
         Route::get('/dignitaires-stats', [DignitaireController::class, 'stats']);
         Route::get('/dignitaires-export', [DignitaireController::class, 'export']);
@@ -108,15 +115,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Nominations
     Route::middleware('permission:Nomination')->group(function () {
+        Route::post('/nominations/{id}/restaurer', [NominationController::class, 'restaurer']);
         Route::apiResource('nominations', NominationController::class);
         Route::post('/nominations/{id}/cloturer', [NominationController::class, 'cloturer']);
         Route::get('/nominations-export', [NominationController::class, 'export']);
     });
 
+    // Procès-verbaux associés aux nominations
+    Route::middleware('permission:Procès-verbal')->group(function () {
+        Route::apiResource('pvs', PvController::class);
+        Route::post('/pvs/{id}/archiver', [PvController::class, 'archiver']);
+        Route::post('/pvs/{id}/restaurer', [PvController::class, 'restaurer']);
+        Route::get('/pvs/{id}/download', [PvController::class, 'download']);
+    });
+
     // Décorations
     Route::middleware('permission:Décoration')->group(function () {
+        Route::get('/decoration-attributions/initial-data', [DecorationAttributionController::class, 'initialData']);
+        Route::get('/decoration-attributions/{id}/attestation', [DecorationAttributionController::class, 'download']);
+        Route::post('/decoration-attributions/{id}/restaurer', [DecorationAttributionController::class, 'restaurer']);
+        Route::apiResource('decoration-attributions', DecorationAttributionController::class)->except(['show']);
         Route::apiResource('decorations', DecorationController::class);
-        Route::post('/dignitaires/{id}/decorations', [DecorationController::class, 'attachToDignitaire']);
         Route::get('/decorations-export', [DecorationController::class, 'export']);
     });
 
@@ -143,11 +162,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Expériences
     Route::middleware('permission:Expérience')->group(function () {
+        Route::get('/experiences/{id}/justificatif', [ExperienceController::class, 'downloadJustificatif']);
         Route::apiResource('experiences', ExperienceController::class);
     });
 
     // Postes
     Route::middleware('permission:Poste')->group(function () {
+        Route::post('/postes/{id}/restaurer', [PosteController::class, 'restaurer']);
         Route::get('/postes/initial-data', [PosteController::class, 'initialData']);
         Route::apiResource('postes', PosteController::class);
         Route::post('/postes/{id}/cloturer', [PosteController::class, 'cloturer']);
@@ -156,6 +177,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Affectations (séjours à l'étranger)
     Route::middleware('permission:Affectation')->group(function () {
+        Route::post('/affectations/{id}/restaurer', [\App\Http\Controllers\Api\AffectationController::class, 'restaurer']);
         Route::apiResource('affectations', \App\Http\Controllers\Api\AffectationController::class);
         Route::post('/affectations/{id}/cloturer', [\App\Http\Controllers\Api\AffectationController::class, 'cloturer']);
     });
@@ -180,10 +202,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/domaines', [ReferentielController::class, 'domaines']);
     Route::get('/structures', [ReferentielController::class, 'structures']);
     Route::get('/etablissements', [ReferentielController::class, 'etablissements']);
-    // Création d'établissement (depuis le champ "recherche ou ajout" des
-    // formulaires de diplôme) — réservée à qui peut écrire sur Diplôme.
+    // Gestion des référentiels académiques — réservée à qui peut gérer les diplômes.
     Route::middleware('permission:Diplôme')->group(function () {
-        Route::post('/etablissements', [EtablissementController::class, 'store']);
+        Route::apiResource('domaines', \App\Http\Controllers\Api\DomaineController::class)->except(['index']);
+        Route::apiResource('etablissements', EtablissementController::class)->except(['index']);
     });
 
     // Gestion Pays, Régions, Villes (CRUD complet)
@@ -252,6 +274,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{id}', [ConjointController::class, 'show']);
             Route::put('/{id}', [ConjointController::class, 'update']);
             Route::delete('/{id}', [ConjointController::class, 'destroy']);
+            Route::post('/{id}/restaurer', [ConjointController::class, 'restaurer']);
             Route::post('/{id}/terminer-union', [ConjointController::class, 'terminerUnion']);
         });
     });
@@ -270,6 +293,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Administration des utilisateurs (Super Administrateur uniquement)
     Route::prefix('admin')->group(function () {
+        Route::middleware('admin-access')->get('/archives', [HistoricalArchiveController::class, 'index']);
         // Journal des actions et rapports périodiques : sous-fonctions
         // normales de "Rapports & Traçabilité", attribuables à
         // Assistant/Gestionnaire comme n'importe quel autre module.

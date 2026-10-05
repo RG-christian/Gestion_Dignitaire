@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dignitaire extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'dignitaire'; // Utiliser le nom de table existant
     public $timestamps = false; // Désactiver les timestamps car la table n'a pas created_at/updated_at
@@ -27,6 +28,8 @@ class Dignitaire extends Model
         'nationalite_id',
         'genre',
         'etat_civil',
+        'est_militaire',
+        'grade_militaire',
         'photo',
         'adresse',
         'telephone',
@@ -36,6 +39,7 @@ class Dignitaire extends Model
     ];
 
     protected $casts = [
+        'est_militaire' => 'boolean',
         'date_naissance' => 'date',
         'date_prise_fonction' => 'date',
     ];
