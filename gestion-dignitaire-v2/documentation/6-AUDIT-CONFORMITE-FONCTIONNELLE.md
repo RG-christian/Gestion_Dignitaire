@@ -279,7 +279,7 @@ Solution : formaliser les deux concepts, ajouter une validation anti-cycle et de
 
 ### 4.11 Tableau de bord
 
-Statut : **Conforme techniquement sur les indicateurs définis le 5 octobre 2026**
+Statut : **Conforme techniquement sur les indicateurs définis le 7 octobre 2026**
 
 Implémenté :
 
@@ -472,28 +472,28 @@ Les deux ressources disposent d'un CRUD, d'une clôture et d'un audit. La gestio
 | Tests cumulés priorités 1.1 à 1.5 | 15 tests réussis, 123 assertions | Aucune régression entre les cinq priorités critiques |
 | `php artisan test --filter=CentralAuditTest` | 4 tests réussis, 22 assertions | Trace automatique, enrichissement sans doublon, exclusion des échecs et rollback atomique vérifiés |
 | Tests cumulés priorités 1.1 à 1.6 | 19 tests réussis, 145 assertions | Aucune régression entre les six priorités critiques |
-| `php artisan test --filter=DashboardIndicatorsTest` | 2 tests réussis, 23 assertions | Totaux, répartitions, listes récentes et validation du statut militaire couverts |
-| Tests cumulés priorités 1.1 à 2.1 | 21 tests réussis, 168 assertions | Aucune régression sur les priorités déjà traitées |
-| `php artisan test --filter=AdvancedSearchTest` | 3 tests réussis, 28 assertions | Combinaison de sept critères, filtres booléens, pagination, options et authentification couvertes |
-| Tests cumulés priorités 1.1 à 2.2 | 24 tests réussis, 196 assertions | Aucune régression sur les priorités déjà traitées |
+| `php artisan test --filter=DashboardMetricsTest` | 2 tests réussis, 21 assertions | Totaux, répartitions, listes récentes et validation du statut militaire couverts |
+| Tests cumulés priorités 1.1 à 2.1 | 21 tests réussis, 166 assertions | Aucune régression sur les priorités déjà traitées |
+| `php artisan test --filter=AdvancedSearchTest` | 3 tests réussis, 28 assertions | Combinaison des critères texte/relations, filtres booléens, pagination, options et authentification couvertes |
+| Tests cumulés priorités 1.1 à 2.2 | 24 tests réussis, 194 assertions | Aucune régression sur les priorités déjà traitées |
 | Build complet Nuxt du 5 octobre 2026 | Réussi | La page `/recherche`, son intégration à la barre de recherche et le serveur Nitro sont compilés ; avertissements non bloquants sur `useDebounce` et une dépendance |
 | `php artisan test --filter=DignitaireChronologyTest` | 3 tests réussis, 22 assertions | Tri familial, conservation d'une union terminée, regroupement académique, expériences en cours et authentification couverts |
-| Tests cumulés priorités 1.1 à 2.3 | 27 tests réussis, 218 assertions | Aucune régression sur les priorités déjà traitées |
+| Tests cumulés priorités 1.1 à 2.3 | 27 tests réussis, 216 assertions | Aucune régression sur les priorités déjà traitées |
 | Build Nuxt avec chronologies du 5 octobre 2026 | Réussi, code de sortie 0 | La route `/dignitaires/{id}/chronologie`, le composant de timeline et l'accès depuis la fiche sont compilés dans Nitro |
 | `php artisan test --filter=AcademicReferenceTest` | 4 tests réussis, 34 assertions | CRUD, doublons, protection des références utilisées et authentification couverts |
-| Tests cumulés priorités 1.1 à 2.4 | 31 tests réussis, 252 assertions | Aucune régression sur les priorités déjà traitées |
+| Tests cumulés priorités 1.1 à 2.4 | 31 tests réussis, 250 assertions | Aucune régression sur les priorités déjà traitées |
 | Build Nuxt avec Domaines et Établissements du 5 octobre 2026 | Artefact Nitro régénéré et syntaxe serveur valide | Les pages `/domaines` et `/etablissements` et leur composant partagé sont compilés ; le wrapper a expiré après 249 secondes avant de restituer le code de sortie |
 | `php artisan test --filter=LanguageFamilyTest` | 3 tests réussis, 24 assertions | Famille optionnelle, CRUD/recherche, authentification et restriction aux quatre niveaux métier couverts |
-| Tests cumulés priorités 1.1 à 2.5 | 34 tests réussis, 276 assertions | Aucune régression sur les priorités déjà traitées |
+| Tests cumulés priorités 1.1 à 2.5 | 34 tests réussis, 274 assertions | Aucune régression sur les priorités déjà traitées |
 | Build Nuxt du module Langues du 5 octobre 2026 | Réussi, code de sortie 0 | Le formulaire aligné sur les niveaux métier et le serveur Nitro sont compilés |
 | `php artisan test --filter=SemiAnnualReportTest` | 3 tests réussis, 19 assertions | Bornes des deux semestres, PDF, archivage, email, planification et cohérence des diplômes couverts |
-| Tests cumulés priorités 1.1 à 2.6 | 37 tests réussis, 295 assertions | Aucune régression sur les priorités déjà traitées |
+| Tests cumulés priorités 1.1 à 2.6 | 37 tests réussis, 293 assertions | Aucune régression sur les priorités déjà traitées |
 | Build Nuxt du module Rapports du 5 octobre 2026 | Réussi, code de sortie 0 | Le filtre semestriel, la page Rapports et le serveur Nitro sont compilés |
 | Migration `add_soft_deletes_to_historical_records` | Exécutée, lot 36 | `deleted_at` ajouté aux six tables historiques ciblées |
 | Migration `link_candidate_documents_to_dignitaries` | Exécutée | Source candidat unique et clé étrangère avec mise à null lors de la suppression |
 | Migration `add_request_context_to_audit_logs` | Exécutée, lot 38 | Identifiant de requête, méthode, chemin, statut, IP et agent utilisateur disponibles |
 | Migration `add_military_status_to_dignitaire` | Exécutée | Statut militaire explicite, grade obligatoire et index de comptage ajoutés sans modifier les valeurs existantes |
-| Build dashboard du 5 octobre 2026 | Artefact Nitro régénéré et syntaxe serveur valide | Le wrapper a expiré après la génération ; les composants Vue et l'artefact `.output/server/index.mjs` passent leurs contrôles syntaxiques |
+| Build dashboard du 7 octobre 2026 | Réussi, code de sortie 0 | Client et serveur Nitro compilés ; avertissements non bloquants sur `useDebounce` et une dépendance |
 | Routes `/api/pvs` | 8 routes actives | Liste, création, consultation, modification, suppression, archivage, restauration et téléchargement |
 | Rendu HTTP `/pvs` du build de production | HTTP 200 | La page est bien produite par Nitro ; la capture visuelle reste à faire car le service de contrôle Windows était indisponible |
 | Connexion MySQL | Réussie après démarrage de MAMP | Base `gestion_dignitaire`, 46 tables accessibles |
@@ -533,7 +533,7 @@ Statut : **terminée le 2 octobre 2026**.
 
 ### Priorité 2 - complétude fonctionnelle
 
-1. **Indicateurs du dashboard : validés techniquement le 5 octobre 2026.** Totaux nominations/militaires, quatre répartitions supplémentaires, trois listes récentes, exclusion des archives et saisie contrôlée du grade militaire. 2 tests/23 assertions dédiés, soit 21 tests/168 assertions cumulés. La récurrence reste en attente d'une définition métier.
+1. **Indicateurs du dashboard : validés techniquement le 7 octobre 2026.** Totaux nominations/militaires, quatre répartitions supplémentaires, trois listes récentes, exclusion des archives et saisie contrôlée du grade militaire. 2 tests/21 assertions dédiés, soit 21 tests/166 assertions cumulés. La récurrence reste en attente d'une définition métier.
 2. **Recherche multicritère : validée techniquement le 5 octobre 2026.** Neuf critères combinables en ET, options dynamiques, pagination, contrôle de permission et exclusion des archives. 3 tests/28 assertions dédiés, soit 24 tests/196 assertions cumulés, et build Nuxt réussi. La recette visuelle navigateur reste à effectuer ; la pertinence approximative concerne encore la recherche rapide.
 3. **Chronologies familiale, académique et professionnelle : validées techniquement le 5 octobre 2026.** Vue consolidée par dignitaire, événements familiaux historiques, diplômes triés et regroupés par niveau, expériences triées avec statut `En cours`. 3 tests/22 assertions dédiés, soit 27 tests/218 assertions cumulés, et build Nuxt réussi. La recette visuelle navigateur reste à effectuer.
 4. **Référentiels Domaines et Établissements : validés techniquement le 5 octobre 2026.** Deux pages de gestion, CRUD complet, recherche locale, enrichissement établissement-ville, prévention des doublons et blocage des suppressions référencées. 4 tests/34 assertions dédiés, soit 31 tests/252 assertions cumulés. Artefact Nitro régénéré et composants compilés ; recette visuelle navigateur restante.

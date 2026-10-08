@@ -8,12 +8,16 @@ use App\Models\Decoration;
 use App\Models\Dignitaire;
 use App\Models\Diplome;
 use App\Models\Entite;
+use App\Models\Experience;
+use App\Models\Affectation;
+use App\Models\DignitaireDocument;
 use App\Models\Nomination;
 use App\Models\Poste;
 use App\Support\Permissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Recherche globale transverse demandée en réunion ("recherche globale
@@ -23,11 +27,18 @@ use Illuminate\Support\Facades\DB;
  */
 class GlobalSearchController extends Controller
 {
-    private const LIMIT_PAR_TYPE = 5;
+    // La recherche rapide doit rester légère, mais cinq résultats masquaient
+    // trop souvent les ressources secondaires. Dix résultats par type offrent
+    // un aperçu utile ; la recherche avancée reste disponible pour l'exhaustif.
+    private const LIMIT_PAR_TYPE = 10;
 
     public function search(Request $request): JsonResponse
     {
         $q = trim((string) $request->get('q', ''));
+        // Les collations MySQL du projet sont généralement insensibles aux
+        // accents. On conserve aussi une forme normalisée pour les variantes
+        // saisies côté utilisateur (é/è/ê -> e).
+        $search = mb_strtolower((string) Str::ascii($q));
 
         if (mb_strlen($q) < 2) {
             return response()->json(['query' => $q, 'results' => []]);
@@ -38,13 +49,14 @@ class GlobalSearchController extends Controller
 
         if (Permissions::peutLire($user, 'Dignitaire')) {
             $dignitaires = Dignitaire::query()
-                ->where(function ($query) use ($q) {
-                    $query->where('nom', 'like', "%{$q}%")
-                        ->orWhere('prenom', 'like', "%{$q}%")
-                        ->orWhere('matricule', 'like', "%{$q}%")
-                        ->orWhere('nip', 'like', "%{$q}%");
+                ->where(function ($query) use ($search) {
+                    $query->whereRaw('LOWER(nom) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(prenom) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(matricule) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(nip) LIKE ?', ["%{$search}%"]);
                 })
-                ->limit(self::LIMIT_PAR_TYPE)
+                ->orderByRaw("CASE WHEN LOWER(nom) = ? THEN 0 WHEN LOWER(nom) LIKE ? THEN 1 ELSE 2 END", [$search, "{$search}%"])
+                ->orderBy('nom')->orderBy('prenom')->limit(self::LIMIT_PAR_TYPE)
                 ->get();
 
             foreach ($dignitaires as $d) {
@@ -154,6 +166,58 @@ class GlobalSearchController extends Controller
                     'label' => $dec->deco_nom,
                     'sublabel' => $dec->deco_type,
                     'url' => '/decorations',
+                ];
+            }
+        }
+
+        if (Permissions::peutLire($user, 'Expérience')) {
+            $experiences = Experience::with(['dignitaire', 'structure'])
+                ->where(function ($query) use ($q, $search) {
+                    $query->whereRaw('LOWER(intitule) LIKE ?', ["%{$search}%"])
+                        ->orWhereHas('structure', fn ($q2) => $q2->whereRaw('LOWER(nom) LIKE ?', ["%{$search}%"]));
+                })
+                ->orderBy('intitule')->limit(self::LIMIT_PAR_TYPE)->get();
+            foreach ($experiences as $experience) {
+                $results[] = [
+                    'type' => 'experience', 'type_label' => 'Expérience', 'id' => $experience->id,
+                    'label' => $experience->intitule, 'sublabel' => $experience->structure?->nom ?: $experience->dignitaire?->nom_complet,
+                    'url' => '/experiences',
+                ];
+            }
+        }
+
+        if (Permissions::peutLire($user, 'Affectation')) {
+            $affectations = Affectation::with(['dignitaire', 'poste', 'pays', 'ville'])
+                ->where(function ($query) use ($search) {
+                    $query->whereRaw('LOWER(type_affectation) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(nature) LIKE ?', ["%{$search}%"])
+                        ->orWhereHas('pays', fn ($q) => $q->whereRaw('LOWER(nom) LIKE ?', ["%{$search}%"]))
+                        ->orWhereHas('ville', fn ($q) => $q->whereRaw('LOWER(nom) LIKE ?', ["%{$search}%"]));
+                })
+                ->orderByDesc('date_debut')->limit(self::LIMIT_PAR_TYPE)->get();
+            foreach ($affectations as $affectation) {
+                $results[] = [
+                    'type' => 'affectation', 'type_label' => 'Affectation', 'id' => $affectation->id,
+                    'label' => $affectation->poste?->intitule ?: ($affectation->type_affectation ?: 'Affectation'),
+                    'sublabel' => trim(implode(' — ', array_filter([$affectation->dignitaire?->nom_complet, $affectation->ville?->nom, $affectation->pays?->nom]))),
+                    'url' => '/affectations',
+                ];
+            }
+        }
+
+        if (Permissions::peutLire($user, 'Dignitaire')) {
+            $documents = DignitaireDocument::with('dignitaire')
+                ->where(function ($query) use ($search) {
+                    $query->whereRaw('LOWER(nom_document) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(type_document) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(numero_document) LIKE ?', ["%{$search}%"]);
+                })
+                ->orderBy('nom_document')->limit(self::LIMIT_PAR_TYPE)->get();
+            foreach ($documents as $document) {
+                $results[] = [
+                    'type' => 'document', 'type_label' => 'Document', 'id' => $document->id,
+                    'label' => $document->nom_document ?: ($document->type_document ?: 'Document'),
+                    'sublabel' => $document->dignitaire?->nom_complet, 'url' => '/dignitaires',
                 ];
             }
         }
